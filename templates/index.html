@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nokia WebEM Configuration Generator</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .main-header {
+            text-align: center;
+            color: #fff;
+            margin-bottom: 2rem;
+            letter-spacing: 1px;
+        }
+        .main-header span {
+            font-size: 1.2rem;
+            color: #e0e0e0;
+            display: block;
+            margin-top: 0.5rem;
+        }
+        .card-group {
+            gap: 2rem;
+            justify-content: center;
+        }
+        .feature-card {
+            border: none;
+            border-radius: 1.5rem;
+            box-shadow: 0 8px 32px 0 rgba(76, 68, 182, 0.25);
+            transition: transform 0.2s, box-shadow 0.2s;
+            background: rgba(255,255,255,0.97);
+            min-width: 320px;
+            max-width: 350px;
+            cursor: pointer;
+        }
+        .feature-card:hover {
+            transform: translateY(-8px) scale(1.03);
+            box-shadow: 0 16px 48px 0 rgba(76, 68, 182, 0.35);
+        }
+        .feature-icon {
+            font-size: 3.5rem;
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+        .feature-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #333;
+        }
+        .feature-desc {
+            color: #666;
+            font-size: 1.05rem;
+            margin-bottom: 1.2rem;
+        }
+        @media (max-width: 900px) {
+            .card-group { flex-direction: column; align-items: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <div class="main-header">
+            <h1>Nokia WebEM Configuration Generator</h1>
+            <span>სწრაფი და მარტივი საბაზო სადგურების კონფიგურაცია</span>
+        </div>
+        <div class="d-flex card-group">
+            <a href="/modernization" class="text-decoration-none">
+                <div class="card feature-card align-items-center p-4">
+                    <i class="bi bi-arrow-repeat feature-icon"></i>
+                    <div class="feature-title">5G Modernization</div>
+                    <div class="feature-desc">არსებულ საბაზო სადგურზე 5G-ის დამატება, ავტომატური კონფიგურაციის გენერაცია.</div>
+                </div>
+            </a>
+            <a href="/rollout" class="text-decoration-none">
+                <div class="card feature-card align-items-center p-4">
+                    <i class="bi bi-plus-circle feature-icon"></i>
+                    <div class="feature-title">ახალი სადგურის Rollout</div>
+                    <div class="feature-desc">სრულიად ახალი საბაზო სადგურის კონფიგურაციის შექმნა და ინტეგრაცია.</div>
+                </div>
+            </a>
+            <a href="/xml-viewer" class="text-decoration-none">
+                <div class="card feature-card align-items-center p-4">
+                    <i class="bi bi-file-earmark-code feature-icon"></i>
+                    <div class="feature-title">XML Viewer</div>
+                    <div class="feature-desc">XML კონფიგურაციის სწრაფი და ვიზუალური დათვალიერება.</div>
+                </div>
+            </a>
+        </div>
+    </div>
+</body>
+</html>

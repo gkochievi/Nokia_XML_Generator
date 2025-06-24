@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XML Viewer - Nokia WebEM Generator</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            width: 100vw;
+            overflow-x: hidden;
+        }
+        .viewer-card {
+            border-radius: 1.5rem;
+            box-shadow: 0 8px 32px 0 rgba(76, 68, 182, 0.18);
+            background: rgba(255,255,255,0.98);
+            max-width: 100vw;
+            width: 100%;
+            margin: 0 auto;
+            padding: 2.5rem 2vw 2rem 2vw;
+            overflow-x: auto;
+        }
+        .viewer-header {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 1.5rem;
+        }
+        .viewer-header i {
+            font-size: 2.5rem;
+            color: #764ba2;
+            margin-bottom: 0.5rem;
+        }
+        .form-label {
+            font-weight: 500;
+            color: #333;
+        }
+        .form-control, .form-control:focus {
+            border-radius: 0.8rem;
+            border: 2px solid #e0e0e0;
+            box-shadow: none;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 0.8rem;
+            font-size: 1.15rem;
+            padding: 0.75rem 2.5rem;
+            box-shadow: 0 4px 16px 0 rgba(102, 126, 234, 0.12);
+            transition: background 0.2s;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        }
+        .xml-tree { font-family: monospace; font-size: 1em; }
+        .xml-tag { color: #764ba2; }
+        .xml-attr { color: #667eea; }
+        .xml-text { color: #333; }
+        .collapsible { cursor: pointer; }
+        .content { display: none; margin-left: 20px; }
+        .collapsible::before {
+            content: '\25B6'; /* ▶ */
+            display: inline-block;
+            margin-right: 6px;
+            transition: transform 0.2s;
+        }
+        .collapsible.active::before {
+            content: '\25BC'; /* ▼ */
+        }
+        .container.py-5 {
+            padding-top: 2rem !important;
+            padding-bottom: 2rem !important;
+            max-width: 100vw;
+            width: 100vw;
+            margin: 0 auto;
+            overflow-x: auto;
+        }
+        @media (min-width: 1200px) {
+            .viewer-card {
+                padding-left: 5vw;
+                padding-right: 5vw;
+            }
+        }
+        .table-responsive {
+            overflow-x: auto;
+            max-width: 100vw;
+        }
+        table.table {
+            min-width: 900px;
+            width: 100%;
+        }
+        @media (max-width: 900px) {
+            table.table {
+                min-width: 600px;
+            }
+            .viewer-card {
+                padding-left: 0.5vw;
+                padding-right: 0.5vw;
+            }
+        }
+        @media (max-width: 600px) {
+            table.table {
+                min-width: 400px;
+            }
+            .viewer-card {
+                padding-left: 0;
+                padding-right: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container py-5">
+    <div class="viewer-card">
+        <div class="viewer-header">
+            <i class="bi bi-file-earmark-code"></i>
+            <h2>XML Viewer</h2>
+            <div class="text-muted mb-2">XML კონფიგურაციის სწრაფი და ვიზუალური დათვალიერება</div>
+        </div>
+        <!-- Multi-file XML upload and file selection UI -->
+        <div class="mb-4">
+            <form id="multi-upload-form" enctype="multipart/form-data">
+                <div class="row align-items-end g-2">
+                    <div class="col-md-6">
+                        <label for="xml_files" class="form-label"><i class="bi bi-files me-2"></i>ატვირთე რამდენიმე XML ფაილი</label>
+                        <input class="form-control" type="file" id="xml_files" name="xmlFiles" accept=".xml" multiple>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="file-select" class="form-label">ატვირთული ფაილები</label>
+                        <div class="input-group">
+                            <select class="form-select" id="file-select"></select>
+                            <button class="btn btn-danger" id="delete-file-btn" type="button" title="ფაილის წაშლა"><i class="bi bi-trash"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <!-- Placeholder for info blocks -->
+        <div id="info-blocks"></div>
+        <script>
+        // Helper: fetch and update file list
+        async function updateFileList(selected) {
+            const resp = await fetch('/api/list-xmls');
+            const data = await resp.json();
+            const select = document.getElementById('file-select');
+            select.innerHTML = '';
+            (data.files || []).forEach(f => {
+                const opt = document.createElement('option');
+                opt.value = f;
+                opt.textContent = f;
+                select.appendChild(opt);
+            });
+            if (selected && data.files.includes(selected)) {
+                select.value = selected;
+            }
+            // If there are files, trigger change to load info
+            if (select.value) {
+                select.dispatchEvent(new Event('change'));
+            } else {
+                document.getElementById('info-blocks').innerHTML = '';
+            }
+        }
+        // Upload handler
+        document.getElementById('xml_files').addEventListener('change', async function() {
+            const files = this.files;
+            if (!files.length) return;
+            // Only allow .xml files
+            for (let f of files) {
+                if (!f.name.toLowerCase().endsWith('.xml')) {
+                    alert('მხოლოდ .xml ფაილების ატვირთვა შეიძლება!');
+                    this.value = '';
+                    return;
+                }
+            }
+            const formData = new FormData();
+            for (let f of files) formData.append('xmlFiles', f);
+            await fetch('/api/upload-xmls', { method: 'POST', body: formData });
+            await updateFileList(files[0].name);
+            this.value = '';
+        });
+        // File select handler
+        document.getElementById('file-select').onchange = async function() {
+            const filename = this.value;
+            if (!filename) {
+                document.getElementById('info-blocks').innerHTML = '';
+                return;
+            }
+            const resp = await fetch('/api/view-xml/' + encodeURIComponent(filename));
+            const data = await resp.json();
+            if (data.success) {
+                renderInfoBlocks(data.data);
+            } else {
+                alert('ფაილის ნახვა ვერ მოხერხდა: ' + (data.error || 'Unknown error'));
+            }
+        };
+        // Delete handler
+        document.getElementById('delete-file-btn').onclick = async function() {
+            const select = document.getElementById('file-select');
+            const filename = select.value;
+            if (!filename) return;
+            if (!confirm('დარწმუნებული ხარ, რომ გინდა წაშალო ფაილი?')) return;
+            await fetch('/api/delete-xml/' + encodeURIComponent(filename), { method: 'DELETE' });
+            await updateFileList();
+        };
+        // Initial file list load
+        updateFileList();
+        // Collapsible logic
+        function bindCollapsibles() {
+            const toggles = document.getElementsByClassName('collapsible');
+            for (let i = 0; i < toggles.length; i++) {
+                toggles[i].onclick = function() {
+                    this.classList.toggle('active');
+                    const content = this.nextElementSibling;
+                    if (content && content.classList.contains('content')) {
+                        content.style.display = content.style.display === 'block' ? 'none' : 'block';
+                    }
+                }
+            }
+        }
+        // Render all info blocks
+        function renderInfoBlocks(config_data) {
+            let infoHtml = '';
+            if (!config_data) {
+                document.getElementById('info-blocks').innerHTML = '';
+                return;
+            }
+            // 1. ძირითადი ინფორმაცია
+            infoHtml += `<div class="mt-4 mb-4 p-3 rounded" style="background: #f7f8fa; border: 1px solid #e0e0e0;">
+            <h5 class="mb-3"><i class="bi bi-info-circle me-2"></i>ძირითადი ინფორმაცია</h5>
+            <div class="row">
+                <div class="col-md-6 mb-2">
+                    <b>სადგურის ID:</b> ${config_data.stationInfo?.mrbtsId || '-'}<br>
+                    <b>BTS Name:</b> ${config_data.stationInfo?.btsName || '-'}<br>
+                    <b>ვერსია:</b> ${config_data.stationInfo?.version || '-'}<br>
+                    <b>5G:</b> ${config_data.stationInfo?.has5G ? '✔️' : '❌'}
+                    <b>4G:</b> ${config_data.stationInfo?.has4G ? '✔️' : '❌'}
+                    <b>3G:</b> ${config_data.stationInfo?.has3G ? '✔️' : '❌'}
+                    <b>2G:</b> ${config_data.stationInfo?.has2G ? '✔️' : '❌'}
+                </div>
+                <div class="col-md-6 mb-2">
+                    <b>NRBTS ID:</b> ${config_data.stationInfo?.nrbtsId || '-'}<br>
+                    <b>LNBTS ID:</b> ${config_data.stationInfo?.lnbtsId || '-'}<br>
+                    <b>WNBTS ID:</b> ${config_data.stationInfo?.wnbtsId || '-'}<br>
+                    <b>BCF ID:</b> ${config_data.stationInfo?.bcfId || '-'}<br>
+                </div>
+            </div>
+            </div>`;
+            // 2. სექტორები და ქერიერები
+            infoHtml += `<div class="mt-4 mb-4 p-3 rounded" style="background: #f7f8fa; border: 1px solid #e0e0e0;">
+            <h5 class="mb-3"><i class="bi bi-diagram-3-fill me-2"></i>სექტორები და ქერიერები</h5>
+            <b>ტექნოლოგიები:</b> ${(config_data.radioInfo?.technologies || []).join(', ')}<br>
+            <b>სექტორების რაოდენობა:</b> ${config_data.radioInfo?.sectorCount || '-'}<br>
+            ${(config_data.radioInfo?.sectorDetails && Object.keys(config_data.radioInfo.sectorDetails).length) ? renderSectorsTable(config_data.radioInfo.sectorDetails) : ''}
+            </div>`;
+            // 3. Cells (უჯრედები)
+            infoHtml += renderCellsSection(config_data.radioInfo?.cells || {});
+            // 4. ქსელის ინფორმაცია
+            infoHtml += `<div class="mt-4 mb-4 p-3 rounded" style="background: #f7f8fa; border: 1px solid #e0e0e0;">
+            <h5 class="mb-3"><i class="bi bi-diagram-2 me-2"></i>ქსელის ინფორმაცია (VLAN + IP)</h5>
+            <div class="table-responsive">
+            <table class="table table-bordered table-sm align-middle text-center mt-2">
+                <thead class="table-light">
+                    <tr>
+                        <th>Label</th><th>VLAN ID</th><th>IP</th><th>Prefix</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${(config_data.networkInfo?.vlan_ip_combined || []).map(row => `
+                        <tr>
+                            <td>${row.label ? `<span class='badge bg-primary'>${row.label}</span>` : '-'}</td>
+                            <td>${row.vlanId || '-'}</td>
+                            <td>${row.ip || '-'}</td>
+                            <td>${row.prefix || '-'}</td>
+                        </tr>`).join('')}
+                </tbody>
+            </table></div>
+            </div>`;
+            // 5. მეზობლები და კაბინეტები
+            infoHtml += `<div class="mt-4 mb-4 p-3 rounded" style="background: #f7f8fa; border: 1px solid #e0e0e0;">
+            <h5 class="mb-3"><i class="bi bi-diagram-2-fill me-2"></i>მეზობლები და კაბინეტები</h5>
+            <b>კაბინეტების რაოდენობა:</b> ${config_data.hardwareInfo?.cabinetCount || '-'}<br>
+            <b>მეზობლები:</b> <b>LTE:</b> ${config_data.neighborInfo?.lteNeighborCount} | <b>NR:</b> ${config_data.neighborInfo?.nrNeighborCount} | <b>X2:</b> ${config_data.neighborInfo?.x2LinkCount}
+            </div>`;
+            document.getElementById('info-blocks').innerHTML = infoHtml;
+            bindCollapsibles();
+        }
+        function renderSectorsTable(sectorDetails) {
+            // Collect all unique sectors
+            let all_sectors = [];
+            Object.values(sectorDetails).forEach(sectors => {
+                Object.keys(sectors).forEach(sector => {
+                    if (!all_sectors.includes(sector)) all_sectors.push(sector);
+                });
+            });
+            all_sectors = all_sectors.sort();
+            let html = `<b>სექტორები და ქერიერები:</b><div class="table-responsive"><table class="table table-bordered table-sm align-middle text-center mt-2"><thead class="table-light"><tr><th>ტექნოლოგია</th>`;
+            all_sectors.forEach(sector => { html += `<th>სექტორი ${sector}</th>`; });
+            html += `</tr></thead><tbody>`;
+            Object.entries(sectorDetails).forEach(([tech, sectors]) => {
+                html += `<tr><td><b>${tech}</b></td>`;
+                all_sectors.forEach(sector => {
+                    html += `<td>${sectors[sector] !== undefined ? sectors[sector] : '-'}</td>`;
+                });
+                html += `</tr>`;
+            });
+            html += `</tbody></table></div>`;
+            return html;
+        }
+        function renderCellsSection(cells) {
+            // Determine which technologies are present
+            const techs = [
+                { key: '2G', label: '2G (GSM)' },
+                { key: '3G', label: '3G (WCDMA)' },
+                { key: '4G', label: '4G (LTE)' },
+                { key: '5G', label: '5G NR' }
+            ];
+            const available = techs.filter(t => (cells[t.key] && cells[t.key].length > 0));
+            let html = `<div class="mt-4 mb-4 p-3 rounded" style="background: #f7f8fa; border: 1px solid #e0e0e0;">
+                <h5 class="mb-3"><i class="bi bi-diagram-3 me-2"></i>Cells</h5>
+                <ul class="nav nav-tabs mb-3" id="cellsTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="tab-all" data-bs-toggle="tab" data-bs-target="#cells-all" type="button" role="tab">All</button>
+                    </li>`;
+            techs.forEach(t => {
+                const disabled = !(cells[t.key] && cells[t.key].length > 0);
+                html += `<li class="nav-item" role="presentation">
+                    <button class="nav-link${disabled ? ' disabled' : ''}" id="tab-${t.key}" data-bs-toggle="tab" data-bs-target="#cells-${t.key}" type="button" role="tab">${t.label}</button>
+                </li>`;
+            });
+            html += `</ul><div class="tab-content" id="cellsTabContent">`;
+            // All tab: show all tables as before
+            html += `<div class="tab-pane fade show active" id="cells-all" role="tabpanel">`;
+            techs.forEach(t => {
+                html += renderSingleCellsTable(t.key, cells);
+            });
+            html += `</div>`;
+            // Per-tech tabs
+            techs.forEach(t => {
+                html += `<div class="tab-pane fade" id="cells-${t.key}" role="tabpanel">`;
+                html += renderSingleCellsTable(t.key, cells);
+                html += `</div>`;
+            });
+            html += `</div></div></div>`;
+            // After rendering, activate Bootstrap tabs
+            setTimeout(() => {
+                if (window.bootstrap && window.bootstrap.Tab) {
+                    // Already loaded
+                } else {
+                    const script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js';
+                    document.body.appendChild(script);
+                }
+            }, 0);
+            return html;
+        }
+        // Helper: render a single technology's cells table
+        function renderSingleCellsTable(tech, cells) {
+            if (tech === '2G') {
+                // Placeholder: no 2G cell details extracted yet
+                if (!cells['2G'] || cells['2G'].length === 0) {
+                    return `<div class="text-muted">No 2G cells found.</div>`;
+                } else {
+                    // Future: render 2G table here
+                    return `<div class="text-muted">2G cell details not implemented.</div>`;
+                }
+            }
+            if (tech === '3G') {
+                if (cells['3G'] && cells['3G'].length > 0) {
+                    let html = `<div class="table-responsive mt-2"><table class="table table-bordered table-sm align-middle text-center"><thead class="table-light"><tr><th>Cell ID</th><th>DL UARFCN</th><th>Cell Power</th></tr></thead><tbody>`;
+                    cells['3G'].forEach(cell => {
+                        html += `<tr><td>${cell.cellId || '-'}</td><td>${cell.uarfcnDl || '-'}</td><td>${cell.maxTxPower || '-'}</td></tr>`;
+                    });
+                    html += `</tbody></table></div>`;
+                    return html;
+                } else {
+                    return `<div class="text-muted">No 3G cells found.</div>`;
+                }
+            }
+            if (tech === '4G') {
+                if (cells['4G'] && cells['4G'].length > 0) {
+                    let html = `<div class="table-responsive mt-2"><table class="table table-bordered table-sm align-middle text-center"><thead class="table-light"><tr><th>Cell Name</th><th>Cell ID</th><th>Local Cell Resource ID</th><th>Physical layer Cell ID</th><th>Tracking area code</th><th>RACH root sequence</th><th>EARFCN_DL</th><th>EARFCN_UL</th><th>MIMO Mode</th><th>Bandwidth</th></tr></thead><tbody>`;
+                    cells['4G'].forEach(cell => {
+                        html += `<tr><td>${cell.cellName || '-'}</td><td>${cell.cellId || '-'}</td><td>${cell.localCellId || '-'}</td><td>${cell.phyCellId || '-'}</td><td>${cell.trackingAreaCode || '-'}</td><td>${cell.rachRootSequence || '-'}</td><td>${cell.earfcnDL || '-'}</td><td>${cell.earfcnUL || '-'}</td><td>${cell.mimoMode || '-'}</td><td>${cell.bandwidth || '-'}</td></tr>`;
+                    });
+                    html += `</tbody></table></div>`;
+                    return html;
+                } else {
+                    return `<div class="text-muted">No 4G cells found.</div>`;
+                }
+            }
+            if (tech === '5G') {
+                if (cells['5G'] && cells['5G'].length > 0) {
+                    let html = `<div class="table-responsive mt-2"><table class="table table-bordered table-sm align-middle text-center"><thead class="table-light"><tr><th>Cell Name</th><th>Cell ID</th><th>Local Cell Resource ID</th><th>Physical layer Cell ID</th><th>Cell Technology</th><th>Cell Working Type</th><th>Frequency Band</th><th>NRARFCN</th><th>Bandwidth</th><th>Cell Power</th></tr></thead><tbody>`;
+                    cells['5G'].forEach(cell => {
+                        // Handle FDD vs TDD display
+                        let nrarfcn = '-';
+                        let bandwidth = '-';
+                        if (cell.cellTechnology === 'TDD') {
+                            // TDD: show combined values
+                            nrarfcn = cell.nrarfcnDL || '-';
+                            bandwidth = cell.bandwidthDL || '-';
+                        } else {
+                            // FDD: show DL/UL format
+                            nrarfcn = `${cell.nrarfcnDL || '-'}/${cell.nrarfcnUL || '-'}`;
+                            bandwidth = `${cell.bandwidthDL || '-'}/${cell.bandwidthUL || '-'}`;
+                        }
+                        html += `<tr><td>${cell.cellName || '-'}</td><td>${cell.cellId || '-'}</td><td>${cell.localCellId || '-'}</td><td>${cell.phyCellId || '-'}</td><td>${cell.cellTechnology || '-'}</td><td>${cell.cellWorkingType || '-'}</td><td>${cell.frequencyBand || '-'}</td><td>${nrarfcn}</td><td>${bandwidth}</td><td>${cell.cellPower || '-'}</td></tr>`;
+                    });
+                    html += `</tbody></table></div>`;
+                    return html;
+                } else {
+                    return `<div class="text-muted">No 5G cells found.</div>`;
+                }
+            }
+            return '';
+        }
+        </script>
+    </div>
+</div>
+</body>
+</html> 
