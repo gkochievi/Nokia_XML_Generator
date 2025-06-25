@@ -5,7 +5,6 @@ import tempfile
 from werkzeug.utils import secure_filename
 from modules.xml_parser import XMLParser
 from modules.xml_viewer import XMLViewer
-from modules.excel_parser import ExcelParser
 from modules.modernization import ModernizationGenerator
 from modules.rollout import RolloutGenerator
 import logging
@@ -29,6 +28,30 @@ os.makedirs(app.config['GENERATED_FOLDER'], exist_ok=True)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
+
+# --- Helper for file validation and saving ---
+def validate_and_save_files(request, required_files, upload_folder):
+    # Check required files
+    for file_key in required_files:
+        if file_key not in request.files:
+            return None, jsonify({'error': f'Missing required file: {file_key}'}), 400
+
+    station_name = request.form.get('stationName')
+    if not station_name:
+        return None, jsonify({'error': 'Station name is required'}), 400
+
+    temp_files = {}
+    for file_key in required_files:
+        file = request.files[file_key]
+        if file.filename == '':
+            return None, jsonify({'error': f'No file selected for {file_key}'}), 400
+        if not allowed_file(file.filename):
+            return None, jsonify({'error': f'Invalid file type for {file_key}'}), 400
+        temp_path = os.path.join(upload_folder, secure_filename(file.filename))
+        file.save(temp_path)
+        temp_files[file_key] = temp_path
+
+    return {'station_name': station_name, 'temp_files': temp_files}, None, None
 
 def main():
     """Main function for running the application"""
@@ -79,7 +102,7 @@ def view_xml():
             })
             
         finally:
-            # Clean up temporary file
+            # Clean up a temporary file
             if temp_path and os.path.exists(temp_path):
                 os.unlink(temp_path)
                 
@@ -91,53 +114,32 @@ def view_xml():
 def modernization():
     """Handle 5G modernization request"""
     try:
-        # Validate required files
         required_files = ['existingXml', 'reference5gXml', 'transmissionExcel']
-        for file_key in required_files:
-            if file_key not in request.files:
-                return jsonify({'error': f'Missing required file: {file_key}'}), 400
-        
-        station_name = request.form.get('stationName')
-        if not station_name:
-            return jsonify({'error': 'Station name is required'}), 400
-        
-        # Save uploaded files temporarily
-        temp_files = {}
-        try:
-            for file_key in required_files:
-                file = request.files[file_key]
-                if file.filename == '':
-                    return jsonify({'error': f'No file selected for {file_key}'}), 400
-                
-                if not allowed_file(file.filename):
-                    return jsonify({'error': f'Invalid file type for {file_key}'}), 400
-                
-                temp_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(file.filename))
-                file.save(temp_path)
-                temp_files[file_key] = temp_path
-            
-            # Process modernization
-            generator = ModernizationGenerator()
-            output_filename = generator.generate(
-                station_name=station_name,
-                existing_xml_path=temp_files['existingXml'],
-                reference_5g_xml_path=temp_files['reference5gXml'],
-                transmission_excel_path=temp_files['transmissionExcel'],
-                output_folder=app.config['GENERATED_FOLDER']
-            )
-            
-            return jsonify({
-                'success': True,
-                'filename': output_filename,
-                'message': '5G modernization configuration generated successfully'
-            })
-            
-        finally:
-            # Clean up temporary files
-            for path in temp_files.values():
-                if os.path.exists(path):
-                    os.unlink(path)
-                    
+        data, error_resp, status = validate_and_save_files(request, required_files, app.config['UPLOAD_FOLDER'])
+        if error_resp:
+            return error_resp, status
+        if data is not None:
+            station_name = data['station_name']
+            temp_files = data['temp_files']
+            try:
+                # Process modernization
+                generator = ModernizationGenerator()
+                output_filename = generator.generate(
+                    station_name=station_name,
+                    existing_xml_path=temp_files['existingXml'],
+                    reference_5g_xml_path=temp_files['reference5gXml'],
+                    transmission_excel_path=temp_files['transmissionExcel'],
+                    output_folder=app.config['GENERATED_FOLDER']
+                )
+                return jsonify({
+                    'success': True,
+                    'filename': output_filename,
+                    'message': '5G modernization configuration generated successfully'
+                })
+            finally:
+                for path in temp_files.values():
+                    if os.path.exists(path):
+                        os.unlink(path)
     except Exception as e:
         logger.error(f"Error in modernization: {str(e)}")
         return jsonify({'error': str(e)}), 500
@@ -146,53 +148,32 @@ def modernization():
 def rollout():
     """Handle new rollout request"""
     try:
-        # Validate required files
         required_files = ['referenceXml', 'radioExcel', 'transmissionExcel']
-        for file_key in required_files:
-            if file_key not in request.files:
-                return jsonify({'error': f'Missing required file: {file_key}'}), 400
-        
-        station_name = request.form.get('stationName')
-        if not station_name:
-            return jsonify({'error': 'Station name is required'}), 400
-        
-        # Save uploaded files temporarily
-        temp_files = {}
-        try:
-            for file_key in required_files:
-                file = request.files[file_key]
-                if file.filename == '':
-                    return jsonify({'error': f'No file selected for {file_key}'}), 400
-                
-                if not allowed_file(file.filename):
-                    return jsonify({'error': f'Invalid file type for {file_key}'}), 400
-                
-                temp_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(file.filename))
-                file.save(temp_path)
-                temp_files[file_key] = temp_path
-            
-            # Process rollout
-            generator = RolloutGenerator()
-            output_filename = generator.generate(
-                station_name=station_name,
-                reference_xml_path=temp_files['referenceXml'],
-                radio_excel_path=temp_files['radioExcel'],
-                transmission_excel_path=temp_files['transmissionExcel'],
-                output_folder=app.config['GENERATED_FOLDER']
-            )
-            
-            return jsonify({
-                'success': True,
-                'filename': output_filename,
-                'message': 'New rollout configuration generated successfully'
-            })
-            
-        finally:
-            # Clean up temporary files
-            for path in temp_files.values():
-                if os.path.exists(path):
-                    os.unlink(path)
-                    
+        data, error_resp, status = validate_and_save_files(request, required_files, app.config['UPLOAD_FOLDER'])
+        if error_resp:
+            return error_resp, status
+        if data is not None:
+            station_name = data['station_name']
+            temp_files = data['temp_files']
+            try:
+                # Process rollout
+                generator = RolloutGenerator()
+                output_filename = generator.generate(
+                    station_name=station_name,
+                    reference_xml_path=temp_files['referenceXml'],
+                    radio_excel_path=temp_files['radioExcel'],
+                    transmission_excel_path=temp_files['transmissionExcel'],
+                    output_folder=app.config['GENERATED_FOLDER']
+                )
+                return jsonify({
+                    'success': True,
+                    'filename': output_filename,
+                    'message': 'New rollout configuration generated successfully'
+                })
+            finally:
+                for path in temp_files.values():
+                    if os.path.exists(path):
+                        os.unlink(path)
     except Exception as e:
         logger.error(f"Error in rollout: {str(e)}")
         return jsonify({'error': str(e)}), 500
