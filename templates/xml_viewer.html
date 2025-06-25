@@ -257,6 +257,8 @@
             </div>`;
             // 3. Cells (უჯრედები)
             infoHtml += renderCellsSection(config_data.radioInfo?.cells || {});
+            // 3.1. Cell-Radio Mapping
+            infoHtml += renderCellRadioMappingSection(config_data.cellRadioMapping || []);
             // 4. ქსელის ინფორმაცია
             infoHtml += `<div class="mt-4 mb-4 p-3 rounded" style="background: #f7f8fa; border: 1px solid #e0e0e0;">
             <h5 class="mb-3"><i class="bi bi-diagram-2 me-2"></i>ქსელის ინფორმაცია (VLAN + IP)</h5>
@@ -317,9 +319,57 @@
                 { key: '4G', label: '4G (LTE)' },
                 { key: '5G', label: '5G NR' }
             ];
-            const available = techs.filter(t => (cells[t.key] && cells[t.key].length > 0));
             let html = `<div class="mt-4 mb-4 p-3 rounded" style="background: #f7f8fa; border: 1px solid #e0e0e0;">
                 <h5 class="mb-3"><i class="bi bi-diagram-3 me-2"></i>Cells</h5>
+                <!-- Filter Controls -->
+                <div class="row mb-3">
+                    <div class="col-md-2">
+                        <label class="form-label small">სელის სახელი:</label>
+                        <input type="text" class="form-control form-control-sm" id="cells-name-filter" placeholder="სელის სახელი...">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">Cell ID:</label>
+                        <select class="form-select form-select-sm" id="cells-cellid-filter">
+                            <option value="">ყველა</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">სექტორი:</label>
+                        <select class="form-select form-select-sm" id="cells-sector-filter">
+                            <option value="">ყველა</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">ქერიერი:</label>
+                        <select class="form-select form-select-sm" id="cells-carrier-filter">
+                            <option value="">ყველა</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label small">PCI:</label>
+                        <select class="form-select form-select-sm" id="cells-pci-filter">
+                            <option value="">ყველა</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label small">TAC:</label>
+                        <select class="form-select form-select-sm" id="cells-tac-filter">
+                            <option value="">ყველა</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">Root Seq:</label>
+                        <select class="form-select form-select-sm" id="cells-rootseq-filter">
+                            <option value="">ყველა</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button class="btn btn-outline-secondary btn-sm me-2" onclick="clearCellsFilters()">
+                            <i class="bi bi-x-circle"></i> გასუფთავება
+                        </button>
+                        <span class="text-muted small" id="cells-count"></span>
+                    </div>
+                </div>
                 <ul class="nav nav-tabs mb-3" id="cellsTab" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active" id="tab-all" data-bs-toggle="tab" data-bs-target="#cells-all" type="button" role="tab">All</button>
@@ -344,7 +394,7 @@
                 html += `</div>`;
             });
             html += `</div></div></div>`;
-            // After rendering, activate Bootstrap tabs
+            // After rendering, activate Bootstrap tabs and filters
             setTimeout(() => {
                 if (window.bootstrap && window.bootstrap.Tab) {
                     // Already loaded
@@ -353,25 +403,155 @@
                     script.src = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js';
                     document.body.appendChild(script);
                 }
+                // Initialize filters
+                initializeCellsFilters(cells);
             }, 0);
             return html;
+        }
+        // Initialize cells filters
+        function initializeCellsFilters(cells) {
+            // Collect all unique values for each filter
+            const allNames = new Set();
+            const allCellIds = new Set();
+            const allSectors = new Set();
+            const allCarriers = new Set();
+            const allPCIs = new Set();
+            const allTACs = new Set();
+            const allRootSeqs = new Set();
+            Object.values(cells).forEach(techCells => {
+                techCells.forEach(cell => {
+                    if (cell.cellName) allNames.add(cell.cellName);
+                    if (cell.cellId) allCellIds.add(cell.cellId);
+                    if (cell.sector) allSectors.add(cell.sector);
+                    if (cell.carrier) allCarriers.add(cell.carrier);
+                    if (cell.phyCellId) allPCIs.add(cell.phyCellId);
+                    if (cell.trackingAreaCode) allTACs.add(cell.trackingAreaCode);
+                    if (cell.rachRootSequence) allRootSeqs.add(cell.rachRootSequence);
+                });
+            });
+            // Populate dropdowns
+            const cellIdFilter = document.getElementById('cells-cellid-filter');
+            Array.from(allCellIds).sort().forEach(val => {
+                const option = document.createElement('option');
+                option.value = val;
+                option.textContent = val;
+                cellIdFilter.appendChild(option);
+            });
+            const sectorFilter = document.getElementById('cells-sector-filter');
+            Array.from(allSectors).sort().forEach(val => {
+                const option = document.createElement('option');
+                option.value = val;
+                option.textContent = val;
+                sectorFilter.appendChild(option);
+            });
+            const carrierFilter = document.getElementById('cells-carrier-filter');
+            Array.from(allCarriers).sort().forEach(val => {
+                const option = document.createElement('option');
+                option.value = val;
+                option.textContent = val;
+                carrierFilter.appendChild(option);
+            });
+            const pciFilter = document.getElementById('cells-pci-filter');
+            Array.from(allPCIs).sort().forEach(val => {
+                const option = document.createElement('option');
+                option.value = val;
+                option.textContent = val;
+                pciFilter.appendChild(option);
+            });
+            const tacFilter = document.getElementById('cells-tac-filter');
+            Array.from(allTACs).sort().forEach(val => {
+                const option = document.createElement('option');
+                option.value = val;
+                option.textContent = val;
+                tacFilter.appendChild(option);
+            });
+            const rootSeqFilter = document.getElementById('cells-rootseq-filter');
+            Array.from(allRootSeqs).sort().forEach(val => {
+                const option = document.createElement('option');
+                option.value = val;
+                option.textContent = val;
+                rootSeqFilter.appendChild(option);
+            });
+            // Add event listeners
+            document.getElementById('cells-name-filter').addEventListener('input', filterCells);
+            document.getElementById('cells-cellid-filter').addEventListener('change', filterCells);
+            document.getElementById('cells-sector-filter').addEventListener('change', filterCells);
+            document.getElementById('cells-carrier-filter').addEventListener('change', filterCells);
+            document.getElementById('cells-pci-filter').addEventListener('change', filterCells);
+            document.getElementById('cells-tac-filter').addEventListener('change', filterCells);
+            document.getElementById('cells-rootseq-filter').addEventListener('change', filterCells);
+            // Initial count
+            updateCellsCount();
+        }
+        // Filter cells function
+        function filterCells() {
+            const nameFilter = document.getElementById('cells-name-filter').value.toLowerCase();
+            const cellIdFilter = document.getElementById('cells-cellid-filter').value;
+            const sectorFilter = document.getElementById('cells-sector-filter').value;
+            const carrierFilter = document.getElementById('cells-carrier-filter').value;
+            const pciFilter = document.getElementById('cells-pci-filter').value;
+            const tacFilter = document.getElementById('cells-tac-filter').value;
+            const rootSeqFilter = document.getElementById('cells-rootseq-filter').value;
+            const rows = document.querySelectorAll('#cellsTabContent tbody tr');
+            let visibleCount = 0;
+            rows.forEach(row => {
+                const cellName = row.getAttribute('data-cellname') || '';
+                const cellId = row.getAttribute('data-cellid') || '';
+                const sector = row.getAttribute('data-sector') || '';
+                const carrier = row.getAttribute('data-carrier') || '';
+                const pci = row.getAttribute('data-pci') || '';
+                const tac = row.getAttribute('data-tac') || '';
+                const rootseq = row.getAttribute('data-rootseq') || '';
+                let show = true;
+                if (nameFilter && !cellName.toLowerCase().includes(nameFilter)) show = false;
+                if (cellIdFilter && cellId !== cellIdFilter) show = false;
+                if (sectorFilter && sector !== sectorFilter) show = false;
+                if (carrierFilter && carrier !== carrierFilter) show = false;
+                if (pciFilter && pci !== pciFilter) show = false;
+                if (tacFilter && tac !== tacFilter) show = false;
+                if (rootSeqFilter && rootseq !== rootSeqFilter) show = false;
+                row.style.display = show ? '' : 'none';
+                if (show) visibleCount++;
+            });
+            document.getElementById('cells-count').textContent = `ნაჩვენები: ${visibleCount}`;
+        }
+        // Clear cells filters
+        function clearCellsFilters() {
+            document.getElementById('cells-name-filter').value = '';
+            document.getElementById('cells-cellid-filter').value = '';
+            document.getElementById('cells-sector-filter').value = '';
+            document.getElementById('cells-carrier-filter').value = '';
+            document.getElementById('cells-pci-filter').value = '';
+            document.getElementById('cells-tac-filter').value = '';
+            document.getElementById('cells-rootseq-filter').value = '';
+            filterCells();
+        }
+        // Update cells count
+        function updateCellsCount() {
+            const visibleRows = document.querySelectorAll('#cellsTabContent tbody tr:not([style*="display: none"])');
+            document.getElementById('cells-count').textContent = `ნაჩვენები: ${visibleRows.length}`;
         }
         // Helper: render a single technology's cells table
         function renderSingleCellsTable(tech, cells) {
             if (tech === '2G') {
-                // Placeholder: no 2G cell details extracted yet
-                if (!cells['2G'] || cells['2G'].length === 0) {
-                    return `<div class="text-muted">No 2G cells found.</div>`;
+                if (cells['2G'] && cells['2G'].length > 0) {
+                    let html = `<div class="table-responsive mt-2"><table class="table table-bordered table-sm align-middle text-center"><thead class="table-light"><tr><th>Cell Name</th><th>Cell ID</th><th>სექტორი</th><th>ქერიერი</th><th>BCCH</th><th>NCC</th><th>BCC</th><th>LAC</th><th>CI</th></tr></thead><tbody>`;
+                    cells['2G'].forEach(cell => {
+                        html += `<tr data-cellname="${cell.cellName || ''}" data-cellid="${cell.cellId || ''}" data-sector="${cell.sector || ''}" data-carrier="${cell.carrier || ''}" data-pci="" data-tac="" data-rootseq="">
+                            <td>${cell.cellName || '-'}</td><td>${cell.cellId || '-'}</td><td>${cell.sector || '-'}</td><td>${cell.carrier || '-'}</td><td>${cell.bcch || '-'}</td><td>${cell.ncc || '-'}</td><td>${cell.bcc || '-'}</td><td>${cell.lac || '-'}</td><td>${cell.ci || '-'}</td></tr>`;
+                    });
+                    html += `</tbody></table></div>`;
+                    return html;
                 } else {
-                    // Future: render 2G table here
-                    return `<div class="text-muted">2G cell details not implemented.</div>`;
+                    return `<div class="text-muted">No 2G cells found.</div>`;
                 }
             }
             if (tech === '3G') {
                 if (cells['3G'] && cells['3G'].length > 0) {
-                    let html = `<div class="table-responsive mt-2"><table class="table table-bordered table-sm align-middle text-center"><thead class="table-light"><tr><th>Cell ID</th><th>DL UARFCN</th><th>Cell Power</th></tr></thead><tbody>`;
+                    let html = `<div class="table-responsive mt-2"><table class="table table-bordered table-sm align-middle text-center"><thead class="table-light"><tr><th>Cell ID</th><th>სექტორი</th><th>ქერიერი</th><th>DL UARFCN</th><th>Cell Power</th></tr></thead><tbody>`;
                     cells['3G'].forEach(cell => {
-                        html += `<tr><td>${cell.cellId || '-'}</td><td>${cell.uarfcnDl || '-'}</td><td>${cell.maxTxPower || '-'}</td></tr>`;
+                        html += `<tr data-cellname="" data-cellid="${cell.cellId || ''}" data-sector="${cell.sector || ''}" data-carrier="${cell.carrier || ''}" data-pci="" data-tac="" data-rootseq="">
+                            <td>${cell.cellId || '-'}</td><td>${cell.sector || '-'}</td><td>${cell.carrier || '-'}</td><td>${cell.uarfcnDl || '-'}</td><td>${cell.maxTxPower || '-'}</td></tr>`;
                     });
                     html += `</tbody></table></div>`;
                     return html;
@@ -381,9 +561,10 @@
             }
             if (tech === '4G') {
                 if (cells['4G'] && cells['4G'].length > 0) {
-                    let html = `<div class="table-responsive mt-2"><table class="table table-bordered table-sm align-middle text-center"><thead class="table-light"><tr><th>Cell Name</th><th>Cell ID</th><th>Local Cell Resource ID</th><th>Physical layer Cell ID</th><th>Tracking area code</th><th>RACH root sequence</th><th>EARFCN_DL</th><th>EARFCN_UL</th><th>MIMO Mode</th><th>Bandwidth</th></tr></thead><tbody>`;
+                    let html = `<div class="table-responsive mt-2"><table class="table table-bordered table-sm align-middle text-center"><thead class="table-light"><tr><th>Cell Name</th><th>Cell ID</th><th>სექტორი</th><th>ქერიერი</th><th>Local Cell Resource ID</th><th>Physical layer Cell ID</th><th>Tracking area code</th><th>RACH root sequence</th><th>EARFCN_DL</th><th>EARFCN_UL</th><th>MIMO Mode</th><th>Bandwidth</th></tr></thead><tbody>`;
                     cells['4G'].forEach(cell => {
-                        html += `<tr><td>${cell.cellName || '-'}</td><td>${cell.cellId || '-'}</td><td>${cell.localCellId || '-'}</td><td>${cell.phyCellId || '-'}</td><td>${cell.trackingAreaCode || '-'}</td><td>${cell.rachRootSequence || '-'}</td><td>${cell.earfcnDL || '-'}</td><td>${cell.earfcnUL || '-'}</td><td>${cell.mimoMode || '-'}</td><td>${cell.bandwidth || '-'}</td></tr>`;
+                        html += `<tr data-cellname="${cell.cellName || ''}" data-cellid="${cell.cellId || ''}" data-sector="${cell.sector || ''}" data-carrier="${cell.carrier || ''}" data-pci="${cell.phyCellId || ''}" data-tac="${cell.trackingAreaCode || ''}" data-rootseq="${cell.rachRootSequence || ''}">
+                            <td>${cell.cellName || '-'}</td><td>${cell.cellId || '-'}</td><td>${cell.sector || '-'}</td><td>${cell.carrier || '-'}</td><td>${cell.localCellId || '-'}</td><td>${cell.phyCellId || '-'}</td><td>${cell.trackingAreaCode || '-'}</td><td>${cell.rachRootSequence || '-'}</td><td>${cell.earfcnDL || '-'}</td><td>${cell.earfcnUL || '-'}</td><td>${cell.mimoMode || '-'}</td><td>${cell.bandwidth || '-'}</td></tr>`;
                     });
                     html += `</tbody></table></div>`;
                     return html;
@@ -393,7 +574,7 @@
             }
             if (tech === '5G') {
                 if (cells['5G'] && cells['5G'].length > 0) {
-                    let html = `<div class="table-responsive mt-2"><table class="table table-bordered table-sm align-middle text-center"><thead class="table-light"><tr><th>Cell Name</th><th>Cell ID</th><th>Local Cell Resource ID</th><th>Physical layer Cell ID</th><th>Cell Technology</th><th>Cell Working Type</th><th>Frequency Band</th><th>NRARFCN</th><th>Bandwidth</th><th>Cell Power</th></tr></thead><tbody>`;
+                    let html = `<div class="table-responsive mt-2"><table class="table table-bordered table-sm align-middle text-center"><thead class="table-light"><tr><th>Cell Name</th><th>Cell ID</th><th>სექტორი</th><th>ქერიერი</th><th>Local Cell Resource ID</th><th>Physical layer Cell ID</th><th>Cell Technology</th><th>Cell Working Type</th><th>Frequency Band</th><th>NRARFCN</th><th>Bandwidth</th><th>Cell Power</th></tr></thead><tbody>`;
                     cells['5G'].forEach(cell => {
                         // Handle FDD vs TDD display
                         let nrarfcn = '-';
@@ -407,7 +588,8 @@
                             nrarfcn = `${cell.nrarfcnDL || '-'}/${cell.nrarfcnUL || '-'}`;
                             bandwidth = `${cell.bandwidthDL || '-'}/${cell.bandwidthUL || '-'}`;
                         }
-                        html += `<tr><td>${cell.cellName || '-'}</td><td>${cell.cellId || '-'}</td><td>${cell.localCellId || '-'}</td><td>${cell.phyCellId || '-'}</td><td>${cell.cellTechnology || '-'}</td><td>${cell.cellWorkingType || '-'}</td><td>${cell.frequencyBand || '-'}</td><td>${nrarfcn}</td><td>${bandwidth}</td><td>${cell.cellPower || '-'}</td></tr>`;
+                        html += `<tr data-cellname="${cell.cellName || ''}" data-cellid="${cell.cellId || ''}" data-sector="${cell.sector || ''}" data-carrier="${cell.carrier || ''}" data-pci="${cell.phyCellId || ''}" data-tac="${cell.trackingAreaCode || ''}" data-rootseq="${cell.rachRootSequence || ''}">
+                            <td>${cell.cellName || '-'}</td><td>${cell.cellId || '-'}</td><td>${cell.sector || '-'}</td><td>${cell.carrier || '-'}</td><td>${cell.localCellId || '-'}</td><td>${cell.phyCellId || '-'}</td><td>${cell.cellTechnology || '-'}</td><td>${cell.cellWorkingType || '-'}</td><td>${cell.frequencyBand || '-'}</td><td>${nrarfcn}</td><td>${bandwidth}</td><td>${cell.cellPower || '-'}</td></tr>`;
                     });
                     html += `</tbody></table></div>`;
                     return html;
@@ -416,6 +598,256 @@
                 }
             }
             return '';
+        }
+        function renderCellRadioMappingSection(mapping) {
+            if (!mapping || mapping.length === 0) return '';
+            let html = `<div class="mt-4 mb-4 p-3 rounded" style="background: #f7f8fa; border: 1px solid #e0e0e0;">
+                <h5 class="mb-3"><i class="bi bi-hdd-network me-2"></i>სელების რადიო მოდულებზე მიბმა</h5>
+                <!-- Filter Controls -->
+                <div class="row mb-3">
+                    <div class="col-md-2">
+                        <label class="form-label small">Cell ID:</label>
+                        <select class="form-select form-select-sm" id="radio-cellid-filter">
+                            <option value="">ყველა</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">ქერიერი:</label>
+                        <select class="form-select form-select-sm" id="radio-carrier-filter">
+                            <option value="">ყველა</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">სექტორი:</label>
+                        <select class="form-select form-select-sm" id="radio-sector-filter">
+                            <option value="">ყველა</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">რადიო მოდული:</label>
+                        <select class="form-select form-select-sm" id="radio-module-filter">
+                            <option value="">ყველა</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label small">პორტი:</label>
+                        <select class="form-select form-select-sm" id="radio-port-filter">
+                            <option value="">ყველა</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label small">რეჟიმი:</label>
+                        <select class="form-select form-select-sm" id="radio-mode-filter">
+                            <option value="">ყველა</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">მოდელი:</label>
+                        <select class="form-select form-select-sm" id="radio-model-filter">
+                            <option value="">ყველა</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button class="btn btn-outline-secondary btn-sm me-2" onclick="clearRadioFilters()">
+                            <i class="bi bi-x-circle"></i> გასუფთავება
+                        </button>
+                        <span class="text-muted small" id="radio-count"></span>
+                    </div>
+                </div>
+                <ul class="nav nav-tabs mb-3" id="cellRadioTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="tab-radio-ALL" data-bs-toggle="tab" data-bs-target="#cell-radio-ALL" type="button" role="tab">All</button>
+                    </li>`;
+            const techs = [
+                { key: '2G', label: '2G (GSM)' },
+                { key: '3G', label: '3G (WCDMA)' },
+                { key: '4G', label: '4G (LTE)' },
+                { key: '5G', label: '5G NR' }
+            ];
+            techs.forEach(t => {
+                html += `<li class="nav-item" role="presentation">
+                    <button class="nav-link" id="tab-radio-${t.key}" data-bs-toggle="tab" data-bs-target="#cell-radio-${t.key}" type="button" role="tab">${t.label}</button>
+                </li>`;
+            });
+            html += `</ul><div class="tab-content" id="cellRadioTabContent">`;
+            // ALL tab
+            html += `<div class="tab-pane fade show active" id="cell-radio-ALL" role="tabpanel">`;
+            html += renderCellRadioMappingTable(mapping);
+            html += `</div>`;
+            // Per-tech tabs
+            techs.forEach(t => {
+                html += `<div class="tab-pane fade" id="cell-radio-${t.key}" role="tabpanel">`;
+                html += renderCellRadioMappingTable(mapping.filter(row => row.tech === t.key));
+                html += `</div>`;
+            });
+            html += `</div></div>`;
+            // Bootstrap tabs activation and filter initialization
+            setTimeout(() => {
+                if (window.bootstrap && window.bootstrap.Tab) {
+                    // Already loaded
+                } else {
+                    const script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js';
+                    document.body.appendChild(script);
+                }
+                // Initialize radio mapping filters
+                initializeRadioFilters(mapping);
+            }, 0);
+            return html;
+        }
+        // Initialize radio mapping filters
+        function initializeRadioFilters(mapping) {
+            // Collect all unique values for each filter
+            const allCellIds = new Set();
+            const allCarriers = new Set();
+            const allSectors = new Set();
+            const allModules = new Set();
+            const allPorts = new Set();
+            const allModes = new Set();
+            const allModels = new Set();
+            mapping.forEach(row => {
+                if (row.cell) allCellIds.add(row.cell);
+                if (row.carrier) allCarriers.add(row.carrier);
+                if (row.sector) allSectors.add(row.sector);
+                if (row.radio_module) allModules.add(row.radio_module);
+                if (row.port) allPorts.add(row.port);
+                if (row.mode) allModes.add(row.mode);
+                if (row.model) allModels.add(row.model);
+            });
+            // Populate dropdowns
+            const cellIdFilter = document.getElementById('radio-cellid-filter');
+            Array.from(allCellIds).sort().forEach(val => {
+                const option = document.createElement('option');
+                option.value = val;
+                option.textContent = val;
+                cellIdFilter.appendChild(option);
+            });
+            const carrierFilter = document.getElementById('radio-carrier-filter');
+            Array.from(allCarriers).sort().forEach(val => {
+                const option = document.createElement('option');
+                option.value = val;
+                option.textContent = val;
+                carrierFilter.appendChild(option);
+            });
+            const sectorFilter = document.getElementById('radio-sector-filter');
+            Array.from(allSectors).sort().forEach(val => {
+                const option = document.createElement('option');
+                option.value = val;
+                option.textContent = val;
+                sectorFilter.appendChild(option);
+            });
+            const moduleFilter = document.getElementById('radio-module-filter');
+            Array.from(allModules).sort().forEach(val => {
+                const option = document.createElement('option');
+                option.value = val;
+                option.textContent = val;
+                moduleFilter.appendChild(option);
+            });
+            const portFilter = document.getElementById('radio-port-filter');
+            Array.from(allPorts).sort().forEach(val => {
+                const option = document.createElement('option');
+                option.value = val;
+                option.textContent = val;
+                portFilter.appendChild(option);
+            });
+            const modeFilter = document.getElementById('radio-mode-filter');
+            Array.from(allModes).sort().forEach(val => {
+                const option = document.createElement('option');
+                option.value = val;
+                option.textContent = val;
+                modeFilter.appendChild(option);
+            });
+            const modelFilter = document.getElementById('radio-model-filter');
+            Array.from(allModels).sort().forEach(val => {
+                const option = document.createElement('option');
+                option.value = val;
+                option.textContent = val;
+                modelFilter.appendChild(option);
+            });
+            // Add event listeners
+            document.getElementById('radio-cellid-filter').addEventListener('change', filterRadioMapping);
+            document.getElementById('radio-carrier-filter').addEventListener('change', filterRadioMapping);
+            document.getElementById('radio-sector-filter').addEventListener('change', filterRadioMapping);
+            document.getElementById('radio-module-filter').addEventListener('change', filterRadioMapping);
+            document.getElementById('radio-port-filter').addEventListener('change', filterRadioMapping);
+            document.getElementById('radio-mode-filter').addEventListener('change', filterRadioMapping);
+            document.getElementById('radio-model-filter').addEventListener('change', filterRadioMapping);
+            // Initial count
+            updateRadioCount();
+        }
+        // Filter radio mapping function
+        function filterRadioMapping() {
+            const cellIdFilter = document.getElementById('radio-cellid-filter').value;
+            const carrierFilter = document.getElementById('radio-carrier-filter').value;
+            const sectorFilter = document.getElementById('radio-sector-filter').value;
+            const moduleFilter = document.getElementById('radio-module-filter').value;
+            const portFilter = document.getElementById('radio-port-filter').value;
+            const modeFilter = document.getElementById('radio-mode-filter').value;
+            const modelFilter = document.getElementById('radio-model-filter').value;
+            const rows = document.querySelectorAll('#cellRadioTabContent tbody tr');
+            let visibleCount = 0;
+            rows.forEach(row => {
+                const cellId = row.getAttribute('data-cellid');
+                const carrier = row.getAttribute('data-carrier');
+                const sector = row.getAttribute('data-sector');
+                const module = row.getAttribute('data-module');
+                const port = row.getAttribute('data-port');
+                const mode = row.getAttribute('data-mode');
+                const model = row.getAttribute('data-model');
+                let show = true;
+                if (cellIdFilter && cellId !== cellIdFilter) show = false;
+                if (carrierFilter && carrier !== carrierFilter) show = false;
+                if (sectorFilter && sector !== sectorFilter) show = false;
+                if (moduleFilter && module !== moduleFilter) show = false;
+                if (portFilter && port !== portFilter) show = false;
+                if (modeFilter && mode !== modeFilter) show = false;
+                if (modelFilter && model !== modelFilter) show = false;
+                row.style.display = show ? '' : 'none';
+                if (show) visibleCount++;
+            });
+            document.getElementById('radio-count').textContent = `ნაჩვენები: ${visibleCount}`;
+        }
+        // Clear radio mapping filters
+        function clearRadioFilters() {
+            document.getElementById('radio-cellid-filter').value = '';
+            document.getElementById('radio-carrier-filter').value = '';
+            document.getElementById('radio-sector-filter').value = '';
+            document.getElementById('radio-module-filter').value = '';
+            document.getElementById('radio-port-filter').value = '';
+            document.getElementById('radio-mode-filter').value = '';
+            document.getElementById('radio-model-filter').value = '';
+            filterRadioMapping();
+        }
+        // Update radio mapping count
+        function updateRadioCount() {
+            const visibleRows = document.querySelectorAll('#cellRadioTabContent tbody tr:not([style*="display: none"])');
+            document.getElementById('radio-count').textContent = `ნაჩვენები: ${visibleRows.length}`;
+        }
+        function renderCellRadioMappingTable(rows) {
+            if (!rows || rows.length === 0) {
+                return `<div class="text-muted">No data found.</div>`;
+            }
+            let html = `<div class="table-responsive"><table class="table table-bordered table-sm align-middle text-center mt-2">
+                <thead class="table-light">
+                    <tr>
+                        <th>Cell</th><th>Tech</th><th>Carrier</th><th>Sector</th><th>Radio module</th><th>Port</th><th>Mode</th><th>Model</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+            rows.forEach(row => {
+                html += `<tr data-cellid="${row.cell || ''}" data-carrier="${row.carrier || ''}" data-sector="${row.sector || ''}" data-module="${row.radio_module || ''}" data-port="${row.port || ''}" data-mode="${row.mode || ''}" data-model="${row.model || ''}">
+                    <td>${row.cell || '-'}</td>
+                    <td>${row.tech || '-'}</td>
+                    <td>${row.carrier || '-'}</td>
+                    <td>${row.sector || '-'}</td>
+                    <td>${row.radio_module || '-'}</td>
+                    <td>${row.port || '-'}</td>
+                    <td>${row.mode || '-'}</td>
+                    <td>${row.model || '-'}</td>
+                </tr>`;
+            });
+            html += `</tbody></table></div>`;
+            return html;
         }
         </script>
     </div>

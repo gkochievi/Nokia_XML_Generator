@@ -7,17 +7,26 @@ logger = logging.getLogger(__name__)
 class XMLViewer:
     """Viewer for Nokia WebEM XML configuration files"""
     
+    MODEL_CODE_MAP = {
+        "473997A": "AHPMDA",
+        "474090A": "AHEGB",
+        "473995A": "AHEGA",
+        "475824A": "AKQJ",
+        "474090A.101": "AHEGB"
+    }
+    
     def extract_configuration_data(self, tree):
         """Extract key configuration data from XML tree (namespace-აგნოსტიკურად)"""
         try:
-            data = {
-                'stationInfo': self._extract_station_info(tree),
-                'networkInfo': self._extract_network_info(tree),
-                'radioInfo': self._extract_radio_info(tree),
-                'hardwareInfo': self._extract_hardware_info(tree),
-                'neighborInfo': self._extract_neighbor_info(tree)
-            }
-            return data
+            info = {}
+            info["stationInfo"] = self._extract_station_info(tree)
+            info["networkInfo"] = self._extract_network_info(tree)
+            info["radioInfo"] = self._extract_radio_info(tree)
+            info["hardwareInfo"] = self._extract_hardware_info(tree)
+            info["neighborInfo"] = self._extract_neighbor_info(tree)
+            # Only now pass info to cellRadioMapping
+            info["cellRadioMapping"] = self._extract_cell_radio_mapping(tree, info)
+            return info
         except Exception as e:
             logger.error(f"Error extracting configuration data: {str(e)}")
             return {}
@@ -140,7 +149,7 @@ class XMLViewer:
             'technologies': [],
             'sectorCount': 0,
             'sectorDetails': {},
-            'cells': {'3G': [], '4G': [], '5G': []}
+            'cells': {'2G': [], '3G': [], '4G': [], '5G': []}
         }
         managed_objects = self._findall_managed_objects(tree)
         # ტექნოლოგიები
@@ -246,7 +255,37 @@ class XMLViewer:
             info['antennas'].append(antenna_data)
         
         # Extract detailed cell info for each technology
-        info['cells'] = {'3G': [], '4G': [], '5G': []}
+        info['cells'] = {'2G': [], '3G': [], '4G': [], '5G': []}
+
+        # 2G (GNCEL)
+        for gncel in [mo for mo in managed_objects if mo.get('class','').endswith('GNCEL')]:
+            cell = {}
+            dn = gncel.get('distName', '')
+            cell['cellId'] = dn.split('-')[-1] if '-' in dn else ''
+            for p in gncel.xpath('./*[local-name()="p"]'):
+                name = p.get('name')
+                if name == 'cellName':
+                    cell['cellName'] = p.text
+                elif name == 'bcch':
+                    cell['bcch'] = p.text
+                elif name == 'ncc':
+                    cell['ncc'] = p.text
+                elif name == 'bcc':
+                    cell['bcc'] = p.text
+                elif name == 'lac':
+                    cell['lac'] = p.text
+                elif name == 'ci':
+                    cell['ci'] = p.text
+            
+            # Add sector for 2G (last digit of cellId = sector, always 1 carrier)
+            if cell.get('cellId') and cell['cellId'].isdigit():
+                cell['sector'] = cell['cellId'][-1]
+                cell['carrier'] = '1'  # 2G always has 1 carrier
+            else:
+                cell['sector'] = ''
+                cell['carrier'] = ''
+            
+            info['cells']['2G'].append(cell)
 
         # 3G (WCEL/WNCEL)
         for wcel in [mo for mo in managed_objects if mo.get('class','').endswith('WCEL') or mo.get('class','').endswith('WNCEL')]:
@@ -268,6 +307,24 @@ class XMLViewer:
                     cell['uarfcnDl'] = p.text
                 elif name == 'maxTxPower' and 'maxTxPower' not in cell:
                     cell['maxTxPower'] = p.text
+            
+            # ახალი ლოგიკა: ამოიღე ქერიერი და სექტორი ყოველთვის dash-ის შემდეგი ორი ციფრიდან
+            numeric_part = ''
+            if cell.get('cellId'):
+                if '-' in cell['cellId']:
+                    numeric_part = cell['cellId'].split('-')[-1]
+                else:
+                    numeric_part = cell['cellId']
+                if len(numeric_part) == 2 and numeric_part.isdigit():
+                    cell['carrier'] = numeric_part[0]
+                    cell['sector'] = numeric_part[1]
+                else:
+                    cell['carrier'] = ''
+                    cell['sector'] = ''
+            else:
+                cell['carrier'] = ''
+                cell['sector'] = ''
+            
             info['cells']['3G'].append(cell)
 
         # 4G (LNCEL)
@@ -307,6 +364,15 @@ class XMLViewer:
                         cell['mimoMode'] = p.text
                     elif name == 'dlChBw':
                         cell['bandwidth'] = p.text
+            
+            # Add sector and carrier for 4G (LNCEL-XX format: first digit = carrier, second digit = sector)
+            if cell.get('cellId') and len(cell['cellId']) == 2 and cell['cellId'].isdigit():
+                cell['carrier'] = cell['cellId'][0]
+                cell['sector'] = cell['cellId'][1]
+            else:
+                cell['carrier'] = ''
+                cell['sector'] = ''
+            
             info['cells']['4G'].append(cell)
 
         # 5G (NRCELL)
@@ -380,6 +446,15 @@ class XMLViewer:
                             cell['bandwidthDL'] = p.text
                         elif name == 'chBwUl':
                             cell['bandwidthUL'] = p.text
+            
+            # Add sector and carrier for 5G (NRCELL-XXX format: second digit = carrier, third digit = sector)
+            if cell.get('cellId') and len(cell['cellId']) == 3 and cell['cellId'].isdigit():
+                cell['carrier'] = cell['cellId'][1]
+                cell['sector'] = cell['cellId'][2]
+            else:
+                cell['carrier'] = ''
+                cell['sector'] = ''
+            
             # Only add if at least cellId or cellName is present and not a duplicate
             if (cell.get('cellId') or cell.get('cellName')) and any([cell.get(k) for k in ['nrarfcnDL','nrarfcnUL','bandwidthDL','bandwidthUL','cellTechnology','cellWorkingType','frequencyBand','cellPower','localCellId','phyCellId']]):
                 info['cells']['5G'].append(cell)
@@ -478,3 +553,139 @@ class XMLViewer:
             html += f'<span class="xml-tag">&lt;/{tag}&gt;</span>'
         html += '</li>'
         return html
+
+    def _extract_cell_radio_mapping(self, tree, info):
+        # 1. collect all CHANNELGROUP and CHANNEL objects
+        managed_objects = self._findall_managed_objects(tree)
+        channelgroups = [mo for mo in managed_objects if mo.get('class','').endswith('CHANNELGROUP')]
+        channels = [mo for mo in managed_objects if mo.get('class','').endswith('CHANNEL')]
+        rmods = [mo for mo in managed_objects if mo.get('class','').endswith('RMOD')]
+        # build RMOD code map
+        rmod_code_map = {}
+        for rmod in rmods:
+            rmod_name = rmod.get('distName', '').split('/')[-1]  # RMOD-XX
+            prod_code = ''
+            for p in rmod.xpath('./*[local-name()="p"]'):
+                if p.get('name') == 'prodCodePlanned':
+                    prod_code = p.text
+            model = self.MODEL_CODE_MAP.get(prod_code, prod_code)
+            rmod_code_map[rmod_name] = model
+        # build cell info map for quick lookup (by (cellId, tech) and (fullCellName, tech))
+        cell_info_map = {}
+        for tech, cells in info.get('radioInfo',{}).get('cells',{}).items():
+            for cell in cells:
+                cell_id = cell.get('cellId')
+                full_name = cell.get('fullCellName') if 'fullCellName' in cell else None
+                if cell_id:
+                    cell_info_map[(cell_id, tech)] = {
+                        'tech': tech,
+                        'carrier': cell.get('carrier',''),
+                        'sector': cell.get('sector','')
+                    }
+                if full_name:
+                    cell_info_map[(full_name, tech)] = {
+                        'tech': tech,
+                        'carrier': cell.get('carrier',''),
+                        'sector': cell.get('sector','')
+                    }
+        # --- ახალი ლოგიკა: სელის დონეზე პორტების ფუნქციების აგება ---
+        # collect all channel info by (cell, rmod, port)
+        cell_port_map = {}
+        for ch in channels:
+            dist = ch.get('distName','')
+            parts = dist.split('/')
+            # Only support LCELW- (3G), LCELL- (4G), LCELNR- (5G)
+            cell_part = next((p for p in parts if p.startswith(('LCELW-','LCELL-','LCELNR-'))), None)
+            cell_id = ''
+            cell_tech = ''
+            full_cell_name = cell_part if cell_part else ''
+            carrier = ''
+            sector = ''
+            if cell_part:
+                # Extract numeric part after dash
+                numeric_part = cell_part.split('-')[-1]
+                if cell_part.startswith('LCELW-') and len(numeric_part) == 2 and numeric_part.isdigit():
+                    cell_id = numeric_part
+                    cell_tech = '3G'
+                    carrier = numeric_part[0]
+                    sector = numeric_part[1]
+                elif cell_part.startswith('LCELL-') and len(numeric_part) == 2 and numeric_part.isdigit():
+                    cell_id = numeric_part
+                    cell_tech = '4G'
+                    carrier = numeric_part[0]
+                    sector = numeric_part[1]
+                elif cell_part.startswith('LCELNR-') and len(numeric_part) == 3 and numeric_part.isdigit():
+                    cell_id = numeric_part
+                    cell_tech = '5G'
+                    carrier = numeric_part[0]
+                    sector = numeric_part[1]
+                else:
+                    cell_id = numeric_part
+                    # fallback: try to guess tech
+                    if cell_part.startswith('LCELW-'):
+                        cell_tech = '3G'
+                    elif cell_part.startswith('LCELL-'):
+                        cell_tech = '4G'
+                    elif cell_part.startswith('LCELNR-'):
+                        cell_tech = '5G'
+            antlDN = ''
+            mode = ''
+            for p in ch.xpath('./*[local-name()="p"]'):
+                if p.get('name') == 'antlDN':
+                    antlDN = p.text or ''
+                elif p.get('name') == 'direction':
+                    mode = p.text or ''
+            rmod = ''
+            port = ''
+            if antlDN:
+                antl_parts = antlDN.split('/')
+                rmod = next((p for p in antl_parts if p.startswith('RMOD-')), '')
+                port = next((p for p in antl_parts if p.startswith('ANTL-')), '')
+            # --- აგროვებს თითოეული სელისთვის თითო პორტზე ფუნქციებს ---
+            cell_key = (cell_id, cell_tech)
+            if cell_key not in cell_port_map:
+                cell_port_map[cell_key] = {}
+            port_key = (rmod, port)
+            if port_key not in cell_port_map[cell_key]:
+                cell_port_map[cell_key][port_key] = set()
+            if mode:
+                cell_port_map[cell_key][port_key].add(mode)
+        # ახლა ვაგენერირებ mapping-ს: თითოეული სელისთვის თითო პორტზე სწორი ფუნქცია
+        mapping = []
+        for (cell_id, cell_tech), ports in cell_port_map.items():
+            # მოძებნე დამატებითი info
+            cell_info = cell_info_map.get((cell_id, cell_tech), {'tech': cell_tech})
+            # თუ არ არის carrier/sector, სცადე ამოიღო cell_id-დან
+            carrier = cell_info.get('carrier','')
+            sector = cell_info.get('sector','')
+            if (not carrier or not sector) and cell_id and cell_tech in ['3G','4G','5G']:
+                if len(cell_id) == 2 and cell_id.isdigit() and cell_tech in ['3G','4G']:
+                    carrier = cell_id[0]
+                    sector = cell_id[1]
+                elif len(cell_id) == 3 and cell_id.isdigit() and cell_tech == '5G':
+                    carrier = cell_id[1]
+                    sector = cell_id[2]
+            for (rmod, port), modes in ports.items():
+                if not cell_id or not rmod or not port:
+                    continue
+                # თუ ორივე ფუნქციაა, ეწეროს TXRX, თუ არა — რაც არის
+                if {'TX', 'RX'}.issubset(modes):
+                    mode = 'TXRX'
+                elif 'TX' in modes:
+                    mode = 'TX'
+                elif 'RX' in modes:
+                    mode = 'RX'
+                else:
+                    mode = ''
+                model = rmod_code_map.get(rmod, '')
+                mapping.append({
+                    'cell': cell_id,
+                    'tech': cell_info.get('tech',''),
+                    'carrier': carrier,
+                    'sector': sector,
+                    'radio_module': rmod,
+                    'port': port,
+                    'mode': mode,
+                    'model': model
+                })
+        return mapping
