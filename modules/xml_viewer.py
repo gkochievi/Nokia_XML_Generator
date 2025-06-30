@@ -12,7 +12,8 @@ class XMLViewer:
         "474090A": "AHEGB",
         "473995A": "AHEGA",
         "475824A": "AKQJ",
-        "474090A.101": "AHEGB"
+        "474090A.101": "AHEGB",
+        "475130A": "AZQL"
     }
     
     def extract_configuration_data(self, tree):
