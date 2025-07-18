@@ -4,105 +4,1237 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>5G Modernization - Nokia WebEM Generator</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
         body {
             min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            background: var(--primary-gradient);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        .modern-card {
-            border-radius: 1.5rem;
-            box-shadow: 0 8px 32px 0 rgba(76, 68, 182, 0.18);
-            background: rgba(255,255,255,0.98);
-            max-width: 480px;
-            margin: auto;
-            padding: 2.5rem 2rem 2rem 2rem;
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
         }
-        .modern-header {
-            text-align: center;
-            color: #667eea;
-            margin-bottom: 1.5rem;
+
+        .gradient-border {
+            border: 2px solid transparent;
+            background: linear-gradient(white, white) padding-box, var(--primary-gradient) border-box;
         }
-        .modern-header i {
-            font-size: 2.5rem;
-            color: #764ba2;
-            margin-bottom: 0.5rem;
-        }
-        .form-label {
-            font-weight: 500;
-            color: #333;
-        }
-        .form-control, .form-control:focus {
-            border-radius: 0.8rem;
-            border: 2px solid #e0e0e0;
-            box-shadow: none;
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+        .btn-gradient {
+            background: var(--primary-gradient);
             border: none;
-            border-radius: 0.8rem;
-            font-size: 1.15rem;
-            padding: 0.75rem 2.5rem;
-            box-shadow: 0 4px 16px 0 rgba(102, 126, 234, 0.12);
-            transition: background 0.2s;
+            box-shadow: 0 4px 15px 0 rgba(102, 126, 234, 0.35);
+            transition: all 0.3s ease;
         }
-        .btn-primary:hover {
-            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+
+        .btn-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px 0 rgba(102, 126, 234, 0.5);
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+
+        .upload-area {
+            border: 2px dashed #dee2e6;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea;
+            background-color: rgba(102, 126, 234, 0.05);
+        }
+
+        .upload-area.dragover {
+            border-color: #667eea;
+            background-color: rgba(102, 126, 234, 0.1);
+        }
+
+        .loading-spinner {
+            display: none;
+        }
+
+        .console-log {
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            font-family: 'Cascadia Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.8rem;
+            height: 300px;
+            overflow-y: auto;
+            padding: 1rem;
+            border-radius: 0 0 0.375rem 0.375rem;
+        }
+
+        .console-log::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .console-log::-webkit-scrollbar-track {
+            background: #2d2d2d;
+        }
+
+        .console-log::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 4px;
+        }
+
+        .console-log::-webkit-scrollbar-thumb:hover {
+            background: #777;
+        }
+
+        .log-entry {
+            margin-bottom: 0.5rem;
+            word-wrap: break-word;
+        }
+
+        .log-timestamp {
+            color: #569cd6;
+            font-weight: bold;
+        }
+
+        .log-level-info {
+            color: #4ec9b0;
+        }
+
+        .log-level-warning {
+            color: #dcdcaa;
+        }
+
+        .log-level-error {
+            color: #f44747;
+        }
+
+        .log-level-success {
+            color: #b5cea8;
+        }
+
+        .log-content {
+            color: #d4d4d4;
+        }
+
+        .console-toggle {
+            transition: transform 0.2s ease;
+        }
+
+        .console-toggle.rotated {
+            transform: rotate(180deg);
+        }
+
+        @media (max-width: 768px) {
+            .container-fluid {
+                padding: 1rem;
+            }
+            
+            .console-log {
+                height: 200px;
+                font-size: 0.7rem;
+            }
         }
     </style>
 </head>
-<body>
-<div class="container py-5">
-    <div class="modern-card">
-        <div class="modern-header">
-            <i class="bi bi-arrow-repeat"></i>
-            <h2>5G Modernization</h2>
-            <div class="text-muted mb-2">არსებულ საბაზო სადგურზე 5G-ის დამატება</div>
+<body class="min-h-screen">
+    <div class="container-fluid py-4">
+        <div class="row justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8">
+                <div class="glass-card rounded-4 p-4 p-md-5">
+                    <!-- Header -->
+                    <div class="text-center mb-5">
+                        <div class="mb-4">
+                            <i class="bi bi-arrow-repeat display-3 text-primary mb-3" style="background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"></i>
+                        </div>
+                        <h1 class="h1 fw-bold mb-2" style="background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">5G Modernization</h1>
+                        <p class="text-muted fs-5 mb-0">არსებულ საბაზო სადგურზე 5G-ის დამატება</p>
+                        <hr class="my-4 mx-auto" style="width: 100px; height: 3px; background: var(--primary-gradient); border: none; border-radius: 2px;">
+                    </div>
+
+                    <!-- Form -->
+                    <form id="modernizationForm" class="needs-validation" novalidate>
+                        <!-- Station Name -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <label for="stationName" class="form-label fw-semibold">
+                                    <i class="bi bi-broadcast me-2 text-primary"></i>სადგურის სახელი
+                                </label>
+                                <input type="text" class="form-control form-control-lg gradient-border" 
+                                       id="stationName" name="stationName" required 
+                                       placeholder="შეიყვანეთ სადგურის სახელი">
+                                <div class="invalid-feedback">გთხოვთ შეიყვანოთ სადგურის სახელი</div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Reference 5G XML Section -->
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label fw-semibold">
+                                    <i class="bi bi-file-earmark-xml me-2 text-success"></i>Reference 5G XML
+                                </label>
+                                
+                                <!-- Dropdown for existing files -->
+                                <div class="mb-3">
+                                    <select class="form-select" id="reference5gXmlSelection" name="reference5gXmlSelection">
+                                        <option value="">მონაცემები იტვირთება...</option>
+                                    </select>
+                                </div>
+
+                                <!-- Upload area -->
+                                <div class="upload-area rounded-3 p-4 text-center" id="reference5gUploadArea">
+                                    <i class="bi bi-cloud-upload text-muted mb-2" style="font-size: 2rem;"></i>
+                                    <p class="mb-2">ახალი ფაილის ატვირთვა</p>
+                                    <input type="file" class="d-none" id="reference5gXmlUpload" name="reference5gXmlUpload" accept=".xml">
+                                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="document.getElementById('reference5gXmlUpload').click()">
+                                        <i class="bi bi-plus-circle me-1"></i>არჩევა
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- IP Plan Excel Section -->
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label fw-semibold">
+                                    <i class="bi bi-file-earmark-excel me-2 text-warning"></i>IP Plan Excel
+                                </label>
+                                
+                                <!-- Dropdown for existing files -->
+                                <div class="mb-3">
+                                    <select class="form-select" id="ipPlanSelection" name="ipPlanSelection">
+                                        <option value="">მონაცემები იტვირთება...</option>
+                                    </select>
+                                </div>
+
+                                <!-- Upload area -->
+                                <div class="upload-area rounded-3 p-4 text-center" id="ipPlanUploadArea">
+                                    <i class="bi bi-cloud-upload text-muted mb-2" style="font-size: 2rem;"></i>
+                                    <p class="mb-2">ახალი ფაილის ატვირთვა</p>
+                                    <input type="file" class="d-none" id="ipPlanUpload" name="ipPlanUpload" accept=".xlsx,.xls">
+                                    <button type="button" class="btn btn-outline-warning btn-sm" onclick="document.getElementById('ipPlanUpload').click()">
+                                        <i class="bi bi-plus-circle me-1"></i>არჩევა
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Existing Station XML -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <label for="existingXml" class="form-label fw-semibold">
+                                    <i class="bi bi-file-earmark-xml me-2 text-danger"></i>არსებული სადგურის XML
+                                </label>
+                                <input type="file" class="form-control form-control-lg" 
+                                       id="existingXml" name="existingXml" accept=".xml" required>
+                                <div class="form-text">ატვირთეთ არსებული სადგურის XML კონფიგურაცია</div>
+                                <div class="invalid-feedback">გთხოვთ ატვირთოთ არსებული სადგურის XML ფაილი</div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-lg btn-gradient text-white py-3">
+                                <span class="btn-content">
+                                    <i class="bi bi-gear-wide-connected me-2"></i>
+                                    დაგენერირე ახალი XML
+                                </span>
+                                <span class="loading-spinner">
+                                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                                    მუშავდება...
+                                </span>
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Alert -->
+                    <div id="alertContainer" class="mt-4"></div>
+
+                    <!-- Debug Console -->
+                    <div class="mt-4">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-light border-0 p-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0 fw-semibold text-muted">
+                                        <i class="bi bi-terminal me-2"></i>Debug Console
+                                    </h6>
+                                    <button class="btn btn-sm btn-outline-secondary" type="button" id="manualToggleBtn">
+                                        <i class="bi bi-chevron-down console-toggle" id="consoleToggleIcon"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="collapse" id="debugConsole">
+                                <div class="card-body p-0">
+                                    <!-- Console Tabs -->
+                                    <ul class="nav nav-tabs nav-fill border-0" id="consoleTabs" role="tablist">
+                                        <li class="nav-item" role="presentation">
+                                            <button class="nav-link active small d-flex align-items-center justify-content-center" id="extraction-tab" data-bs-toggle="tab" data-bs-target="#extraction-log" type="button" role="tab">
+                                                <i class="bi bi-file-text me-1"></i>ამოღება
+                                                <button class="btn btn-sm ms-2 p-0 clear-console-btn" data-console="extractionConsole" title="გასუფთავება">
+                                                    <i class="bi bi-x-circle text-muted" style="font-size: 0.8rem;"></i>
+                                                </button>
+                                            </button>
+                                        </li>
+                                        <li class="nav-item" role="presentation">
+                                            <button class="nav-link small d-flex align-items-center justify-content-center" id="generation-tab" data-bs-toggle="tab" data-bs-target="#generation-log" type="button" role="tab">
+                                                <i class="bi bi-gear me-1"></i>გენერაცია
+                                                <button class="btn btn-sm ms-2 p-0 clear-console-btn" data-console="generationConsole" title="გასუფთავება">
+                                                    <i class="bi bi-x-circle text-muted" style="font-size: 0.8rem;"></i>
+                                                </button>
+                                            </button>
+                                        </li>
+                                        <li class="nav-item" role="presentation">
+                                            <button class="nav-link small d-flex align-items-center justify-content-center" id="system-tab" data-bs-toggle="tab" data-bs-target="#system-log" type="button" role="tab">
+                                                <i class="bi bi-cpu me-1"></i>სისტემა
+                                                <button class="btn btn-sm ms-2 p-0 clear-console-btn" data-console="systemConsole" title="გასუფთავება">
+                                                    <i class="bi bi-x-circle text-muted" style="font-size: 0.8rem;"></i>
+                                                </button>
+                                            </button>
+                                        </li>
+                                    </ul>
+                                    
+                                    <!-- Console Content -->
+                                    <div class="tab-content" id="consoleTabContent">
+                                        <!-- Extraction Log -->
+                                        <div class="tab-pane fade show active" id="extraction-log" role="tabpanel">
+                                            <div class="console-log" id="extractionConsole">
+                                                <div class="p-3 text-muted small">
+                                                    <i class="bi bi-info-circle me-1"></i>
+                                                    XML ფაილის ამოღების ლოგები გამოჩნდება აქ...
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Generation Log -->
+                                        <div class="tab-pane fade" id="generation-log" role="tabpanel">
+                                            <div class="console-log" id="generationConsole">
+                                                <div class="p-3 text-muted small">
+                                                    <i class="bi bi-info-circle me-1"></i>
+                                                    XML გენერაციის ლოგები გამოჩნდება აქ...
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- System Log -->
+                                        <div class="tab-pane fade" id="system-log" role="tabpanel">
+                                            <div class="console-log" id="systemConsole">
+                                                <div class="p-3 text-muted small">
+                                                    <i class="bi bi-info-circle me-1"></i>
+                                                    სისტემის ლოგები გამოჩნდება აქ...
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <form method="post" enctype="multipart/form-data" action="/api/modernization" id="modernizationForm">
-            <div class="mb-3">
-                <label for="station_name" class="form-label"><i class="bi bi-broadcast me-2"></i>სადგურის სახელი</label>
-                <input type="text" class="form-control" id="station_name" name="stationName" required>
-            </div>
-            <div class="mb-3">
-                <label for="existing_xml" class="form-label"><i class="bi bi-file-earmark-xml me-2"></i>არსებული სადგურის XML</label>
-                <input class="form-control" type="file" id="existing_xml" name="existingXml" accept=".xml" required>
-            </div>
-            <div class="mb-3">
-                <label for="ip_plan" class="form-label"><i class="bi bi-file-earmark-excel me-2"></i>IP Plan Excel</label>
-                <input class="form-control" type="file" id="ip_plan" name="transmissionExcel" accept=".xlsx,.xls" required>
-            </div>
-            <div class="mb-3">
-                <label for="reference_5g_xml" class="form-label"><i class="bi bi-file-earmark-xml me-2"></i>Reference 5G XML (მაგალითი)</label>
-                <input class="form-control" type="file" id="reference_5g_xml" name="reference5gXml" accept=".xml" required>
-            </div>
-            <button type="submit" class="btn btn-primary w-100 mt-3"><i class="bi bi-gear-wide-connected me-2"></i>დაგენერირე ახალი XML</button>
-        </form>
-        <div id="modernization-alert" class="alert mt-3 d-none" role="alert"></div>
     </div>
-</div>
-<script>
-const form = document.getElementById('modernizationForm');
-const alertBox = document.getElementById('modernization-alert');
-form.addEventListener('submit', async function(e) {
-    e.preventDefault();
-    alertBox.classList.add('d-none');
-    const formData = new FormData(form);
-    const res = await fetch('/api/modernization', { method: 'POST', body: formData });
-    const data = await res.json();
-    if (data.success) {
-        alertBox.className = 'alert alert-success mt-3';
-        alertBox.textContent = 'XML ფაილი წარმატებით გენერირდა! ჩამოტვირთვა: ' + data.filename;
-    } else {
-        alertBox.className = 'alert alert-danger mt-3';
-        alertBox.textContent = data.error || 'დაფიქსირდა შეცდომა';
-    }
-    alertBox.classList.remove('d-none');
-});
-</script>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Global variables
+        let xmlFiles = [];
+        let excelFiles = [];
+
+        // Console management functions
+        function addLogEntry(consoleId, level, message, timestamp = new Date()) {
+            const console = document.getElementById(consoleId);
+            if (!console) return;
+
+            // Clear initial message if exists
+            const initialMsg = console.querySelector('.text-muted');
+            if (initialMsg) {
+                initialMsg.remove();
+            }
+
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            
+            const timeStr = timestamp.toLocaleTimeString('ka-GE', { 
+                hour12: false, 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit' 
+            });
+            
+            logEntry.innerHTML = `
+                <span class="log-timestamp">[${timeStr}]</span>
+                <span class="log-level-${level}">[${level.toUpperCase()}]</span>
+                <span class="log-content">${message}</span>
+            `;
+            
+            console.appendChild(logEntry);
+            console.scrollTop = console.scrollHeight;
+        }
+
+        function clearConsole(consoleId) {
+            const console = document.getElementById(consoleId);
+            if (console) {
+                console.innerHTML = '';
+                
+                // Add default message back
+                let defaultMessage = '';
+                switch (consoleId) {
+                    case 'extractionConsole':
+                        defaultMessage = 'XML ფაილის ამოღების ლოგები გამოჩნდება აქ...';
+                        break;
+                    case 'generationConsole':
+                        defaultMessage = 'XML გენერაციის ლოგები გამოჩნდება აქ...';
+                        break;
+                    case 'systemConsole':
+                        defaultMessage = 'სისტემის ლოგები გამოჩნდება აქ...';
+                        break;
+                }
+                
+                if (defaultMessage) {
+                    const defaultDiv = document.createElement('div');
+                    defaultDiv.className = 'p-3 text-muted small';
+                    defaultDiv.innerHTML = `<i class="bi bi-info-circle me-1"></i>${defaultMessage}`;
+                    console.appendChild(defaultDiv);
+                }
+            }
+        }
+
+        function getCurrentTimestamp() {
+            return new Date().toLocaleTimeString('ka-GE', { 
+                hour12: false, 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit' 
+            });
+        }
+
+        function addSystemLog(message, level = 'info') {
+            addLogEntry('systemConsole', level, message);
+        }
+
+        function addExtractionLog(message, level = 'info') {
+            addLogEntry('extractionConsole', level, message);
+        }
+
+        function addGenerationLog(message, level = 'info') {
+            addLogEntry('generationConsole', level, message);
+        }
+
+        // Console toggle animation - MANUAL CONTROL
+        function setupConsoleToggle() {
+            const toggleBtn = document.getElementById('manualToggleBtn');
+            const toggleIcon = document.getElementById('consoleToggleIcon');
+            const debugConsole = document.getElementById('debugConsole');
+
+            if (toggleBtn && toggleIcon && debugConsole) {
+                let isAnimating = false;
+                let isOpen = false;
+
+                // Manual toggle function
+                const toggleConsoleManual = function() {
+                    if (isAnimating) {
+                        console.log('Animation in progress, ignoring toggle');
+                        return;
+                    }
+
+                    isAnimating = true;
+                    console.log('Manual toggle - current state:', isOpen ? 'open' : 'closed');
+
+                    if (isOpen) {
+                        // Close console
+                        debugConsole.style.transition = 'height 0.35s ease';
+                        debugConsole.style.height = debugConsole.scrollHeight + 'px';
+                        debugConsole.offsetHeight; // Force reflow
+                        debugConsole.style.height = '0px';
+                        debugConsole.style.overflow = 'hidden';
+                        
+                        toggleIcon.classList.remove('rotated');
+                        isOpen = false;
+                        
+                        setTimeout(() => {
+                            debugConsole.classList.add('collapse');
+                            debugConsole.style.height = '';
+                            debugConsole.style.transition = '';
+                            isAnimating = false;
+                            console.log('Console closed');
+                        }, 350);
+                    } else {
+                        // Open console
+                        debugConsole.classList.remove('collapse');
+                        debugConsole.style.height = '0px';
+                        debugConsole.style.overflow = 'hidden';
+                        debugConsole.style.transition = 'height 0.35s ease';
+                        
+                        debugConsole.offsetHeight; // Force reflow
+                        debugConsole.style.height = debugConsole.scrollHeight + 'px';
+                        
+                        toggleIcon.classList.add('rotated');
+                        isOpen = true;
+                        
+                        setTimeout(() => {
+                            debugConsole.style.height = '';
+                            debugConsole.style.overflow = '';
+                            debugConsole.style.transition = '';
+                            isAnimating = false;
+                            console.log('Console opened');
+                        }, 350);
+                    }
+                };
+
+                // Add click handler to toggle button
+                toggleBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Toggle button clicked');
+                    toggleConsoleManual();
+                });
+
+                // Prevent clicks inside console from doing anything
+                debugConsole.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+
+                // Initialize closed state
+                debugConsole.classList.add('collapse');
+                isOpen = false;
+            }
+        }
+
+        // Add manual console control
+        function toggleConsole() {
+            const debugConsole = document.getElementById('debugConsole');
+            const bsCollapse = new bootstrap.Collapse(debugConsole, {
+                toggle: true
+            });
+        }
+
+        // Keep console open when interacting with tabs - SIMPLIFIED
+        function setupTabHandling() {
+            // Wait for DOM to be ready, then setup clear buttons
+            setTimeout(() => {
+                const clearButtons = document.querySelectorAll('.clear-console-btn');
+                clearButtons.forEach(btn => {
+                    // Remove any existing listeners
+                    btn.replaceWith(btn.cloneNode(true));
+                });
+
+                // Re-attach clean listeners
+                const newClearButtons = document.querySelectorAll('.clear-console-btn');
+                newClearButtons.forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        
+                        const consoleId = this.dataset.console;
+                        console.log('Clearing console:', consoleId); // Debug
+                        clearConsole(consoleId);
+                        
+                        // Add cleared log entry
+                        setTimeout(() => {
+                            addLogEntry(consoleId, 'info', 'კონსოლი გასუფთავდა');
+                        }, 100);
+                    });
+                });
+            }, 500);
+        }
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            addSystemLog('საიტი ირთვება...', 'info');
+            loadExampleFiles();
+            setupEventListeners();
+            setupConsoleToggle();
+            setupTabHandling(); // Initialize tab handling
+            addSystemLog('საიტი წარმატებით ჩაიტვირთა', 'success');
+        });
+
+        // Load example files from server
+        async function loadExampleFiles() {
+            try {
+                addSystemLog('Example ფაილების ჩატვირთვა დაიწყო...', 'info');
+                
+                // Load XML files
+                const xmlResponse = await fetch('/api/example-files/xml');
+                const xmlData = await xmlResponse.json();
+                if (xmlData.success) {
+                    xmlFiles = xmlData.files;
+                    updateXmlDropdown();
+                    addSystemLog(`XML ფაილები ჩაიტვირთა: ${xmlFiles.length} ფაილი`, 'success');
+                }
+
+                // Load Excel files
+                const excelResponse = await fetch('/api/example-files/excel');
+                const excelData = await excelResponse.json();
+                if (excelData.success) {
+                    excelFiles = excelData.files;
+                    updateExcelDropdown();
+                    addSystemLog(`Excel ფაილები ჩაიტვირთა: ${excelFiles.length} ფაილი`, 'success');
+                }
+            } catch (error) {
+                addSystemLog(`ფაილების ჩატვირთვისას შეცდომა: ${error.message}`, 'error');
+                console.error('Error loading example files:', error);
+            }
+        }
+
+        // Update XML dropdown
+        function updateXmlDropdown() {
+            const select = document.getElementById('reference5gXmlSelection');
+            select.innerHTML = '<option value="upload">🔄 ახალი ფაილის ატვირთვა</option>';
+            
+            xmlFiles.forEach(file => {
+                const option = document.createElement('option');
+                option.value = file;
+                option.textContent = file;
+                select.appendChild(option);
+            });
+        }
+
+        // Update Excel dropdown
+        function updateExcelDropdown() {
+            const select = document.getElementById('ipPlanSelection');
+            select.innerHTML = '<option value="upload">🔄 ახალი ფაილის ატვირთვა</option>';
+            
+            excelFiles.forEach(file => {
+                const option = document.createElement('option');
+                option.value = file;
+                option.textContent = file;
+                select.appendChild(option);
+            });
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // File upload handlers
+            document.getElementById('reference5gXmlUpload').addEventListener('change', function(e) {
+                handleFileUpload(e.target.files[0], 'xml');
+            });
+
+            document.getElementById('ipPlanUpload').addEventListener('change', function(e) {
+                handleFileUpload(e.target.files[0], 'excel');
+            });
+
+            // Existing XML file handler - extract btsName
+            document.getElementById('existingXml').addEventListener('change', function(e) {
+                if (e.target.files && e.target.files[0]) {
+                    extractBtsName(e.target.files[0]);
+                }
+            });
+
+            // Reference XML dropdown handler - extract btsName
+            document.getElementById('reference5gXmlSelection').addEventListener('change', function(e) {
+                const selectedFile = e.target.value;
+                if (selectedFile && selectedFile !== 'upload') {
+                    extractBtsNameFromExampleFile(selectedFile, 'reference');
+                }
+            });
+
+            // Form submission
+            document.getElementById('modernizationForm').addEventListener('submit', handleFormSubmit);
+
+            // Form validation
+            const form = document.getElementById('modernizationForm');
+            form.addEventListener('submit', function(event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        }
+
+        // Handle file upload
+        async function handleFileUpload(file, type) {
+            if (!file) return;
+
+            addSystemLog(`ფაილის ატვირთვა დაიწყო: ${file.name} (${type})`, 'info');
+            
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                addSystemLog('ფაილი იგზავნება სერვერზე...', 'info');
+                
+                const response = await fetch('/api/example-files/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    addSystemLog(`✓ ფაილი წარმატებით აიტვირთა: ${data.filename}`, 'success');
+                    showAlert('success', `ფაილი ${data.filename} წარმატებით აიტვირთა`);
+                    loadExampleFiles(); // Reload files
+                } else {
+                    addSystemLog(`✗ ფაილის ატვირთვისას შეცდომა: ${data.error}`, 'error');
+                    showAlert('danger', data.error || 'ფაილის ატვირთვისას მოხდა შეცდომა');
+                }
+            } catch (error) {
+                addSystemLog(`✗ ნეტვორკის შეცდომა: ${error.message}`, 'error');
+                showAlert('danger', 'ფაილის ატვირთვისას მოხდა შეცდომა');
+                console.error('File upload error:', error);
+            }
+        }
+
+        // Extract btsName from uploaded XML file
+        async function extractBtsName(file) {
+            const stationNameInput = document.getElementById('stationName');
+            
+            addExtractionLog(`XML ფაილის ამოღება დაიწყო: ${file.name}`, 'info');
+            
+            // If station name is already filled, ask user if they want to replace it
+            if (stationNameInput.value.trim() !== '') {
+                if (!confirm('სადგურის სახელი უკვე შევსებულია. გსურთ ავტომატური შევსება XML ფაილიდან?')) {
+                    addExtractionLog('მომხმარებელმა გააუქმა ავტომატური შევსება', 'warning');
+                    return;
+                }
+            }
+
+            const formData = new FormData();
+            formData.append('xmlFile', file);
+
+            try {
+                // Show loading indicator on station name field
+                const originalPlaceholder = stationNameInput.placeholder;
+                stationNameInput.placeholder = 'btsName იკითხება...';
+                stationNameInput.disabled = true;
+                
+                addExtractionLog('XML ფაილი იგზავნება სერვერზე ანალიზისთვის...', 'info');
+
+                // Extract btsName, btsId, sctpPortMin, and 2G parameters
+                const formData2 = new FormData();
+                formData2.append('xmlFile', file);
+                const formData3 = new FormData();
+                formData3.append('xmlFile', file);
+                const formData4 = new FormData();
+                formData4.append('xmlFile', file);
+                
+                const [btsNameResponse, btsIdResponse, sctpPortResponse, params2gResponse] = await Promise.all([
+                    fetch('/api/extract-bts-name', {
+                        method: 'POST',
+                        body: formData
+                    }),
+                    fetch('/api/extract-bts-id', {
+                        method: 'POST',
+                        body: formData2
+                    }),
+                    fetch('/api/extract-sctp-port', {
+                        method: 'POST',
+                        body: formData3
+                    }),
+                    fetch('/api/extract-2g-params', {
+                        method: 'POST',
+                        body: formData4
+                    })
+                ]);
+                
+                const btsNameData = await btsNameResponse.json();
+                const btsIdData = await btsIdResponse.json();
+                const sctpPortData = await sctpPortResponse.json();
+                const params2gData = await params2gResponse.json();
+
+                // Log debugging information to console
+                console.log('BTS Name extraction response:', btsNameData);
+                console.log('BTS ID extraction response:', btsIdData);
+                console.log('SCTP Port extraction response:', sctpPortData);
+                console.log('2G Parameters extraction response:', params2gData);
+                addExtractionLog('სერვერიდან პასუხი მოვიდა (btsName, BTS ID, sctpPortMin და 2G პარამეტრები)', 'info');
+                
+                if (btsNameData.debug) {
+                    console.log('XML Debug Info:');
+                    console.log('- Root tag:', btsNameData.debug.root_tag);
+                    console.log('- Root attributes:', btsNameData.debug.root_attributes);
+                    console.log('- Namespaces:', btsNameData.debug.namespaces);
+                    console.log('- Managed Objects found:', btsNameData.debug.managed_objects.length);
+                    
+                    addExtractionLog(`XML Root: ${btsNameData.debug.root_tag}`, 'info');
+                    addExtractionLog(`Namespaces: ${Object.keys(btsNameData.debug.namespaces).length} ნაპოვნი`, 'info');
+                    addExtractionLog(`Managed Objects: ${btsNameData.debug.managed_objects.length} ნაპოვნი`, 'info');
+                    
+                    // Log XPath test results
+                    if (btsNameData.debug.xpath_tests) {
+                        Object.entries(btsNameData.debug.xpath_tests).forEach(([xpath, count]) => {
+                            addExtractionLog(`XPath "${xpath}": ${count} შედეგი`, 'info');
+                        });
+                    }
+                    
+                    btsNameData.debug.managed_objects.forEach((obj, index) => {
+                        console.log(`  ${index + 1}. class: "${obj.class}", distName: "${obj.distName}", operation: "${obj.operation}"`);
+                        addExtractionLog(`Object ${index + 1}: class="${obj.class}", distName="${obj.distName}"`, 'info');
+                    });
+                }
+
+                // Handle btsName result
+                if (btsNameData.success && btsNameData.btsName) {
+                    stationNameInput.value = btsNameData.btsName;
+                    addExtractionLog(`✓ btsName წარმატებით ამოიღო: "${btsNameData.btsName}"`, 'success');
+                } else {
+                    addExtractionLog(`✗ btsName ვერ ამოიღო: ${btsNameData.error || 'უცნობი შეცდომა'}`, 'error');
+                }
+                
+                // Handle BTS ID result
+                if (btsIdData.success && btsIdData.btsId) {
+                    addExtractionLog(`✓ BTS ID წარმატებით ამოიღო: "${btsIdData.btsId}"`, 'success');
+                } else {
+                    addExtractionLog(`✗ BTS ID ვერ ამოიღო: ${btsIdData.error || 'უცნობი შეცდომა'}`, 'error');
+                }
+                
+                // Handle sctpPortMin result
+                if (sctpPortData.success && sctpPortData.sctpPortMin) {
+                    addExtractionLog(`✓ sctpPortMin წარმატებით ამოიღო: "${sctpPortData.sctpPortMin}"`, 'success');
+                } else {
+                    addExtractionLog(`ℹ sctpPortMin ვერ მოიძებნა (სადგური შეიძლება არ ქონდეს 3G)`, 'info');
+                }
+                
+                // Handle 2G parameters result
+                if (params2gData.success && params2gData.params2g) {
+                    const params = params2gData.params2g;
+                    addExtractionLog(`✓ 2G პარამეტრები წარმატებით ამოიღო:`, 'success');
+                    Object.entries(params).forEach(([key, value]) => {
+                        addExtractionLog(`  - ${key}: "${value}"`, 'success');
+                    });
+                } else {
+                    addExtractionLog(`ℹ 2G პარამეტრები ვერ მოიძებნა (სადგური შეიძლება არ ქონდეს 2G)`, 'info');
+                }
+                
+                // Show success message if at least one was extracted
+                if ((btsNameData.success && btsNameData.btsName) || (btsIdData.success && btsIdData.btsId) || (sctpPortData.success && sctpPortData.sctpPortMin) || (params2gData.success && params2gData.params2g)) {
+                    let message = 'ავტომატური ამოღება წარმატებული:';
+                    if (btsNameData.success && btsNameData.btsName) {
+                        message += ` btsName: ${btsNameData.btsName}`;
+                    }
+                    if (btsIdData.success && btsIdData.btsId) {
+                        message += ` BTS ID: ${btsIdData.btsId}`;
+                    }
+                    if (sctpPortData.success && sctpPortData.sctpPortMin) {
+                        message += ` sctpPortMin: ${sctpPortData.sctpPortMin}`;
+                    }
+                    if (params2gData.success && params2gData.params2g) {
+                        const paramCount = Object.keys(params2gData.params2g).length;
+                        message += ` 2G პარამეტრები: ${paramCount} ნაპოვნი`;
+                    }
+                    showAlert('success', message);
+                } else {
+                    let errorMsg = 'btsName და BTS ID ვერ მოიძებნა XML ფაილში. sctpPortMin და 2G პარამეტრები არც მოიძებნა (ნორმალურია 5G-only სადგურებისთვის)';
+                    addExtractionLog(`⚠ ამოღება ვერ მოხერხდა: ${errorMsg}`, 'warning');
+                    
+                    // Add debug info to error message
+                    if (btsNameData.debug) {
+                        errorMsg += `<br><br><strong>Debug ინფორმაცია:</strong><br>`;
+                        errorMsg += `- Root element: ${btsNameData.debug.root_tag}<br>`;
+                        errorMsg += `- Managed Objects ნაპოვნი: ${btsNameData.debug.managed_objects.length}<br>`;
+                        
+                        if (btsNameData.debug.managed_objects.length > 0) {
+                            errorMsg += `<br><strong>ნაპოვნი Objects:</strong><br>`;
+                            btsNameData.debug.managed_objects.forEach((obj, index) => {
+                                errorMsg += `${index + 1}. class: "${obj.class}"<br>`;
+                            });
+                        }
+                    }
+                    
+                    showAlert('warning', errorMsg);
+                }
+            } catch (error) {
+                addExtractionLog(`✗ ნეტვორკის შეცდომა: ${error.message}`, 'error');
+                showAlert('danger', 'პარამეტრების ამოღებისას მოხდა შეცდომა');
+                console.error('Error extracting parameters:', error);
+            } finally {
+                // Reset field state
+                stationNameInput.placeholder = originalPlaceholder;
+                stationNameInput.disabled = false;
+                addExtractionLog('XML ამოღების პროცესი დასრულდა', 'info');
+            }
+        }
+
+        // Extract btsName, BTS ID, sctpPortMin, and 2G parameters from example file (dropdown selection)
+        async function extractBtsNameFromExampleFile(filename, type) {
+            addSystemLog(`${type} XML-დან ყველა პარამეტრის ამოღება: ${filename}`, 'info');
+            
+            try {
+                const [btsNameResponse, btsIdResponse, sctpPortResponse, params2gResponse] = await Promise.all([
+                    fetch(`/api/example-files/extract-bts-name/${encodeURIComponent(filename)}`),
+                    fetch(`/api/example-files/extract-bts-id/${encodeURIComponent(filename)}`),
+                    fetch(`/api/example-files/extract-sctp-port/${encodeURIComponent(filename)}`),
+                    fetch(`/api/example-files/extract-2g-params/${encodeURIComponent(filename)}`)
+                ]);
+                
+                const btsNameData = await btsNameResponse.json();
+                const btsIdData = await btsIdResponse.json();
+                const sctpPortData = await sctpPortResponse.json();
+                const params2gData = await params2gResponse.json();
+
+                addSystemLog(`${type} XML API პასუხი მიღებულია (ყველა პარამეტრი)`, 'info');
+                
+                // Handle btsName result
+                if (btsNameData.success && btsNameData.btsName) {
+                    addSystemLog(`✓ ${type} XML btsName: "${btsNameData.btsName}"`, 'success');
+                    
+                    if (type === 'reference') {
+                        // Store reference btsName for later use
+                        window.referenceBtsName = btsNameData.btsName;
+                        addSystemLog(`Reference Template Name შენახულია: "${btsNameData.btsName}"`, 'info');
+                    }
+                } else {
+                    addSystemLog(`✗ ${type} XML-დან btsName ვერ ამოიღო: ${btsNameData.error || 'უცნობი შეცდომა'}`, 'error');
+                }
+                
+                // Handle BTS ID result
+                if (btsIdData.success && btsIdData.btsId) {
+                    addSystemLog(`✓ ${type} XML BTS ID: "${btsIdData.btsId}"`, 'success');
+                    
+                    if (type === 'reference') {
+                        // Store reference BTS ID for later use
+                        window.referenceBtsId = btsIdData.btsId;
+                        addSystemLog(`Reference Template BTS ID შენახულია: "${btsIdData.btsId}"`, 'info');
+                    }
+                } else {
+                    addSystemLog(`✗ ${type} XML-დან BTS ID ვერ ამოიღო: ${btsIdData.error || 'უცნობი შეცდომა'}`, 'error');
+                }
+                
+                // Handle sctpPortMin result
+                if (sctpPortData.success && sctpPortData.sctpPortMin) {
+                    addSystemLog(`✓ ${type} XML sctpPortMin: "${sctpPortData.sctpPortMin}"`, 'success');
+                    
+                    if (type === 'reference') {
+                        // Store reference sctpPortMin for later use
+                        window.referenceSctpPort = sctpPortData.sctpPortMin;
+                        addSystemLog(`Reference Template sctpPortMin შენახულია: "${sctpPortData.sctpPortMin}"`, 'info');
+                    }
+                } else {
+                    addSystemLog(`ℹ ${type} XML-ში sctpPortMin ვერ მოიძებნა (შეიძლება არ ქონდეს 3G)`, 'info');
+                }
+                
+                // Handle 2G parameters result
+                if (params2gData.success && params2gData.params2g) {
+                    const params = params2gData.params2g;
+                    addSystemLog(`✓ ${type} XML 2G პარამეტრები:`, 'success');
+                    Object.entries(params).forEach(([key, value]) => {
+                        addSystemLog(`  - ${key}: "${value}"`, 'success');
+                    });
+                    
+                    if (type === 'reference') {
+                        // Store reference 2G parameters for later use
+                        window.reference2gParams = params2gData.params2g;
+                        addSystemLog(`Reference Template 2G პარამეტრები შენახულია`, 'info');
+                    }
+                } else {
+                    addSystemLog(`ℹ ${type} XML-ში 2G პარამეტრები ვერ მოიძებნა (შეიძლება არ ქონდეს 2G)`, 'info');
+                }
+            } catch (error) {
+                addSystemLog(`✗ ${type} XML პარამეტრების ამოღების ნეტვორკის შეცდომა: ${error.message}`, 'error');
+                console.error(`Error extracting parameters from ${type} file:`, error);
+            }
+        }
+
+        // Handle form submission
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            
+            const form = e.target;
+            if (!form.checkValidity()) {
+                addGenerationLog('ფორმის ვალიდაცია ვერ გაიარა', 'error');
+                return;
+            }
+
+            addGenerationLog('XML გენერაცია დაიწყო...', 'info');
+            clearConsole('generationConsole'); // Clear previous logs
+            addGenerationLog('XML გენერაცია დაიწყო...', 'info');
+
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const btnContent = submitBtn.querySelector('.btn-content');
+            const loadingSpinner = submitBtn.querySelector('.loading-spinner');
+
+            // Show loading state
+            btnContent.style.display = 'none';
+            loadingSpinner.style.display = 'inline-block';
+            submitBtn.disabled = true;
+            addGenerationLog('ფორმის მონაცემები ემზადება...', 'info');
+
+            try {
+                const formData = new FormData(form);
+                
+                // Log form data
+                const stationName = formData.get('stationName');
+                const stationNameDirect = document.getElementById('stationName').value;
+                const reference5gSelection = formData.get('reference5gXmlSelection');
+                const ipPlanSelection = formData.get('ipPlanSelection');
+                
+                addGenerationLog(`სადგურის სახელი (FormData): "${stationName}"`, 'info');
+                addGenerationLog(`სადგურის სახელი (Direct): "${stationNameDirect}"`, 'info');
+                addGenerationLog(`Reference 5G XML: ${reference5gSelection || 'ატვირთული ფაილი'}`, 'info');
+                addGenerationLog(`IP Plan: ${ipPlanSelection || 'ატვირთული ფაილი'}`, 'info');
+                
+                // Use direct value if FormData is null
+                const finalStationName = stationName || stationNameDirect;
+                if (!finalStationName || finalStationName.trim() === '') {
+                    addGenerationLog('✗ სადგურის სახელი ცარიელია!', 'error');
+                    showAlert('danger', 'გთხოვთ შეიყვანოთ სადგურის სახელი');
+                    return;
+                }
+
+                // Update FormData with correct station name
+                if (!stationName && finalStationName) {
+                    formData.set('stationName', finalStationName);
+                    addGenerationLog(`FormData updated with station name: "${finalStationName}"`, 'info');
+                }
+
+                addGenerationLog('მონაცემები იგზავნება სერვერზე...', 'info');
+
+                const response = await fetch('/api/modernization', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                addGenerationLog('სერვერიდან პასუხი მოვიდა', 'info');
+
+                if (data.success) {
+                    addGenerationLog(`✓ XML ფაილი წარმატებით გენერირდა!`, 'success');
+                    addGenerationLog(`ფაილის სახელი: ${data.filename}`, 'success');
+                    
+                    // Log replacement details
+                    if (data.details) {
+                        addGenerationLog(`--- Template Replacement Details ---`, 'info');
+                        
+                        // BTS Name replacement
+                        addGenerationLog(`Reference Template Name: "${data.details.reference_bts_name}"`, 'info');
+                        addGenerationLog(`Target Station Name: "${data.details.existing_bts_name}"`, 'info');
+                        addGenerationLog(`Name Replacement: ${data.details.replacement_performed ? 'YES' : 'NO'}`, data.details.replacement_performed ? 'success' : 'warning');
+                        
+                        if (data.details.replacement_performed) {
+                            addGenerationLog(`Template-ში "${data.details.reference_bts_name}" ჩანაცვლდა "${data.details.existing_bts_name}"-ით`, 'success');
+                        }
+                        
+                        // BTS ID replacement
+                        addGenerationLog(`Reference Template BTS ID: "${data.details.reference_bts_id || 'N/A'}"`, 'info');
+                        addGenerationLog(`Target Station BTS ID: "${data.details.existing_bts_id || 'N/A'}"`, 'info');
+                        addGenerationLog(`BTS ID Replacement: ${data.details.bts_id_replacement_performed ? 'YES' : 'NO'}`, data.details.bts_id_replacement_performed ? 'success' : 'warning');
+                        
+                        if (data.details.bts_id_replacement_performed) {
+                            addGenerationLog(`Template-ში BTS ID "${data.details.reference_bts_id}" ჩანაცვლდა "${data.details.existing_bts_id}"-ით`, 'success');
+                        }
+                        
+                        // sctpPortMin replacement
+                        addGenerationLog(`Reference Template sctpPortMin: "${data.details.reference_sctp_port || 'Not found (no 3G)'}"`, 'info');
+                        addGenerationLog(`Target Station sctpPortMin: "${data.details.existing_sctp_port || 'Not found (no 3G)'}"`, 'info');
+                        addGenerationLog(`sctpPortMin Replacement: ${data.details.sctp_port_replacement_performed ? 'YES' : 'NO (normal for 5G-only stations)'}`, data.details.sctp_port_replacement_performed ? 'success' : 'info');
+                        
+                        if (data.details.sctp_port_replacement_performed) {
+                            addGenerationLog(`Template-ში sctpPortMin "${data.details.reference_sctp_port}" ჩანაცვლდა "${data.details.existing_sctp_port}"-ით`, 'success');
+                        }
+                        
+                        // 2G parameters replacement
+                        const existing2gStatus = data.details.existing_2g_params ? `Found (${Object.keys(data.details.existing_2g_params).length} params)` : 'Not found (no 2G)';
+                        const reference2gStatus = data.details.reference_2g_params ? `Found (${Object.keys(data.details.reference_2g_params).length} params)` : 'Not found (no 2G)';
+                        
+                        addGenerationLog(`Reference Template 2G params: "${reference2gStatus}"`, 'info');
+                        addGenerationLog(`Target Station 2G params: "${existing2gStatus}"`, 'info');
+                        addGenerationLog(`2G Parameters Replacement: ${data.details.params_2g_replacement_performed ? 'YES' : 'NO (normal for stations without 2G)'}`, data.details.params_2g_replacement_performed ? 'success' : 'info');
+                        
+                        if (data.details.params_2g_replacement_performed) {
+                            addGenerationLog(`Template-ში 2G პარამეტრები ჩანაცვლდა:`, 'success');
+                            if (data.details.existing_2g_params && data.details.reference_2g_params) {
+                                Object.entries(data.details.existing_2g_params).forEach(([key, value]) => {
+                                    const oldValue = data.details.reference_2g_params[key];
+                                    if (oldValue) {
+                                        addGenerationLog(`  - ${key}: "${oldValue}" → "${value}"`, 'success');
+                                    }
+                                });
+                            }
+                        }
+                        
+                        addGenerationLog(`--- End Replacement Details ---`, 'info');
+                    }
+                    
+                    // Start automatic download
+                    addGenerationLog(`ფაილის ავტომატური ჩამოტვირთვა იწყება...`, 'info');
+                    downloadGeneratedFile(data.filename);
+                    
+                    showAlert('success', `XML ფაილი წარმატებით გენერირდა და ჩამოიტვირთა! ფაილი: ${data.filename}`);
+                    
+                    // Switch to generation tab to show logs
+                    const generationTab = document.getElementById('generation-tab');
+                    if (generationTab) {
+                        generationTab.click();
+                    }
+                } else {
+                    addGenerationLog(`✗ გენერაციისას შეცდომა: ${data.error}`, 'error');
+                    showAlert('danger', data.error || 'გენერაციისას მოხდა შეცდომა');
+                }
+            } catch (error) {
+                addGenerationLog(`✗ ნეტვორკის შეცდომა: ${error.message}`, 'error');
+                showAlert('danger', 'გენერაციისას მოხდა შეცდომა');
+                console.error('Generation error:', error);
+            } finally {
+                // Reset button state
+                btnContent.style.display = 'inline-block';
+                loadingSpinner.style.display = 'none';
+                submitBtn.disabled = false;
+                addGenerationLog('XML გენერაციის პროცესი დასრულდა', 'info');
+            }
+        }
+
+        // Download generated file
+        function downloadGeneratedFile(filename) {
+            try {
+                addGenerationLog(`ჩამოტვირთვის URL ქმნება: ${filename}`, 'info');
+                
+                // Create download URL
+                const downloadUrl = `/download/${encodeURIComponent(filename)}`;
+                
+                // Create temporary download link
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.download = filename;
+                link.style.display = 'none';
+                
+                // Add to DOM, click, and remove
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                addGenerationLog(`✓ ფაილი ჩამოტვირთვისთვის გამოიგზავნა: ${filename}`, 'success');
+                
+                // Also show a manual download link in case auto-download fails
+                setTimeout(() => {
+                    showDownloadLink(filename, downloadUrl);
+                }, 1000);
+                
+            } catch (error) {
+                addGenerationLog(`✗ ჩამოტვირთვისას შეცდომა: ${error.message}`, 'error');
+                console.error('Download error:', error);
+            }
+        }
+
+        // Show manual download link
+        function showDownloadLink(filename, downloadUrl) {
+            const alertContainer = document.getElementById('alertContainer');
+            const downloadAlertId = 'download-alert-' + Date.now();
+            
+            const downloadAlertHTML = `
+                <div class="alert alert-info alert-dismissible fade show" role="alert" id="${downloadAlertId}">
+                    <i class="bi bi-download me-2"></i>
+                    <strong>ჩამოტვირთვა:</strong> 
+                    <a href="${downloadUrl}" download="${filename}" class="alert-link">
+                        <i class="bi bi-file-earmark-arrow-down me-1"></i>
+                        ${filename}
+                    </a>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            alertContainer.insertAdjacentHTML('beforeend', downloadAlertHTML);
+            
+            // Auto-remove after 30 seconds
+            setTimeout(() => {
+                const alertElement = document.getElementById(downloadAlertId);
+                if (alertElement) {
+                    const alert = new bootstrap.Alert(alertElement);
+                    alert.close();
+                }
+            }, 30000);
+        }
+
+        // Handle file upload
+        async function handleFileUpload(file, type) {
+            if (!file) return;
+
+            addSystemLog(`ფაილის ატვირთვა დაიწყო: ${file.name} (${type})`, 'info');
+            
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                addSystemLog('ფაილი იგზავნება სერვერზე...', 'info');
+                
+                const response = await fetch('/api/example-files/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    addSystemLog(`✓ ფაილი წარმატებით აიტვირთა: ${data.filename}`, 'success');
+                    showAlert('success', `ფაილი ${data.filename} წარმატებით აიტვირთა`);
+                    loadExampleFiles(); // Reload files
+                } else {
+                    addSystemLog(`✗ ფაილის ატვირთვისას შეცდომა: ${data.error}`, 'error');
+                    showAlert('danger', data.error || 'ფაილის ატვირთვისას მოხდა შეცდომა');
+                }
+            } catch (error) {
+                addSystemLog(`✗ ნეტვორკის შეცდომა: ${error.message}`, 'error');
+                showAlert('danger', 'ფაილის ატვირთვისას მოხდა შეცდომა');
+                console.error('File upload error:', error);
+            }
+        }
+
+        // Show alert
+        function showAlert(type, message) {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertId = 'alert-' + Date.now();
+            
+            const alertHTML = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert" id="${alertId}">
+                    <i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            alertContainer.insertAdjacentHTML('beforeend', alertHTML);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                const alertElement = document.getElementById(alertId);
+                if (alertElement) {
+                    const alert = new bootstrap.Alert(alertElement);
+                    alert.close();
+                }
+            }, 5000);
+        }
+
+        // Drag and drop functionality
+        function setupDragAndDrop() {
+            const uploadAreas = document.querySelectorAll('.upload-area');
+            
+            uploadAreas.forEach(area => {
+                area.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    this.classList.add('dragover');
+                });
+
+                area.addEventListener('dragleave', function(e) {
+                    e.preventDefault();
+                    this.classList.remove('dragover');
+                });
+
+                area.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    this.classList.remove('dragover');
+                    
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        const fileType = this.id.includes('reference5g') ? 'xml' : 'excel';
+                        handleFileUpload(files[0], fileType);
+                    }
+                });
+            });
+        }
+
+        // Initialize drag and drop after DOM is loaded
+        document.addEventListener('DOMContentLoaded', setupDragAndDrop);
+    </script>
 </body>
-</html> 
+</html>
