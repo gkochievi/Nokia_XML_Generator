@@ -185,10 +185,12 @@ def modernization():
             existing_bts_id = parser.extract_bts_id(existing_tree)
             existing_sctp_port = parser.extract_sctp_port_min(existing_tree)
             existing_2g_params = parser.extract_2g_parameters(existing_tree)
+            existing_4g_cells = parser.extract_4g_cells(existing_tree)
             logger.info(f"Existing station btsName: {existing_bts_name}")
             logger.info(f"Existing station BTS ID: {existing_bts_id}")
             logger.info(f"Existing station sctpPortMin: {existing_sctp_port}")
             logger.info(f"Existing station 2G params: {existing_2g_params}")
+            logger.info(f"Existing station 4G cells: {existing_4g_cells}")
             
             # Extract reference template data
             reference_tree = parser.parse_file(file_paths['reference5gXml'])
@@ -196,10 +198,12 @@ def modernization():
             reference_bts_id = parser.extract_bts_id(reference_tree)
             reference_sctp_port = parser.extract_sctp_port_min(reference_tree)
             reference_2g_params = parser.extract_2g_parameters(reference_tree)
+            reference_4g_cells = parser.extract_4g_cells(reference_tree)
             logger.info(f"Reference template btsName: {reference_bts_name}")
             logger.info(f"Reference template BTS ID: {reference_bts_id}")
             logger.info(f"Reference template sctpPortMin: {reference_sctp_port}")
             logger.info(f"Reference template 2G params: {reference_2g_params}")
+            logger.info(f"Reference template 4G cells: {reference_4g_cells}")
             
             if not existing_bts_name:
                 return jsonify({'error': 'არსებული XML ფაილში btsName ვერ მოიძებნა'}), 400
@@ -245,10 +249,13 @@ def modernization():
                 'reference_sctp_port': reference_sctp_port,
                 'existing_2g_params': existing_2g_params,
                 'reference_2g_params': reference_2g_params,
+                'existing_4g_cells': existing_4g_cells,
+                'reference_4g_cells': reference_4g_cells,
                 'replacement_performed': bool(existing_bts_name and reference_bts_name),
                 'bts_id_replacement_performed': bool(existing_bts_id and reference_bts_id),
                 'sctp_port_replacement_performed': bool(existing_sctp_port and reference_sctp_port),
-                'params_2g_replacement_performed': bool(existing_2g_params and reference_2g_params)
+                'params_2g_replacement_performed': bool(existing_2g_params and reference_2g_params),
+                'cells_4g_replacement_performed': bool(existing_4g_cells and reference_4g_cells)
             }
         })
         
@@ -632,6 +639,261 @@ def extract_2g_params():
         logger.error(f"Error extracting 2G parameters: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/extract-4g-cells', methods=['POST'])
+def extract_4g_cells():
+    """Extract 4G cell parameters from uploaded XML file"""
+    try:
+        if 'xmlFile' not in request.files:
+            return jsonify({'error': 'No XML file provided'}), 400
+        
+        file = request.files['xmlFile']
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        if not file.filename.lower().endswith('.xml'):
+            return jsonify({'error': 'File must be an XML file'}), 400
+        
+        # Save file temporarily
+        import tempfile
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.xml') as tmp_file:
+            file.save(tmp_file.name)
+            temp_path = tmp_file.name
+        
+        try:
+            # Parse XML and extract 4G cell parameters
+            parser = XMLParser()
+            tree = parser.parse_file(temp_path)
+            
+            # Get debugging info
+            root = tree.getroot()
+            debug_info = {
+                'root_tag': root.tag,
+                'root_attributes': dict(root.attrib),
+                'namespaces': dict(root.nsmap) if hasattr(root, 'nsmap') else {},
+                'managed_objects': [],
+                'xpath_tests': {}
+            }
+            
+            # Test different XPath patterns for debugging
+            xpath_tests = [
+                "//managedObject",
+                "//*[local-name()='managedObject']"
+            ]
+            
+            for xpath in xpath_tests:
+                try:
+                    found = tree.xpath(xpath)
+                    debug_info['xpath_tests'][xpath] = len(found)
+                except Exception as e:
+                    debug_info['xpath_tests'][xpath] = f"Error: {str(e)}"
+            
+            # Find all managedObject elements for debugging (try both patterns)
+            all_managed_objects = tree.xpath("//*[local-name()='managedObject']")
+            if not all_managed_objects:
+                all_managed_objects = tree.xpath("//managedObject")
+            
+            for obj in all_managed_objects:
+                debug_info['managed_objects'].append({
+                    'class': obj.get('class'),
+                    'distName': obj.get('distName'),
+                    'operation': obj.get('operation'),
+                    'tag': obj.tag
+                })
+            
+            cells_4g = parser.extract_4g_cells(tree)
+            
+            if cells_4g:
+                return jsonify({
+                    'success': True, 
+                    'cells4g': cells_4g,
+                    'debug': debug_info
+                })
+            else:
+                return jsonify({
+                    'success': False, 
+                    'error': '4G cell parameters not found in XML file',
+                    'debug': debug_info
+                })
+                
+        finally:
+            # Clean up temporary file
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
+        
+    except Exception as e:
+        logger.error(f"Error extracting 4G cell parameters: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/extract-4g-rootseq', methods=['POST'])
+def extract_4g_rootseq():
+    """Extract 4G rootSeqIndex parameters from uploaded XML file"""
+    try:
+        if 'xmlFile' not in request.files:
+            return jsonify({'error': 'No XML file provided'}), 400
+        
+        file = request.files['xmlFile']
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        if not file.filename.lower().endswith('.xml'):
+            return jsonify({'error': 'File must be an XML file'}), 400
+        
+        # Save file temporarily
+        import tempfile
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.xml') as tmp_file:
+            file.save(tmp_file.name)
+            temp_path = tmp_file.name
+        
+        try:
+            # Parse XML and extract 4G rootSeqIndex parameters
+            parser = XMLParser()
+            tree = parser.parse_file(temp_path)
+            
+            # Get debugging info
+            root = tree.getroot()
+            debug_info = {
+                'root_tag': root.tag,
+                'root_attributes': dict(root.attrib),
+                'namespaces': dict(root.nsmap) if hasattr(root, 'nsmap') else {},
+                'managed_objects': [],
+                'xpath_tests': {}
+            }
+            
+            # Test different XPath patterns for debugging
+            xpath_tests = [
+                "//managedObject[@class='NOKLTE:LNCEL_FDD']",
+                "//*[local-name()='managedObject'][@class='NOKLTE:LNCEL_FDD']"
+            ]
+            
+            for xpath in xpath_tests:
+                try:
+                    found = tree.xpath(xpath)
+                    debug_info['xpath_tests'][xpath] = len(found)
+                except Exception as e:
+                    debug_info['xpath_tests'][xpath] = f"Error: {str(e)}"
+            
+            # Find all LNCEL_FDD managedObject elements for debugging
+            all_managed_objects = tree.xpath("//*[local-name()='managedObject'][contains(@class, 'LNCEL_FDD')]")
+            if not all_managed_objects:
+                all_managed_objects = tree.xpath("//managedObject[contains(@class, 'LNCEL_FDD')]")
+            
+            for obj in all_managed_objects:
+                debug_info['managed_objects'].append({
+                    'class': obj.get('class'),
+                    'distName': obj.get('distName'),
+                    'operation': obj.get('operation'),
+                    'tag': obj.tag
+                })
+            
+            rootseq_4g = parser.extract_4g_rootseq(tree)
+            
+            if rootseq_4g:
+                return jsonify({
+                    'success': True, 
+                    'rootseq4g': rootseq_4g,
+                    'debug': debug_info
+                })
+            else:
+                return jsonify({
+                    'success': False, 
+                    'error': '4G rootSeqIndex parameters not found in XML file',
+                    'debug': debug_info
+                })
+                
+        finally:
+            # Clean up temporary file
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
+        
+    except Exception as e:
+        logger.error(f"Error extracting 4G rootSeqIndex parameters: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/extract-5g-nrcells', methods=['POST'])
+def extract_5g_nrcells():
+    """Extract 5G NRCELL physCellId parameters from uploaded XML file"""
+    try:
+        if 'xmlFile' not in request.files:
+            return jsonify({'error': 'No XML file provided'}), 400
+        
+        file = request.files['xmlFile']
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        if not file.filename.lower().endswith('.xml'):
+            return jsonify({'error': 'File must be an XML file'}), 400
+        
+        # Save file temporarily
+        import tempfile
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.xml') as tmp_file:
+            file.save(tmp_file.name)
+            temp_path = tmp_file.name
+        
+        try:
+            # Parse XML and extract 5G NRCELL parameters
+            parser = XMLParser()
+            tree = parser.parse_file(temp_path)
+            
+            # Get debugging info
+            root = tree.getroot()
+            debug_info = {
+                'root_tag': root.tag,
+                'root_attributes': dict(root.attrib),
+                'namespaces': dict(root.nsmap) if hasattr(root, 'nsmap') else {},
+                'managed_objects': [],
+                'xpath_tests': {}
+            }
+            
+            # Test different XPath patterns for debugging
+            xpath_tests = [
+                "//managedObject[@class='com.nokia.srbts.nrbts:NRCELL']",
+                "//*[local-name()='managedObject'][@class='com.nokia.srbts.nrbts:NRCELL']"
+            ]
+            
+            for xpath in xpath_tests:
+                try:
+                    found = tree.xpath(xpath)
+                    debug_info['xpath_tests'][xpath] = len(found)
+                except Exception as e:
+                    debug_info['xpath_tests'][xpath] = f"Error: {str(e)}"
+            
+            # Find all NRCELL managedObject elements for debugging
+            all_managed_objects = tree.xpath("//*[local-name()='managedObject'][contains(@class, 'NRCELL')]")
+            if not all_managed_objects:
+                all_managed_objects = tree.xpath("//managedObject[contains(@class, 'NRCELL')]")
+            
+            for obj in all_managed_objects:
+                debug_info['managed_objects'].append({
+                    'class': obj.get('class'),
+                    'distName': obj.get('distName'),
+                    'operation': obj.get('operation'),
+                    'tag': obj.tag
+                })
+            
+            nrcells_5g = parser.extract_5g_nrcells(tree)
+            
+            if nrcells_5g:
+                return jsonify({
+                    'success': True, 
+                    'nrcells5g': nrcells_5g,
+                    'debug': debug_info
+                })
+            else:
+                return jsonify({
+                    'success': False, 
+                    'error': '5G NRCELL physCellId parameters not found in XML file',
+                    'debug': debug_info
+                })
+                
+        finally:
+            # Clean up temporary file
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
+        
+    except Exception as e:
+        logger.error(f"Error extracting 5G NRCELL parameters: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/example-files/xml', methods=['GET'])
 def list_example_xml_files():
     """List all XML files in example_files directory"""
@@ -798,6 +1060,87 @@ def extract_2g_params_from_example_file(filename):
             
     except Exception as e:
         logger.error(f"Error extracting 2G parameters from example file: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/example-files/extract-4g-cells/<filename>', methods=['GET'])
+def extract_4g_cells_from_example_file(filename):
+    """Extract 4G cell parameters from a file in example_files directory"""
+    try:
+        filename = secure_filename(filename)
+        file_path = os.path.join(app.config['EXAMPLE_FILES_FOLDER'], filename)
+        
+        if not os.path.exists(file_path):
+            return jsonify({'error': 'File not found'}), 404
+        
+        if not filename.lower().endswith('.xml'):
+            return jsonify({'error': 'File must be an XML file'}), 400
+        
+        # Parse XML and extract 4G cell parameters
+        parser = XMLParser()
+        tree = parser.parse_file(file_path)
+        cells_4g = parser.extract_4g_cells(tree)
+        
+        if cells_4g:
+            return jsonify({'success': True, 'cells4g': cells_4g, 'filename': filename})
+        else:
+            return jsonify({'success': False, 'error': '4G cell parameters not found in XML file', 'filename': filename})
+            
+    except Exception as e:
+        logger.error(f"Error extracting 4G cell parameters from example file: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/example-files/extract-4g-rootseq/<filename>', methods=['GET'])
+def extract_4g_rootseq_from_example_file(filename):
+    """Extract 4G rootSeqIndex parameters from a file in example_files directory"""
+    try:
+        filename = secure_filename(filename)
+        file_path = os.path.join(app.config['EXAMPLE_FILES_FOLDER'], filename)
+        
+        if not os.path.exists(file_path):
+            return jsonify({'error': 'File not found'}), 404
+        
+        if not filename.lower().endswith('.xml'):
+            return jsonify({'error': 'File must be an XML file'}), 400
+        
+        # Parse XML and extract 4G rootSeqIndex parameters
+        parser = XMLParser()
+        tree = parser.parse_file(file_path)
+        rootseq_4g = parser.extract_4g_rootseq(tree)
+        
+        if rootseq_4g:
+            return jsonify({'success': True, 'rootseq4g': rootseq_4g, 'filename': filename})
+        else:
+            return jsonify({'success': False, 'error': '4G rootSeqIndex parameters not found in XML file', 'filename': filename})
+            
+    except Exception as e:
+        logger.error(f"Error extracting 4G rootSeqIndex parameters from example file: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/example-files/extract-5g-nrcells/<filename>', methods=['GET'])
+def extract_5g_nrcells_from_example_file(filename):
+    """Extract 5G NRCELL physCellId parameters from a file in example_files directory"""
+    try:
+        filename = secure_filename(filename)
+        file_path = os.path.join(app.config['EXAMPLE_FILES_FOLDER'], filename)
+        
+        if not os.path.exists(file_path):
+            return jsonify({'error': 'File not found'}), 404
+        
+        if not filename.lower().endswith('.xml'):
+            return jsonify({'error': 'File must be an XML file'}), 400
+        
+        # Parse XML and extract 5G NRCELL parameters
+        parser = XMLParser()
+        tree = parser.parse_file(file_path)
+        nrcells_5g = parser.extract_5g_nrcells(tree)
+        
+        if nrcells_5g:
+            return jsonify({'success': True, 'nrcells5g': nrcells_5g, 'filename': filename})
+        else:
+            return jsonify({'success': False, 'error': '5G NRCELL physCellId parameters not found in XML file', 'filename': filename})
+            
+    except Exception as e:
+        logger.error(f"Error extracting 5G NRCELL parameters from example file: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/download/<filename>')

@@ -407,3 +407,287 @@ class XMLParser:
             import traceback
             logger.error(f"Traceback: {traceback.format_exc()}")
             return None
+    
+    def extract_4g_cells(self, tree):
+        """Extract 4G cell parameters from LNCEL managedObjects"""
+        try:
+            logger.info("Starting 4G cell parameters extraction...")
+            
+            # Debug: Print root element info
+            root = tree.getroot()
+            logger.info(f"Root element: {root.tag}, attributes: {root.attrib}")
+            
+            # Try different XPath patterns for LNCEL (with namespace handling)
+            xpath_patterns = [
+                "//managedObject[@class='NOKLTE:LNCEL']",  # Standard
+                "//*[local-name()='managedObject'][@class='NOKLTE:LNCEL']",  # Namespace-agnostic
+                "//managedObject[contains(@class, 'LNCEL')]",  # Contains LNCEL
+                "//*[local-name()='managedObject'][contains(@class, 'LNCEL')]",  # Namespace-agnostic contains
+                "//managedObject[contains(@distName, 'LNCEL')]",  # DistName contains LNCEL
+                "//*[local-name()='managedObject'][contains(@distName, 'LNCEL')]"  # Namespace-agnostic distName
+            ]
+            
+            lncel_objects = []
+            for pattern in xpath_patterns:
+                found = tree.xpath(pattern)
+                logger.info(f"XPath '{pattern}' found {len(found)} elements")
+                if found:
+                    lncel_objects = found
+                    logger.info(f"Successfully found LNCEL objects using pattern: {pattern}")
+                    break
+            
+            if not lncel_objects:
+                logger.info("No LNCEL managedObjects found - this station does not have 4G cells")
+                return None
+            
+            logger.info(f"Found {len(lncel_objects)} LNCEL objects (4G cells)")
+            
+            # Extract parameters from each cell  
+            cells_data = {}
+            params_to_extract = ['phyCellId', 'tac']
+            
+            for i, lncel in enumerate(lncel_objects):
+                dist_name = lncel.get('distName')
+                class_name = lncel.get('class')
+                logger.info(f"Processing LNCEL {i+1}: class='{class_name}', distName='{dist_name}'")
+                
+                # Extract cell ID from distName (LNCEL-XX)
+                import re
+                cell_id_match = re.search(r'LNCEL-(\d+)', dist_name) if dist_name else None
+                if cell_id_match:
+                    full_cell_id = f"LNCEL-{cell_id_match.group(1)}"
+                    logger.info(f"Found cell ID: {full_cell_id}")
+                else:
+                    logger.warning(f"Could not extract cell ID from distName: '{dist_name}'")
+                    continue
+                
+                # Extract parameters for this cell
+                cell_params = {}
+                for param_name in params_to_extract:
+                    # phyCellId and tac are directly in LNCEL
+                    param_patterns = [
+                        f".//p[@name='{param_name}']",  # Standard
+                        f".//*[local-name()='p'][@name='{param_name}']"  # Namespace-agnostic
+                    ]
+                    
+                    param_element = None
+                    for param_pattern in param_patterns:
+                        found_param = lncel.xpath(param_pattern)
+                        logger.info(f"Cell {full_cell_id} parameter '{param_name}' pattern '{param_pattern}' found {len(found_param)} elements")
+                        if found_param:
+                            param_element = found_param[0]
+                            break
+                    
+                    if param_element is not None and param_element.text:
+                        param_value = param_element.text.strip()
+                        cell_params[param_name] = param_value
+                        logger.info(f"Found {full_cell_id} {param_name}: '{param_value}'")
+                    else:
+                        logger.warning(f"Parameter {param_name} not found in cell {full_cell_id}")
+                
+                # Store cell data if we found any parameters
+                if cell_params:
+                    cells_data[full_cell_id] = cell_params
+                    logger.info(f"Stored cell {full_cell_id} with {len(cell_params)} parameters")
+                else:
+                    logger.warning(f"No parameters found for cell {full_cell_id}")
+            
+            if cells_data:
+                logger.info(f"Successfully extracted 4G cell data for {len(cells_data)} cells: {list(cells_data.keys())}")
+                return cells_data
+            else:
+                logger.info("No 4G cell parameters found")
+                return None
+            
+        except Exception as e:
+            logger.error(f"Error extracting 4G cell parameters: {str(e)}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            return None
+    
+    def extract_4g_rootseq(self, tree):
+        """Extract rootSeqIndex parameters from LNCEL_FDD managedObjects"""
+        try:
+            logger.info("Starting 4G rootSeqIndex extraction...")
+            
+            # Debug: Print root element info
+            root = tree.getroot()
+            logger.info(f"Root element: {root.tag}, attributes: {root.attrib}")
+            
+            # Try different XPath patterns for LNCEL_FDD (with namespace handling)
+            xpath_patterns = [
+                "//managedObject[@class='NOKLTE:LNCEL_FDD']",  # Standard
+                "//*[local-name()='managedObject'][@class='NOKLTE:LNCEL_FDD']",  # Namespace-agnostic
+                "//managedObject[contains(@class, 'LNCEL_FDD')]",  # Contains LNCEL_FDD
+                "//*[local-name()='managedObject'][contains(@class, 'LNCEL_FDD')]",  # Namespace-agnostic contains
+                "//managedObject[contains(@distName, 'LNCEL_FDD')]",  # DistName contains LNCEL_FDD
+                "//*[local-name()='managedObject'][contains(@distName, 'LNCEL_FDD')]"  # Namespace-agnostic distName
+            ]
+            
+            lncel_fdd_objects = []
+            for pattern in xpath_patterns:
+                found = tree.xpath(pattern)
+                logger.info(f"XPath '{pattern}' found {len(found)} LNCEL_FDD elements")
+                if found:
+                    lncel_fdd_objects = found
+                    logger.info(f"Successfully found LNCEL_FDD objects using pattern: {pattern}")
+                    break
+            
+            if not lncel_fdd_objects:
+                logger.info("No LNCEL_FDD managedObjects found - this station does not have 4G FDD cells")
+                return None
+            
+            logger.info(f"Found {len(lncel_fdd_objects)} LNCEL_FDD objects")
+            
+            # Extract rootSeqIndex from each LNCEL_FDD
+            rootseq_data = {}
+            
+            for i, lncel_fdd in enumerate(lncel_fdd_objects):
+                dist_name = lncel_fdd.get('distName')
+                class_name = lncel_fdd.get('class')
+                logger.info(f"Processing LNCEL_FDD {i+1}: class='{class_name}', distName='{dist_name}'")
+                
+                # Extract cell ID from distName (LNCEL-XX)
+                # distName example: "MRBTS-90134/LNBTS-90134/LNCEL-11/LNCEL_FDD-0"
+                import re
+                cell_id_match = re.search(r'LNCEL-(\d+)', dist_name) if dist_name else None
+                if cell_id_match:
+                    full_cell_id = f"LNCEL-{cell_id_match.group(1)}"
+                    logger.info(f"Found cell ID: {full_cell_id}")
+                else:
+                    logger.warning(f"Could not extract cell ID from distName: '{dist_name}'")
+                    continue
+                
+                # Find rootSeqIndex parameter (with namespace handling)
+                param_patterns = [
+                    ".//p[@name='rootSeqIndex']",  # Standard
+                    ".//*[local-name()='p'][@name='rootSeqIndex']"  # Namespace-agnostic
+                ]
+                
+                param_element = None
+                for param_pattern in param_patterns:
+                    found_param = lncel_fdd.xpath(param_pattern)
+                    logger.info(f"Cell {full_cell_id} rootSeqIndex pattern '{param_pattern}' found {len(found_param)} elements")
+                    if found_param:
+                        param_element = found_param[0]
+                        break
+                
+                if param_element is not None and param_element.text:
+                    param_value = param_element.text.strip()
+                    rootseq_data[full_cell_id] = {'rootSeqIndex': param_value}
+                    logger.info(f"Found {full_cell_id} rootSeqIndex: '{param_value}'")
+                else:
+                    logger.warning(f"rootSeqIndex not found in cell {full_cell_id}")
+            
+            if rootseq_data:
+                logger.info(f"Successfully extracted rootSeqIndex data for {len(rootseq_data)} cells: {list(rootseq_data.keys())}")
+                return rootseq_data
+            else:
+                logger.info("No rootSeqIndex parameters found")
+                return None
+            
+        except Exception as e:
+            logger.error(f"Error extracting 4G rootSeqIndex: {str(e)}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            return None
+    
+    def extract_5g_nrcells(self, tree):
+        """Extract 5G physCellId parameters from NRCELL managedObjects"""
+        try:
+            logger.info("Starting 5G NRCELL physCellId extraction...")
+            
+            # Debug: Print root element info
+            root = tree.getroot()
+            logger.info(f"Root element: {root.tag}, attributes: {root.attrib}")
+            
+            # Try different XPath patterns for NRCELL (with namespace handling)
+            xpath_patterns = [
+                "//managedObject[@class='com.nokia.srbts.nrbts:NRCELL']",  # Standard
+                "//*[local-name()='managedObject'][@class='com.nokia.srbts.nrbts:NRCELL']",  # Namespace-agnostic
+                "//managedObject[contains(@class, 'NRCELL')]",  # Contains NRCELL
+                "//*[local-name()='managedObject'][contains(@class, 'NRCELL')]",  # Namespace-agnostic contains
+                "//managedObject[contains(@distName, 'NRCELL')]",  # DistName contains NRCELL
+                "//*[local-name()='managedObject'][contains(@distName, 'NRCELL')]"  # Namespace-agnostic distName
+            ]
+            
+            nrcell_objects = []
+            for pattern in xpath_patterns:
+                found = tree.xpath(pattern)
+                logger.info(f"XPath '{pattern}' found {len(found)} NRCELL elements")
+                if found:
+                    nrcell_objects = found
+                    logger.info(f"Successfully found NRCELL objects using pattern: {pattern}")
+                    break
+            
+            if not nrcell_objects:
+                logger.info("No NRCELL managedObjects found - this station does not have 5G cells")
+                return None
+            
+            logger.info(f"Found {len(nrcell_objects)} NRCELL objects")
+            
+            # Extract physCellId from each NRCELL
+            nrcell_data = {}
+            
+            for i, nrcell in enumerate(nrcell_objects):
+                dist_name = nrcell.get('distName')
+                class_name = nrcell.get('class')
+                logger.info(f"Processing NRCELL {i+1}: class='{class_name}', distName='{dist_name}'")
+                
+                # Extract cell ID from distName (NRCELL-XXX)
+                # distName example: "MRBTS-90134/NRBTS-90134/NRCELL-111"
+                import re
+                cell_id_match = re.search(r'NRCELL-(\d+)', dist_name) if dist_name else None
+                if cell_id_match:
+                    full_cell_id = f"NRCELL-{cell_id_match.group(1)}"
+                    cell_number = cell_id_match.group(1)
+                    
+                    # Map NRCELL to corresponding LNCEL (last 2 digits)
+                    # NRCELL-111 -> LNCEL-11, NRCELL-311 -> LNCEL-11, etc.
+                    if len(cell_number) >= 2:
+                        lncel_number = cell_number[-2:]  # Last 2 digits
+                        mapped_lncel_id = f"LNCEL-{lncel_number}"
+                        logger.info(f"Found 5G cell ID: {full_cell_id} → maps to 4G: {mapped_lncel_id}")
+                    else:
+                        logger.warning(f"Could not map NRCELL ID to LNCEL: '{cell_number}'")
+                        continue
+                else:
+                    logger.warning(f"Could not extract cell ID from distName: '{dist_name}'")
+                    continue
+                
+                # Find physCellId parameter (with namespace handling)
+                param_patterns = [
+                    ".//p[@name='physCellId']",  # Standard
+                    ".//*[local-name()='p'][@name='physCellId']"  # Namespace-agnostic
+                ]
+                
+                param_element = None
+                for param_pattern in param_patterns:
+                    found_param = nrcell.xpath(param_pattern)
+                    logger.info(f"Cell {full_cell_id} physCellId pattern '{param_pattern}' found {len(found_param)} elements")
+                    if found_param:
+                        param_element = found_param[0]
+                        break
+                
+                if param_element is not None and param_element.text:
+                    param_value = param_element.text.strip()
+                    nrcell_data[mapped_lncel_id] = {
+                        'nrcell_id': full_cell_id,
+                        'physCellId': param_value
+                    }
+                    logger.info(f"Found {full_cell_id} physCellId: '{param_value}' (mapped to {mapped_lncel_id})")
+                else:
+                    logger.warning(f"physCellId not found in cell {full_cell_id}")
+            
+            if nrcell_data:
+                logger.info(f"Successfully extracted 5G NRCELL data for {len(nrcell_data)} mapped cells: {list(nrcell_data.keys())}")
+                return nrcell_data
+            else:
+                logger.info("No 5G NRCELL physCellId parameters found")
+                return None
+            
+        except Exception as e:
+            logger.error(f"Error extracting 5G NRCELL physCellId: {str(e)}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            return None
