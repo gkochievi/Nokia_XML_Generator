@@ -671,8 +671,9 @@ class XMLParser:
                 
                 if param_element is not None and param_element.text:
                     param_value = param_element.text.strip()
-                    nrcell_data[mapped_lncel_id] = {
-                        'nrcell_id': full_cell_id,
+                    # Use NRCELL ID as key instead of mapped LNCEL to avoid overwrites
+                    nrcell_data[full_cell_id] = {
+                        'mapped_lncel': mapped_lncel_id,
                         'physCellId': param_value
                     }
                     logger.info(f"Found {full_cell_id} physCellId: '{param_value}' (mapped to {mapped_lncel_id})")

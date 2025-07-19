@@ -502,21 +502,22 @@ class ModernizationGenerator:
         
         import re
         
-        # Process each mapped cell
-        for lncel_id in old_nrcells.keys():
-            if lncel_id in new_4g_cells:
-                logger.info(f"Processing NRCELL physCellId mapping: {lncel_id}")
-                
-                # Get the NRCELL info and old physCellId
-                nrcell_info = old_nrcells[lncel_id]
-                nrcell_id = nrcell_info['nrcell_id']  # e.g., "NRCELL-111"
-                old_phys_cell_id = nrcell_info['physCellId']
-                
+        # Process each NRCELL
+        for nrcell_id in old_nrcells.keys():
+            logger.info(f"Processing NRCELL physCellId: {nrcell_id}")
+            
+            # Get the NRCELL info and old physCellId
+            nrcell_info = old_nrcells[nrcell_id]
+            mapped_lncel_id = nrcell_info['mapped_lncel']  # e.g., "LNCEL-11"
+            old_phys_cell_id = nrcell_info['physCellId']
+            
+            # Check if the mapped LNCEL exists in new 4G cells
+            if mapped_lncel_id in new_4g_cells:
                 # Get new physCellId from 4G LNCEL
-                if 'phyCellId' in new_4g_cells[lncel_id]:
-                    new_phys_cell_id = new_4g_cells[lncel_id]['phyCellId']
+                if 'phyCellId' in new_4g_cells[mapped_lncel_id]:
+                    new_phys_cell_id = new_4g_cells[mapped_lncel_id]['phyCellId']
                     
-                    logger.info(f"Mapping {nrcell_id} (old physCellId: {old_phys_cell_id}) → {lncel_id} (new physCellId: {new_phys_cell_id})")
+                    logger.info(f"Mapping {nrcell_id} (old physCellId: {old_phys_cell_id}) → {mapped_lncel_id} (new physCellId: {new_phys_cell_id})")
                     
                     # Pattern to find NRCELL managedObject that contains the specific NRCELL ID in distName
                     # and then the physCellId parameter within it
@@ -540,9 +541,9 @@ class ModernizationGenerator:
                     else:
                         logger.warning(f"No instances of {nrcell_id} physCellId '{old_phys_cell_id}' found for replacement")
                 else:
-                    logger.warning(f"phyCellId not found in 4G cell {lncel_id} for mapping to {nrcell_id}")
+                    logger.warning(f"phyCellId not found in 4G cell {mapped_lncel_id} for mapping to {nrcell_id}")
             else:
-                logger.info(f"Mapped 4G cell {lncel_id} not found in existing station for 5G mapping")
+                logger.info(f"Mapped 4G cell {mapped_lncel_id} not found in existing station for 5G mapping")
         
         logger.info(f"Total 5G NRCELL physCellId replacements made: {total_replacements}")
         return xml_content
