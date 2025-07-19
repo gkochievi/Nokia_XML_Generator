@@ -63,6 +63,14 @@ def main():
 def index():
     return render_template('index.html')
 
+@app.route('/modernization')
+def show_modernization():
+    return render_template('modernization.html')
+
+@app.route('/rollout')
+def show_rollout():
+    return render_template('rollout.html')
+
 @app.route('/api/view-xml', methods=['POST'])
 def view_xml():
     """Parse and view XML configuration file"""

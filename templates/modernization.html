@@ -52,6 +52,84 @@
             box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
         }
 
+        /* Navigation styling for all screen sizes */
+        .navbar {
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1) !important;
+            z-index: 9999 !important;
+            display: block !important;
+            visibility: visible !important;
+            position: relative !important;
+            width: 100% !important;
+            min-height: 60px !important;
+        }
+
+        .navbar-brand {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .nav-link {
+            font-weight: 500;
+            font-size: 1rem;
+            padding: 0.5rem 0.75rem !important;
+            margin: 0 0.25rem;
+            border-radius: 0.375rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.1) !important;
+            color: white !important;
+            transform: translateY(-1px);
+        }
+
+        /* Ensure navbar is visible on all desktop sizes */
+        @media (min-width: 992px) {
+            .navbar-nav {
+                display: flex !important;
+                visibility: visible !important;
+                flex-direction: row !important;
+                align-items: center !important;
+            }
+            
+            .navbar-collapse {
+                display: flex !important;
+                flex-basis: auto;
+                visibility: visible !important;
+            }
+            
+            .nav-item {
+                display: block !important;
+                visibility: visible !important;
+            }
+            
+            .nav-link {
+                display: block !important;
+                visibility: visible !important;
+            }
+        }
+
+        /* Mobile navbar styling */
+        @media (max-width: 991.98px) {
+            .navbar-nav {
+                background-color: rgba(102, 126, 234, 0.95) !important;
+                border-radius: 0.5rem;
+                padding: 1rem;
+                margin-top: 1rem;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            }
+            
+            .nav-link {
+                margin: 0.25rem 0;
+                color: rgba(255, 255, 255, 0.9) !important;
+            }
+            
+            .nav-link:hover {
+                background-color: rgba(255, 255, 255, 0.1) !important;
+                color: white !important;
+            }
+        }
+
         .upload-area {
             border: 2px dashed #dee2e6;
             transition: all 0.3s ease;
@@ -151,6 +229,44 @@
     </style>
 </head>
 <body class="min-h-screen">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg" style="background: rgba(102, 126, 234, 0.9) !important; backdrop-filter: blur(15px); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2); padding: 0.75rem 0; display: block !important; visibility: visible !important; position: relative !important; z-index: 9999 !important; width: 100% !important; min-height: 60px !important;">
+        <div class="container-fluid" style="display: flex !important; visibility: visible !important;">
+            <a class="navbar-brand fw-bold d-flex align-items-center" href="/" style="color: white;">
+                <i class="bi bi-cpu me-2" style="font-size: 1.5rem;"></i>
+                Nokia WebEM
+            </a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
+                    style="box-shadow: none; outline: none;">
+                <span class="navbar-toggler-icon" style="background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAiIGhlaWdodD0iMzAiIHZpZXdCb3g9IjAgMCAzMCAzMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTYgOUgyNEg2WiIgZmlsbD0iI2ZmZmZmZiIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjIiLz4KPHBhdGggZD0iTTYgMTVIMjRINloiIGZpbGw9IiNmZmZmZmYiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSIyIi8+CjxwYXRoIGQ9Ik02IDIxSDI0SDZaIiBmaWxsPSIjZmZmZmZmIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K');"></span>
+            </button>
+            <div class="navbar-collapse show" id="navbarNav" style="display: flex !important; visibility: visible !important;">
+                <ul class="navbar-nav ms-auto" style="display: flex !important; visibility: visible !important; flex-direction: row !important; align-items: center !important;">
+                    <li class="nav-item" style="display: block !important; visibility: visible !important;">
+                        <a class="nav-link px-3 py-2" href="/" style="color: rgba(255, 255, 255, 0.8) !important; font-weight: 500; display: block !important; visibility: visible !important; transition: all 0.3s ease;">
+                            <i class="bi bi-house me-1"></i>მთავარი
+                        </a>
+                    </li>
+                    <li class="nav-item" style="display: block !important; visibility: visible !important;">
+                        <a class="nav-link px-3 py-2 rounded-2 mx-1" href="/modernization" style="background: rgba(255, 255, 255, 0.2) !important; color: white !important; font-weight: 600; display: block !important; visibility: visible !important; border: 1px solid rgba(255, 255, 255, 0.3); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);">
+                            <i class="bi bi-arrow-repeat me-1"></i>5G Modernization
+                        </a>
+                    </li>
+                    <li class="nav-item" style="display: block !important; visibility: visible !important;">
+                        <a class="nav-link px-3 py-2" href="/rollout" style="color: rgba(255, 255, 255, 0.8) !important; font-weight: 500; display: block !important; visibility: visible !important; transition: all 0.3s ease;">
+                            <i class="bi bi-plus-circle me-1"></i>ახალი სადგური
+                        </a>
+                    </li>
+                    <li class="nav-item" style="display: block !important; visibility: visible !important;">
+                        <a class="nav-link px-3 py-2" href="/xml-viewer" style="color: rgba(255, 255, 255, 0.8) !important; font-weight: 500; display: block !important; visibility: visible !important; transition: all 0.3s ease;">
+                            <i class="bi bi-file-earmark-code me-1"></i>XML Viewer
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
     <div class="container-fluid py-4">
         <div class="row justify-content-center">
             <div class="col-12 col-lg-10 col-xl-8">
@@ -346,7 +462,28 @@
     </div>
 
     <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Navigation Enhancement Script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Fix mobile navigation collapse issue
+    const navbarToggler = document.querySelector('.navbar-toggler');
+    const navbarCollapse = document.querySelector('.navbar-collapse');
+    
+    // Close navbar on link click (mobile)
+    document.querySelectorAll('.navbar-nav .nav-link').forEach(link => {
+        link.addEventListener('click', function() {
+            if (window.innerWidth < 992) { // Only on mobile
+                const collapse = new bootstrap.Collapse(navbarCollapse, {
+                    toggle: false
+                });
+                collapse.hide();
+            }
+        });
+    });
+});
+</script>
     
 <script>
         // Global variables
@@ -713,19 +850,15 @@ const form = document.getElementById('modernizationForm');
                 
                 addExtractionLog('XML ფაილი იგზავნება სერვერზე ანალიზისთვის...', 'info');
 
-                // Extract btsName, btsId, sctpPortMin, 2G parameters, and 4G cells
+                // Extract btsName, btsId, sctpPortMin, and 2G parameters
                 const formData2 = new FormData();
                 formData2.append('xmlFile', file);
                 const formData3 = new FormData();
                 formData3.append('xmlFile', file);
                 const formData4 = new FormData();
                 formData4.append('xmlFile', file);
-                const formData5 = new FormData();
-                formData5.append('xmlFile', file);
-                const formData6 = new FormData();
-                formData6.append('xmlFile', file);
                 
-                const [btsNameResponse, btsIdResponse, sctpPortResponse, params2gResponse, cells4gResponse, rootseq4gResponse] = await Promise.all([
+                const [btsNameResponse, btsIdResponse, sctpPortResponse, params2gResponse] = await Promise.all([
                     fetch('/api/extract-bts-name', {
                         method: 'POST',
                         body: formData
@@ -741,14 +874,6 @@ const form = document.getElementById('modernizationForm');
                     fetch('/api/extract-2g-params', {
                         method: 'POST',
                         body: formData4
-                    }),
-                    fetch('/api/extract-4g-cells', {
-                        method: 'POST',
-                        body: formData5
-                    }),
-                    fetch('/api/extract-4g-rootseq', {
-                        method: 'POST',
-                        body: formData6
                     })
                 ]);
                 
@@ -756,17 +881,13 @@ const form = document.getElementById('modernizationForm');
                 const btsIdData = await btsIdResponse.json();
                 const sctpPortData = await sctpPortResponse.json();
                 const params2gData = await params2gResponse.json();
-                const cells4gData = await cells4gResponse.json();
-                const rootseq4gData = await rootseq4gResponse.json();
 
                 // Log debugging information to console
                 console.log('BTS Name extraction response:', btsNameData);
                 console.log('BTS ID extraction response:', btsIdData);
                 console.log('SCTP Port extraction response:', sctpPortData);
                 console.log('2G Parameters extraction response:', params2gData);
-                console.log('4G Cells extraction response:', cells4gData);
-                console.log('4G RootSeq extraction response:', rootseq4gData);
-                addExtractionLog('სერვერიდან პასუხი მოვიდა (ყველა პარამეტრი)', 'info');
+                addExtractionLog('სერვერიდან პასუხი მოვიდა (btsName, BTS ID, sctpPortMin და 2G პარამეტრები)', 'info');
                 
                 if (btsNameData.debug) {
                     console.log('XML Debug Info:');
@@ -825,36 +946,8 @@ const form = document.getElementById('modernizationForm');
                     addExtractionLog(`ℹ 2G პარამეტრები ვერ მოიძებნა (სადგური შეიძლება არ ქონდეს 2G)`, 'info');
                 }
                 
-                // Handle 4G cells result
-                if (cells4gData.success && cells4gData.cells4g) {
-                    const cells = cells4gData.cells4g;
-                    addExtractionLog(`✓ 4G ელემენტები წარმატებით ამოიღო:`, 'success');
-                    Object.entries(cells).forEach(([cellId, cellParams]) => {
-                        addExtractionLog(`  - ${cellId}:`, 'success');
-                        Object.entries(cellParams).forEach(([paramName, paramValue]) => {
-                            addExtractionLog(`    • ${paramName}: "${paramValue}"`, 'success');
-                        });
-                    });
-                } else {
-                    addExtractionLog(`ℹ 4G ელემენტები ვერ მოიძებნა (სადგური შეიძლება არ ქონდეს 4G)`, 'info');
-                }
-                
-                // Handle 4G rootSeqIndex result
-                if (rootseq4gData.success && rootseq4gData.rootseq4g) {
-                    const rootseqs = rootseq4gData.rootseq4g;
-                    addExtractionLog(`✓ 4G rootSeqIndex პარამეტრები წარმატებით ამოიღო:`, 'success');
-                    Object.entries(rootseqs).forEach(([cellId, cellParams]) => {
-                        addExtractionLog(`  - ${cellId}:`, 'success');
-                        Object.entries(cellParams).forEach(([paramName, paramValue]) => {
-                            addExtractionLog(`    • ${paramName}: "${paramValue}"`, 'success');
-                        });
-                    });
-                } else {
-                    addExtractionLog(`ℹ 4G rootSeqIndex პარამეტრები ვერ მოიძებნა (სადგური შეიძლება არ ქონდეს 4G FDD)`, 'info');
-                }
-                
                 // Show success message if at least one was extracted
-                if ((btsNameData.success && btsNameData.btsName) || (btsIdData.success && btsIdData.btsId) || (sctpPortData.success && sctpPortData.sctpPortMin) || (params2gData.success && params2gData.params2g) || (cells4gData.success && cells4gData.cells4g) || (rootseq4gData.success && rootseq4gData.rootseq4g)) {
+                if ((btsNameData.success && btsNameData.btsName) || (btsIdData.success && btsIdData.btsId) || (sctpPortData.success && sctpPortData.sctpPortMin) || (params2gData.success && params2gData.params2g)) {
                     let message = 'ავტომატური ამოღება წარმატებული:';
                     if (btsNameData.success && btsNameData.btsName) {
                         message += ` btsName: ${btsNameData.btsName}`;
@@ -869,17 +962,9 @@ const form = document.getElementById('modernizationForm');
                         const paramCount = Object.keys(params2gData.params2g).length;
                         message += ` 2G პარამეტრები: ${paramCount} ნაპოვნი`;
                     }
-                    if (cells4gData.success && cells4gData.cells4g) {
-                        const cellCount = Object.keys(cells4gData.cells4g).length;
-                        message += ` 4G ელემენტები: ${cellCount} ნაპოვნი`;
-                    }
-                    if (rootseq4gData.success && rootseq4gData.rootseq4g) {
-                        const rootseqCount = Object.keys(rootseq4gData.rootseq4g).length;
-                        message += ` 4G rootSeqIndex: ${rootseqCount} ნაპოვნი`;
-                    }
                     showAlert('success', message);
                 } else {
-                    let errorMsg = 'btsName და BTS ID ვერ მოიძებნა XML ფაილში. დანარჩენი პარამეტრები არც მოიძებნა (ნორმალურია განსხვავებული ტექნოლოგიების სადგურებისთვის)';
+                    let errorMsg = 'btsName და BTS ID ვერ მოიძებნა XML ფაილში. sctpPortMin და 2G პარამეტრები არც მოიძებნა (ნორმალურია 5G-only სადგურებისთვის)';
                     addExtractionLog(`⚠ ამოღება ვერ მოხერხდა: ${errorMsg}`, 'warning');
                     
                     // Add debug info to error message
@@ -910,26 +995,22 @@ const form = document.getElementById('modernizationForm');
             }
         }
 
-        // Extract all parameters from example file (dropdown selection)
+        // Extract btsName, BTS ID, sctpPortMin, and 2G parameters from example file (dropdown selection)
         async function extractBtsNameFromExampleFile(filename, type) {
             addSystemLog(`${type} XML-დან ყველა პარამეტრის ამოღება: ${filename}`, 'info');
             
             try {
-                const [btsNameResponse, btsIdResponse, sctpPortResponse, params2gResponse, cells4gResponse, rootseq4gResponse] = await Promise.all([
+                const [btsNameResponse, btsIdResponse, sctpPortResponse, params2gResponse] = await Promise.all([
                     fetch(`/api/example-files/extract-bts-name/${encodeURIComponent(filename)}`),
                     fetch(`/api/example-files/extract-bts-id/${encodeURIComponent(filename)}`),
                     fetch(`/api/example-files/extract-sctp-port/${encodeURIComponent(filename)}`),
-                    fetch(`/api/example-files/extract-2g-params/${encodeURIComponent(filename)}`),
-                    fetch(`/api/example-files/extract-4g-cells/${encodeURIComponent(filename)}`),
-                    fetch(`/api/example-files/extract-4g-rootseq/${encodeURIComponent(filename)}`)
+                    fetch(`/api/example-files/extract-2g-params/${encodeURIComponent(filename)}`)
                 ]);
                 
                 const btsNameData = await btsNameResponse.json();
                 const btsIdData = await btsIdResponse.json();
                 const sctpPortData = await sctpPortResponse.json();
                 const params2gData = await params2gResponse.json();
-                const cells4gData = await cells4gResponse.json();
-                const rootseq4gData = await rootseq4gResponse.json();
 
                 addSystemLog(`${type} XML API პასუხი მიღებულია (ყველა პარამეტრი)`, 'info');
                 
@@ -987,46 +1068,6 @@ const form = document.getElementById('modernizationForm');
                     }
                 } else {
                     addSystemLog(`ℹ ${type} XML-ში 2G პარამეტრები ვერ მოიძებნა (შეიძლება არ ქონდეს 2G)`, 'info');
-                }
-                
-                // Handle 4G cells result
-                if (cells4gData.success && cells4gData.cells4g) {
-                    const cells = cells4gData.cells4g;
-                    addSystemLog(`✓ ${type} XML 4G ელემენტები:`, 'success');
-                    Object.entries(cells).forEach(([cellId, cellParams]) => {
-                        addSystemLog(`  - ${cellId}:`, 'success');
-                        Object.entries(cellParams).forEach(([paramName, paramValue]) => {
-                            addSystemLog(`    • ${paramName}: "${paramValue}"`, 'success');
-                        });
-                    });
-                    
-                    if (type === 'reference') {
-                        // Store reference 4G cells for later use
-                        window.reference4gCells = cells4gData.cells4g;
-                        addSystemLog(`Reference Template 4G ელემენტები შენახულია`, 'info');
-                    }
-                } else {
-                    addSystemLog(`ℹ ${type} XML-ში 4G ელემენტები ვერ მოიძებნა (შეიძლება არ ქონდეს 4G)`, 'info');
-                }
-                
-                // Handle 4G rootSeqIndex result
-                if (rootseq4gData.success && rootseq4gData.rootseq4g) {
-                    const rootseqs = rootseq4gData.rootseq4g;
-                    addSystemLog(`✓ ${type} XML 4G rootSeqIndex პარამეტრები:`, 'success');
-                    Object.entries(rootseqs).forEach(([cellId, cellParams]) => {
-                        addSystemLog(`  - ${cellId}:`, 'success');
-                        Object.entries(cellParams).forEach(([paramName, paramValue]) => {
-                            addSystemLog(`    • ${paramName}: "${paramValue}"`, 'success');
-                        });
-                    });
-                    
-                    if (type === 'reference') {
-                        // Store reference 4G rootSeqIndex for later use
-                        window.reference4gRootseq = rootseq4gData.rootseq4g;
-                        addSystemLog(`Reference Template 4G rootSeqIndex პარამეტრები შენახულია`, 'info');
-                    }
-                } else {
-                    addSystemLog(`ℹ ${type} XML-ში 4G rootSeqIndex პარამეტრები ვერ მოიძებნა (შეიძლება არ ქონდეს 4G FDD)`, 'info');
                 }
             } catch (error) {
                 addSystemLog(`✗ ${type} XML პარამეტრების ამოღების ნეტვორკის შეცდომა: ${error.message}`, 'error');
@@ -1146,32 +1187,6 @@ const form = document.getElementById('modernizationForm');
                                     const oldValue = data.details.reference_2g_params[key];
                                     if (oldValue) {
                                         addGenerationLog(`  - ${key}: "${oldValue}" → "${value}"`, 'success');
-                                    }
-                                });
-                            }
-                        }
-                        
-                        // 4G cells replacement
-                        const existing4gStatus = data.details.existing_4g_cells ? `Found (${Object.keys(data.details.existing_4g_cells).length} cells)` : 'Not found (no 4G)';
-                        const reference4gStatus = data.details.reference_4g_cells ? `Found (${Object.keys(data.details.reference_4g_cells).length} cells)` : 'Not found (no 4G)';
-                        
-                        addGenerationLog(`Reference Template 4G cells: "${reference4gStatus}"`, 'info');
-                        addGenerationLog(`Target Station 4G cells: "${existing4gStatus}"`, 'info');
-                        addGenerationLog(`4G Cells Replacement: ${data.details.cells_4g_replacement_performed ? 'YES' : 'NO (normal for stations without 4G)'}`, data.details.cells_4g_replacement_performed ? 'success' : 'info');
-                        
-                        if (data.details.cells_4g_replacement_performed) {
-                            addGenerationLog(`Template-ში 4G ელემენტები ჩანაცვლდა:`, 'success');
-                            if (data.details.existing_4g_cells && data.details.reference_4g_cells) {
-                                Object.entries(data.details.existing_4g_cells).forEach(([cellId, cellParams]) => {
-                                    const referenceCellParams = data.details.reference_4g_cells[cellId];
-                                    if (referenceCellParams) {
-                                        addGenerationLog(`  - ${cellId}:`, 'success');
-                                        Object.entries(cellParams).forEach(([paramName, paramValue]) => {
-                                            const oldValue = referenceCellParams[paramName];
-                                            if (oldValue) {
-                                                addGenerationLog(`    • ${paramName}: "${oldValue}" → "${paramValue}"`, 'success');
-                                            }
-                                        });
                                     }
                                 });
                             }
