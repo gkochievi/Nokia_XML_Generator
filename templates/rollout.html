@@ -4,60 +4,108 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rollout - Nokia WebEM Generator</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
         body {
             min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            background: var(--primary-gradient);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        .rollout-card {
-            border-radius: 1.5rem;
-            box-shadow: 0 8px 32px 0 rgba(76, 68, 182, 0.18);
-            background: rgba(255,255,255,0.98);
-            max-width: 480px;
-            margin: auto;
-            padding: 2.5rem 2rem 2rem 2rem;
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
         }
-        .rollout-header {
-            text-align: center;
-            color: #667eea;
-            margin-bottom: 1.5rem;
+
+        .gradient-border {
+            border: 2px solid transparent;
+            background: linear-gradient(white, white) padding-box, var(--primary-gradient) border-box;
         }
-        .rollout-header i {
-            font-size: 2.5rem;
-            color: #764ba2;
-            margin-bottom: 0.5rem;
-        }
-        .form-label {
-            font-weight: 500;
-            color: #333;
-        }
-        .form-control, .form-control:focus {
-            border-radius: 0.8rem;
-            border: 2px solid #e0e0e0;
-            box-shadow: none;
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+        .btn-gradient {
+            background: var(--primary-gradient);
             border: none;
-            border-radius: 0.8rem;
-            font-size: 1.15rem;
-            padding: 0.75rem 2.5rem;
-            box-shadow: 0 4px 16px 0 rgba(102, 126, 234, 0.12);
-            transition: background 0.2s;
+            box-shadow: 0 4px 15px 0 rgba(102, 126, 234, 0.35);
+            transition: all 0.3s ease;
         }
-                 .btn-primary:hover {
-             background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-         }
+
+        .btn-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px 0 rgba(102, 126, 234, 0.5);
+        }
+
+                .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+
+        .upload-area {
+            border: 2px dashed #c3cef7;
+            background-color: #f8f9ff;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea;
+            background-color: #f0f2ff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.1);
+        }
+
+        .dragover {
+            border-color: #667eea !important;
+            background-color: rgba(102, 126, 234, 0.1) !important;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.3) !important;
+        }
+
+        @media (max-width: 768px) {
+            .container-fluid {
+                padding: 1rem;
+            }
+            
+            .upload-area {
+                padding: 1.5rem 1rem;
+            }
+            
+            .upload-area i {
+                font-size: 2rem !important;
+            }
+            
+            .col-md-6 {
+                margin-bottom: 2rem;
+            }
+            
+            .glass-card {
+                padding: 1.5rem !important;
+            }
+        }
 
         /* Navigation styling for all screen sizes */
         .navbar {
-            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
-            z-index: 1050;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1) !important;
+            z-index: 9999 !important;
+            display: block !important;
+            visibility: visible !important;
+            position: relative !important;
+            width: 100% !important;
+            min-height: 60px !important;
         }
 
         .navbar-brand {
@@ -84,11 +132,25 @@
         @media (min-width: 992px) {
             .navbar-nav {
                 display: flex !important;
+                visibility: visible !important;
+                flex-direction: row !important;
+                align-items: center !important;
             }
             
             .navbar-collapse {
                 display: flex !important;
                 flex-basis: auto;
+                visibility: visible !important;
+            }
+            
+            .nav-item {
+                display: block !important;
+                visibility: visible !important;
+            }
+            
+            .nav-link {
+                display: block !important;
+                visibility: visible !important;
             }
         }
 
@@ -116,8 +178,8 @@
 </head>
  <body>
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg" style="background: rgba(102, 126, 234, 0.9) !important; backdrop-filter: blur(15px); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2); padding: 0.75rem 0;">
-        <div class="container-fluid">
+    <nav class="navbar navbar-expand-lg" style="background: rgba(102, 126, 234, 0.9) !important; backdrop-filter: blur(15px); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2); padding: 0.75rem 0; display: block !important; visibility: visible !important; position: relative !important; z-index: 9999 !important; width: 100% !important; min-height: 60px !important;">
+        <div class="container-fluid" style="display: flex !important; visibility: visible !important;">
             <a class="navbar-brand fw-bold d-flex align-items-center" href="/" style="color: white;">
                 <i class="bi bi-cpu me-2" style="font-size: 1.5rem;"></i>
                 Nokia WebEM
@@ -126,25 +188,25 @@
                     style="box-shadow: none; outline: none;">
                 <span class="navbar-toggler-icon" style="background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAiIGhlaWdodD0iMzAiIHZpZXdCb3g9IjAgMCAzMCAzMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTYgOUgyNEg2WiIgZmlsbD0iI2ZmZmZmZiIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjIiLz4KPHBhdGggZD0iTTYgMTVIMjRINloiIGZpbGw9IiNmZmZmZmYiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSIyIi8+CjxwYXRoIGQ9Ik02IDIxSDI0SDZaIiBmaWxsPSIjZmZmZmZmIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K');"></span>
             </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link px-3 py-2" href="/" style="color: rgba(255, 255, 255, 0.8); font-weight: 500; transition: all 0.3s ease;">
+            <div class="navbar-collapse show" id="navbarNav" style="display: flex !important; visibility: visible !important;">
+                <ul class="navbar-nav ms-auto" style="display: flex !important; visibility: visible !important; flex-direction: row !important; align-items: center !important;">
+                    <li class="nav-item" style="display: block !important; visibility: visible !important;">
+                        <a class="nav-link px-3 py-2" href="/" style="color: rgba(255, 255, 255, 0.8) !important; font-weight: 500; transition: all 0.3s ease; display: block !important; visibility: visible !important;">
                             <i class="bi bi-house me-1"></i>მთავარი
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link px-3 py-2" href="/modernization" style="color: rgba(255, 255, 255, 0.8); font-weight: 500; transition: all 0.3s ease;">
+                    <li class="nav-item" style="display: block !important; visibility: visible !important;">
+                        <a class="nav-link px-3 py-2" href="/modernization" style="color: rgba(255, 255, 255, 0.8) !important; font-weight: 500; transition: all 0.3s ease; display: block !important; visibility: visible !important;">
                             <i class="bi bi-arrow-repeat me-1"></i>5G Modernization
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link px-3 py-2 rounded-2 mx-1" href="/rollout" style="background: rgba(255, 255, 255, 0.2); color: white; font-weight: 600; border: 1px solid rgba(255, 255, 255, 0.3); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);">
+                    <li class="nav-item" style="display: block !important; visibility: visible !important;">
+                        <a class="nav-link px-3 py-2 rounded-2 mx-1" href="/rollout" style="background: rgba(255, 255, 255, 0.2) !important; color: white !important; font-weight: 600; border: 1px solid rgba(255, 255, 255, 0.3); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); display: block !important; visibility: visible !important;">
                             <i class="bi bi-plus-circle me-1"></i>ახალი სადგური
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link px-3 py-2" href="/xml-viewer" style="color: rgba(255, 255, 255, 0.8); font-weight: 500; transition: all 0.3s ease;">
+                    <li class="nav-item" style="display: block !important; visibility: visible !important;">
+                        <a class="nav-link px-3 py-2" href="/xml-viewer" style="color: rgba(255, 255, 255, 0.8) !important; font-weight: 500; transition: all 0.3s ease; display: block !important; visibility: visible !important;">
                             <i class="bi bi-file-earmark-code me-1"></i>XML Viewer
                         </a>
                     </li>
@@ -153,57 +215,345 @@
         </div>
     </nav>
 
- <div class="container py-5">
-    <div class="rollout-card">
-        <div class="rollout-header">
-            <i class="bi bi-plus-circle"></i>
-            <h2>ახალი საბაზო სადგურის Rollout</h2>
-            <div class="text-muted mb-2">სრულიად ახალი საბაზო სადგურის კონფიგურაცია</div>
+    <div class="container-fluid py-4">
+        <div class="row justify-content-center">
+            <div class="col-12 col-lg-10 col-xl-8">
+                <div class="glass-card rounded-4 p-4 p-md-5">
+                    <!-- Header -->
+                    <div class="text-center mb-5">
+                        <div class="mb-4">
+                            <i class="bi bi-plus-circle display-3 text-primary mb-3" style="background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"></i>
+                        </div>
+                        <h1 class="h1 fw-bold mb-2" style="background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">ახალი სადგურის Rollout</h1>
+                        <p class="text-muted fs-5 mb-0">სრულიად ახალი საბაზო სადგურის კონფიგურაცია გენერაცია</p>
+                        <hr class="my-4 mx-auto" style="width: 100px; height: 3px; background: var(--primary-gradient); border: none; border-radius: 2px;">
+                    </div>
+
+                    <!-- Form -->
+                    <form method="post" enctype="multipart/form-data" action="/api/rollout" id="rolloutForm" class="needs-validation" novalidate>
+                        <!-- Station Info -->
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <label for="station_name" class="form-label fw-semibold">
+                                    <i class="bi bi-broadcast me-2 text-primary"></i>სადგურის სახელი
+                                </label>
+                                <input type="text" class="form-control form-control-lg gradient-border" 
+                                       id="station_name" name="stationName" required 
+                                       placeholder="შეიყვანეთ ახალი სადგურის სახელი">
+                                <div class="invalid-feedback">გთხოვთ შეიყვანოთ სადგურის სახელი</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="bts_id" class="form-label fw-semibold">
+                                    <i class="bi bi-hash me-2 text-info"></i>საბაზო სადგურის ID
+                                </label>
+                                <input type="text" class="form-control form-control-lg gradient-border" 
+                                       id="bts_id" name="btsId" required 
+                                       placeholder="შეიყვანეთ BTS ID">
+                                <div class="invalid-feedback">გთხოვთ შეიყვანოთ BTS ID</div>
+                            </div>
+                        </div>
+
+                        <!-- File Upload Sections -->
+                        <div class="row mb-4">
+                            <!-- Reference XML Section -->
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label fw-semibold">
+                                    <i class="bi bi-file-earmark-xml me-2 text-success"></i>Reference XML
+                                </label>
+                                
+                                <!-- Dropdown for existing files -->
+                                <div class="mb-3">
+                                    <select class="form-select" id="referenceXmlSelection" name="referenceXmlSelection">
+                                        <option value="">მონაცემები იტვირთება...</option>
+                                    </select>
+                                </div>
+
+                                <!-- Upload area -->
+                                <div class="upload-area rounded-3 p-4 text-center" id="referenceXmlUploadArea">
+                                    <i class="bi bi-cloud-upload text-muted mb-2" style="font-size: 2rem;"></i>
+                                    <p class="mb-2">ახალი ფაილის ატვირთვა</p>
+                                    <input type="file" class="d-none" id="referenceXmlUpload" name="referenceXmlUpload" accept=".xml">
+                                    <button type="button" class="btn btn-outline-success btn-sm" onclick="document.getElementById('referenceXmlUpload').click()">
+                                        <i class="bi bi-plus-circle me-1"></i>არჩევა
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- IP Plan Excel Section -->
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label fw-semibold">
+                                    <i class="bi bi-file-earmark-excel me-2 text-warning"></i>IP Plan Excel
+                                </label>
+                                
+                                <!-- Dropdown for existing files -->
+                                <div class="mb-3">
+                                    <select class="form-select" id="ipPlanSelection" name="ipPlanSelection">
+                                        <option value="">მონაცემები იტვირთება...</option>
+                                    </select>
+                                </div>
+
+                                <!-- Upload area -->
+                                <div class="upload-area rounded-3 p-4 text-center" id="ipPlanUploadArea">
+                                    <i class="bi bi-cloud-upload text-muted mb-2" style="font-size: 2rem;"></i>
+                                    <p class="mb-2">ახალი ფაილის ატვირთვა</p>
+                                    <input type="file" class="d-none" id="ipPlanUpload" name="ipPlanUpload" accept=".xlsx,.xls">
+                                    <button type="button" class="btn btn-outline-warning btn-sm" onclick="document.getElementById('ipPlanUpload').click()">
+                                        <i class="bi bi-plus-circle me-1"></i>არჩევა
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-gradient btn-lg py-3 fw-semibold">
+                                        <i class="bi bi-gear-wide-connected me-2"></i>
+                                        დაგენერირე ახალი სადგურის XML
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Alert Container -->
+                    <div id="rollout-alert" class="alert mt-4 d-none" role="alert"></div>
+                </div>
+            </div>
         </div>
-        <form method="post" enctype="multipart/form-data" action="/api/rollout" id="rolloutForm">
-            <div class="mb-3">
-                <label for="station_name" class="form-label"><i class="bi bi-broadcast me-2"></i>სადგურის სახელი</label>
-                <input type="text" class="form-control" id="station_name" name="stationName" required>
-            </div>
-            <div class="mb-3">
-                <label for="reference_xml" class="form-label"><i class="bi bi-file-earmark-xml me-2"></i>Reference XML (მსგავსი სადგური)</label>
-                <input class="form-control" type="file" id="reference_xml" name="referenceXml" accept=".xml" required>
-            </div>
-            <div class="mb-3">
-                <label for="radio_params" class="form-label"><i class="bi bi-file-earmark-excel me-2"></i>Radio Params Excel</label>
-                <input class="form-control" type="file" id="radio_params" name="radioExcel" accept=".xlsx,.xls" required>
-            </div>
-            <div class="mb-3">
-                <label for="ip_plan" class="form-label"><i class="bi bi-file-earmark-excel me-2"></i>IP Plan Excel</label>
-                <input class="form-control" type="file" id="ip_plan" name="transmissionExcel" accept=".xlsx,.xls" required>
-            </div>
-            <button type="submit" class="btn btn-primary w-100 mt-3"><i class="bi bi-gear-wide-connected me-2"></i>დაგენერირე ახალი XML</button>
-        </form>
-        <div id="rollout-alert" class="alert mt-3 d-none" role="alert"></div>
     </div>
-</div>
 <script>
-const form = document.getElementById('rolloutForm');
-const alertBox = document.getElementById('rollout-alert');
-form.addEventListener('submit', async function(e) {
-    e.preventDefault();
-    alertBox.classList.add('d-none');
-    const formData = new FormData(form);
-    const res = await fetch('/api/rollout', { method: 'POST', body: formData });
-    const data = await res.json();
-    if (data.success) {
-        alertBox.className = 'alert alert-success mt-3';
-        alertBox.textContent = 'XML ფაილი წარმატებით გენერირდა! ჩამოტვირთვა: ' + data.filename;
-    } else {
-        alertBox.className = 'alert alert-danger mt-3';
-        alertBox.textContent = data.error || 'დაფიქსირდა შეცდომა';
+// Form validation and submission
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('rolloutForm');
+    const alertBox = document.getElementById('rollout-alert');
+
+    // Load existing files for dropdowns
+    loadExistingFiles();
+
+    // Bootstrap validation
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (form.checkValidity()) {
+            alertBox.classList.add('d-none');
+            
+            // Show loading state
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="bi bi-arrow-clockwise me-2 spinner-border spinner-border-sm"></i>მუშავდება...';
+            
+            try {
+                const formData = new FormData(form);
+                const res = await fetch('/api/rollout', { method: 'POST', body: formData });
+                const data = await res.json();
+                
+                if (data.success) {
+                    alertBox.className = 'alert alert-success mt-4';
+                    alertBox.innerHTML = `
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-check-circle-fill me-2 fs-4"></i>
+                            <div>
+                                <strong>წარმატება!</strong><br>
+                                XML ფაილი გენერირდა: <strong>${data.filename}</strong>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    alertBox.className = 'alert alert-danger mt-4';
+                    alertBox.innerHTML = `
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-exclamation-triangle-fill me-2 fs-4"></i>
+                            <div>
+                                <strong>შეცდომა!</strong><br>
+                                ${data.error || 'დაფიქსირდა გაუცნობი შეცდომა'}
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                alertBox.className = 'alert alert-danger mt-4';
+                alertBox.innerHTML = `
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-exclamation-triangle-fill me-2 fs-4"></i>
+                        <div>
+                            <strong>კავშირის შეცდომა!</strong><br>
+                            სერვერთან კავშირი ვერ დამყარდა
+                        </div>
+                    </div>
+                `;
+            } finally {
+                // Reset button
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+                alertBox.classList.remove('d-none');
+            }
+        }
+        
+        form.classList.add('was-validated');
+    });
+
+    // Load existing files function
+    async function loadExistingFiles() {
+        try {
+            // Load Reference XML files
+            const xmlResponse = await fetch('/api/example-files?type=xml');
+            const xmlData = await xmlResponse.json();
+            
+            const xmlSelect = document.getElementById('referenceXmlSelection');
+            xmlSelect.innerHTML = '<option value="">მონაცემები იტვირთება...</option>';
+            
+            if (xmlData.success && xmlData.files && xmlData.files.length > 0) {
+                xmlSelect.innerHTML = '<option value="">აირჩიეთ არსებული XML ფაილი</option>';
+                xmlData.files.forEach(file => {
+                    const option = document.createElement('option');
+                    option.value = file;
+                    option.textContent = file;
+                    xmlSelect.appendChild(option);
+                });
+            } else {
+                xmlSelect.innerHTML = '<option value="">არ მოიძებნა XML ფაილები</option>';
+            }
+
+            // Load IP Plan files  
+            const excelResponse = await fetch('/api/example-files?type=excel');
+            const excelData = await excelResponse.json();
+            
+            const ipSelect = document.getElementById('ipPlanSelection');
+            ipSelect.innerHTML = '<option value="">მონაცემები იტვირთება...</option>';
+            
+            if (excelData.success && excelData.files && excelData.files.length > 0) {
+                ipSelect.innerHTML = '<option value="">აირჩიეთ არსებული Excel ფაილი</option>';
+                excelData.files.forEach(file => {
+                    const option = document.createElement('option');
+                    option.value = file;
+                    option.textContent = file;
+                    ipSelect.appendChild(option);
+                });
+            } else {
+                ipSelect.innerHTML = '<option value="">არ მოიძებნა Excel ფაილები</option>';
+            }
+            
+        } catch (error) {
+            console.error('Error loading files:', error);
+            document.getElementById('referenceXmlSelection').innerHTML = '<option value="">შეცდომა ფაილების ჩატვირთვაში</option>';
+            document.getElementById('ipPlanSelection').innerHTML = '<option value="">შეცდომა ფაილების ჩატვირთვაში</option>';
+        }
     }
-    alertBox.classList.remove('d-none');
-  });
+
+    // Drag and drop functionality for upload areas
+    const uploadAreas = document.querySelectorAll('.upload-area');
+    
+    uploadAreas.forEach(uploadArea => {
+        const input = uploadArea.querySelector('input[type="file"]');
+        
+        if (!input) return; // Skip if no input found
+        
+        // Add visual feedback on drag
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, () => uploadArea.classList.add('dragover'), false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, () => uploadArea.classList.remove('dragover'), false);
+        });
+        
+        // Handle dropped files
+        uploadArea.addEventListener('drop', function(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            if (files.length > 0) {
+                input.files = files;
+                updateFileLabel(uploadArea, files[0].name);
+                
+                // Clear dropdown selection
+                const container = uploadArea.closest('.col-md-6');
+                const select = container.querySelector('select');
+                if (select) select.value = '';
+            }
+        });
+        
+        // Handle normal file selection
+        input.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                updateFileLabel(uploadArea, this.files[0].name);
+                
+                // Clear dropdown selection
+                const container = uploadArea.closest('.col-md-6');
+                const select = container.querySelector('select');
+                if (select) select.value = '';
+            }
+        });
+    });
+
+    // Handle dropdown changes
+    const selects = document.querySelectorAll('select[id$="Selection"]');
+    selects.forEach(select => {
+        select.addEventListener('change', function() {
+            if (this.value) {
+                // Clear file input when dropdown is selected
+                const container = this.closest('.col-md-6');
+                const input = container.querySelector('input[type="file"]');
+                const uploadArea = container.querySelector('.upload-area');
+                
+                if (input) {
+                    input.value = '';
+                    // Reset upload area text
+                    const textElement = uploadArea.querySelector('p');
+                    if (textElement) {
+                        textElement.textContent = 'ახალი ფაილის ატვირთვა';
+                    }
+                }
+            }
+        });
+    });
+
+    // Helper function to update file labels
+    function updateFileLabel(uploadArea, fileName) {
+        const textElement = uploadArea.querySelector('p');
+        if (textElement) {
+            textElement.innerHTML = `<i class="bi bi-check-circle-fill me-1 text-success"></i>არჩეულია: <strong>${fileName}</strong>`;
+        }
+    }
+});
 </script>
 
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Navigation Enhancement Script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Fix mobile navigation collapse issue
+    const navbarToggler = document.querySelector('.navbar-toggler');
+    const navbarCollapse = document.querySelector('.navbar-collapse');
+    
+    // Close navbar on link click (mobile)
+    document.querySelectorAll('.navbar-nav .nav-link').forEach(link => {
+        link.addEventListener('click', function() {
+            if (window.innerWidth < 992) { // Only on mobile
+                const collapse = new bootstrap.Collapse(navbarCollapse, {
+                    toggle: false
+                });
+                collapse.hide();
+            }
+        });
+    });
+});
+</script>
 
 <!-- Navigation Enhancement Script -->
 <script>
