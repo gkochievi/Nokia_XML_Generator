@@ -692,3 +692,228 @@ class XMLParser:
             import traceback
             logger.error(f"Traceback: {traceback.format_exc()}")
             return None
+
+    def extract_network_parameters(self, tree):
+        """Extract network parameters like NRX2LINK_TRUST and LNADJGNB"""
+        network_params = {}
+        
+        try:
+            logger.info("Starting network parameters extraction...")
+            
+            # Extract NRX2LINK_TRUST ipV4Addr (this should be LTE IP from IP Plan) (namespace-agnostic)
+            nrx2link_objects = tree.xpath("//*[local-name()='managedObject' and contains(@class, 'NRX2LINK_TRUST')]")
+            logger.info(f"Found {len(nrx2link_objects)} NRX2LINK_TRUST objects")
+            for obj in nrx2link_objects:
+                dist_name = obj.get('distName', '')
+                ipv4_addr_elem = obj.find(".//*[local-name()='p'][@name='ipV4Addr']")
+                if ipv4_addr_elem is not None and ipv4_addr_elem.text:
+                    network_params['NRX2LINK_TRUST_ipV4Addr'] = {
+                        'value': ipv4_addr_elem.text.strip(),
+                        'distName': dist_name
+                    }
+                    logger.info(f"Found NRX2LINK_TRUST ipV4Addr: {ipv4_addr_elem.text.strip()}")
+            
+            # Extract LNADJGNB cPlaneIpAddr (this should be 5G IP from IP Plan) (namespace-agnostic)
+            lnadjgnb_objects = tree.xpath("//*[local-name()='managedObject' and contains(@class, 'LNADJGNB')]")
+            logger.info(f"Found {len(lnadjgnb_objects)} LNADJGNB objects")
+            for obj in lnadjgnb_objects:
+                dist_name = obj.get('distName', '')
+                cplane_ip_elem = obj.find(".//*[local-name()='p'][@name='cPlaneIpAddr']")
+                if cplane_ip_elem is not None and cplane_ip_elem.text:
+                    network_params['LNADJGNB_cPlaneIpAddr'] = {
+                        'value': cplane_ip_elem.text.strip(),
+                        'distName': dist_name
+                    }
+                    logger.info(f"Found LNADJGNB cPlaneIpAddr: {cplane_ip_elem.text.strip()}")
+            
+            logger.info(f"Network parameters extraction completed. Found {len(network_params)} params: {list(network_params.keys())}")
+            return network_params
+            
+        except Exception as e:
+            logger.error(f"Error extracting network parameters: {str(e)}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            return {}
+
+    def extract_vlan_parameters(self, tree):
+        """Extract VLAN parameters from VLANIF objects"""
+        vlan_data = {}
+        
+        try:
+            logger.info("Starting VLAN parameters extraction...")
+            
+            # Find all VLANIF managedObjects (namespace-agnostic)
+            vlanif_objects = tree.xpath("//*[local-name()='managedObject' and contains(@class, 'VLANIF')]")
+            logger.info(f"Found {len(vlanif_objects)} VLANIF objects")
+            
+            for i, obj in enumerate(vlanif_objects):
+                dist_name = obj.get('distName', '')
+                logger.info(f"Processing VLANIF {i+1}: distName={dist_name}")
+                
+                # Extract userLabel and vlanId (namespace-agnostic)
+                user_label_elem = obj.find(".//*[local-name()='p'][@name='userLabel']")
+                vlan_id_elem = obj.find(".//*[local-name()='p'][@name='vlanId']")
+                
+                logger.info(f"  userLabel elem: {user_label_elem is not None}")
+                logger.info(f"  vlanId elem: {vlan_id_elem is not None}")
+                
+                if user_label_elem is not None:
+                    logger.info(f"  userLabel text: '{user_label_elem.text}'")
+                if vlan_id_elem is not None:
+                    logger.info(f"  vlanId text: '{vlan_id_elem.text}'")
+                
+                if user_label_elem is not None and vlan_id_elem is not None:
+                    user_label = user_label_elem.text.strip() if user_label_elem.text else None
+                    vlan_id = vlan_id_elem.text.strip() if vlan_id_elem.text else None
+                    
+                    logger.info(f"  Processed: userLabel='{user_label}', vlanId='{vlan_id}'")
+                    
+                    if user_label and vlan_id:
+                        # Map userLabel to standardized technology names
+                        tech_mapping = {
+                            'OAM': 'OAM',
+                            'MGT': 'OAM',
+                            '2G': '2G',
+                            'GSM': '2G',
+                            '3G': '3G',
+                            'WCDMA': '3G',
+                            '4G': '4G',
+                            'LTE': '4G',
+                            '5G': '5G',
+                            'NR': '5G'
+                        }
+                        
+                        tech_name = tech_mapping.get(user_label.upper(), user_label)
+                        vlan_data[tech_name] = {
+                            'vlanId': vlan_id,
+                            'userLabel': user_label,
+                            'distName': dist_name
+                        }
+                        logger.info(f"  Added VLAN: {tech_name} -> vlanId: {vlan_id}, userLabel: {user_label}")
+                    else:
+                        logger.warning(f"  Skipped VLANIF {i+1}: missing userLabel or vlanId")
+                else:
+                    logger.warning(f"  Skipped VLANIF {i+1}: missing userLabel or vlanId elements")
+            
+            logger.info(f"VLAN extraction completed. Found {len(vlan_data)} VLANs: {list(vlan_data.keys())}")
+            return vlan_data
+            
+        except Exception as e:
+            logger.error(f"Error extracting VLAN parameters: {str(e)}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            return {}
+
+    def extract_ip_parameters(self, tree):
+        """Extract IP parameters from IPNO and other IP-related objects"""
+        ip_data = {}
+        
+        try:
+            logger.info("Starting IP parameters extraction...")
+            
+            # Find all IPNO managedObjects with IP configuration (namespace-agnostic)
+            ipno_objects = tree.xpath("//*[local-name()='managedObject' and contains(@class, 'IPNO')]")
+            logger.info(f"Found {len(ipno_objects)} IPNO objects")
+            
+            for obj in ipno_objects:
+                dist_name = obj.get('distName', '')
+                
+                # Extract IP-related parameters (namespace-agnostic)
+                local_ip_elem = obj.find(".//*[local-name()='p'][@name='localIpAddr']")
+                prefix_len_elem = obj.find(".//*[local-name()='p'][@name='localIpPrefixLength']")
+                gateway_elem = obj.find(".//*[local-name()='p'][@name='gateway']")
+                user_label_elem = obj.find(".//*[local-name()='p'][@name='userLabel']")
+                
+                if local_ip_elem is not None and local_ip_elem.text:
+                    local_ip = local_ip_elem.text.strip()
+                    prefix_len = prefix_len_elem.text.strip() if prefix_len_elem is not None and prefix_len_elem.text else None
+                    gateway = gateway_elem.text.strip() if gateway_elem is not None and gateway_elem.text else None
+                    user_label = user_label_elem.text.strip() if user_label_elem is not None and user_label_elem.text else None
+                    
+                    # Try to identify technology from distName or userLabel
+                    tech_name = 'UNKNOWN'
+                    if user_label:
+                        tech_mapping = {
+                            'OAM': 'OAM',
+                            'MGT': 'OAM',
+                            '2G': '2G',
+                            'GSM': '2G',
+                            '3G': '3G', 
+                            'WCDMA': '3G',
+                            '4G': '4G',
+                            'LTE': '4G',
+                            '5G': '5G',
+                            'NR': '5G'
+                        }
+                        tech_name = tech_mapping.get(user_label.upper(), user_label)
+                    
+                    ip_data[tech_name] = {
+                        'localIpAddr': local_ip,
+                        'localIpPrefixLength': prefix_len,
+                        'gateway': gateway,
+                        'userLabel': user_label,
+                        'distName': dist_name
+                    }
+                    logger.info(f"Found IP config: {tech_name} -> IP: {local_ip}, Gateway: {gateway}")
+            
+            logger.info(f"IP extraction completed. Found {len(ip_data)} IP configs: {list(ip_data.keys())}")
+            return ip_data
+            
+        except Exception as e:
+            logger.error(f"Error extracting IP parameters: {str(e)}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            return {}
+
+    def extract_routing_parameters(self, tree):
+        """Extract IPv4 routing parameters from IPRT objects"""
+        routing_data = {}
+        
+        try:
+            logger.info("Starting routing parameters extraction...")
+            
+            # Find all IPRT managedObjects (IPv4 routing) (namespace-agnostic)
+            iprt_objects = tree.xpath("//*[local-name()='managedObject' and contains(@class, 'IPRT')]")
+            logger.info(f"Found {len(iprt_objects)} IPRT objects")
+            
+            for obj in iprt_objects:
+                dist_name = obj.get('distName', '')
+                
+                # Extract routing parameters (namespace-agnostic)
+                dest_ip_elem = obj.find(".//*[local-name()='p'][@name='destIpAddr']")
+                prefix_len_elem = obj.find(".//*[local-name()='p'][@name='destIpPrefixLength']")
+                gateway_elem = obj.find(".//*[local-name()='p'][@name='gateway']")
+                
+                if dest_ip_elem is not None and dest_ip_elem.text and gateway_elem is not None and gateway_elem.text:
+                    dest_ip = dest_ip_elem.text.strip()
+                    prefix_len = prefix_len_elem.text.strip() if prefix_len_elem is not None and prefix_len_elem.text else None
+                    gateway = gateway_elem.text.strip()
+                    
+                    # Determine IPRT type from distName
+                    iprt_type = 'IPRT-1'  # Default
+                    if 'IPRT-2' in dist_name:
+                        iprt_type = 'IPRT-2'
+                    elif 'NR' in dist_name:
+                        iprt_type = 'IPRT-2 NR'
+                    
+                    if iprt_type not in routing_data:
+                        routing_data[iprt_type] = {}
+                    
+                    # Use first two octets as key for mapping
+                    ip_prefix = '.'.join(dest_ip.split('.')[:2])
+                    routing_data[iprt_type][ip_prefix] = {
+                        'destIpAddr': dest_ip,
+                        'destIpPrefixLength': prefix_len,
+                        'gateway': gateway,
+                        'distName': dist_name
+                    }
+                    logger.info(f"Found routing: {iprt_type} {ip_prefix} -> Gateway: {gateway}")
+            
+            logger.info(f"Routing extraction completed. Found {len(routing_data)} IPRT types: {list(routing_data.keys())}")
+            return routing_data
+            
+        except Exception as e:
+            logger.error(f"Error extracting routing parameters: {str(e)}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            return {}

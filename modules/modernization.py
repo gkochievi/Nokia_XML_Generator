@@ -15,13 +15,28 @@ class ModernizationGenerator:
         self.excel_parser = ExcelParser()
     
     def generate(self, station_name, existing_xml_path, reference_5g_xml_path, 
-                 transmission_excel_path, output_folder, existing_bts_name=None, reference_bts_name=None):
+                 transmission_excel_path, output_folder, existing_bts_name=None, reference_bts_name=None,
+                 ip_plan_excel_path=None):
         """Generate 5G modernization configuration using template replacement approach"""
         try:
             logger.info("Starting 5G modernization generation...")
             logger.info(f"Station name: {station_name}")
             logger.info(f"Existing btsName: {existing_bts_name}")
             logger.info(f"Reference btsName: {reference_bts_name}")
+            
+            # Parse IP Plan data if provided
+            ip_plan_data = None
+            if ip_plan_excel_path:
+                try:
+                    ip_plan_data = self.excel_parser.parse_ip_plan_excel(ip_plan_excel_path, station_name)
+                    if ip_plan_data:
+                        logger.info(f"IP Plan data loaded successfully for station: {station_name}")
+                        logger.info(f"IP Plan technologies: {list(ip_plan_data['technologies'].keys())}")
+                    else:
+                        logger.warning(f"No IP Plan data found for station: {station_name}")
+                except Exception as e:
+                    logger.error(f"Error parsing IP Plan Excel: {str(e)}")
+                    ip_plan_data = None
             
             # Extract all parameters from both XML files
             existing_bts_id = None
@@ -36,6 +51,14 @@ class ModernizationGenerator:
             reference_4g_rootseq = None
             existing_5g_nrcells = None
             reference_5g_nrcells = None
+            existing_vlan_data = None
+            reference_vlan_data = None
+            existing_ip_data = None
+            reference_ip_data = None
+            existing_routing_data = None
+            reference_routing_data = None
+            existing_network_params = None
+            reference_network_params = None
             
             try:
                 if existing_xml_path:
@@ -46,12 +69,21 @@ class ModernizationGenerator:
                     existing_4g_cells = self.xml_parser.extract_4g_cells(existing_tree)
                     existing_4g_rootseq = self.xml_parser.extract_4g_rootseq(existing_tree)
                     existing_5g_nrcells = self.xml_parser.extract_5g_nrcells(existing_tree)
+                    # Extract network-related parameters
+                    existing_vlan_data = self.xml_parser.extract_vlan_parameters(existing_tree)
+                    existing_ip_data = self.xml_parser.extract_ip_parameters(existing_tree)
+                    existing_routing_data = self.xml_parser.extract_routing_parameters(existing_tree)
+                    existing_network_params = self.xml_parser.extract_network_parameters(existing_tree)
                     logger.info(f"Existing BTS ID: {existing_bts_id}")
                     logger.info(f"Existing sctpPortMin: {existing_sctp_port}")
                     logger.info(f"Existing 2G params: {existing_2g_params}")
                     logger.info(f"Existing 4G cells: {existing_4g_cells}")
                     logger.info(f"Existing 4G rootSeq: {existing_4g_rootseq}")
                     logger.info(f"Existing 5G NRCells: {existing_5g_nrcells}")
+                    logger.info(f"Existing VLAN data: {existing_vlan_data}")
+                    logger.info(f"Existing IP data: {existing_ip_data}")
+                    logger.info(f"Existing routing data: {existing_routing_data}")
+                    logger.info(f"Existing network params: {existing_network_params}")
                 
                 if reference_5g_xml_path:
                     reference_tree = self.xml_parser.parse_file(reference_5g_xml_path)
@@ -61,12 +93,21 @@ class ModernizationGenerator:
                     reference_4g_cells = self.xml_parser.extract_4g_cells(reference_tree)
                     reference_4g_rootseq = self.xml_parser.extract_4g_rootseq(reference_tree)
                     reference_5g_nrcells = self.xml_parser.extract_5g_nrcells(reference_tree)
+                    # Extract network-related parameters
+                    reference_vlan_data = self.xml_parser.extract_vlan_parameters(reference_tree)
+                    reference_ip_data = self.xml_parser.extract_ip_parameters(reference_tree)
+                    reference_routing_data = self.xml_parser.extract_routing_parameters(reference_tree)
+                    reference_network_params = self.xml_parser.extract_network_parameters(reference_tree)
                     logger.info(f"Reference BTS ID: {reference_bts_id}")
                     logger.info(f"Reference sctpPortMin: {reference_sctp_port}")
                     logger.info(f"Reference 2G params: {reference_2g_params}")
                     logger.info(f"Reference 4G cells: {reference_4g_cells}")
                     logger.info(f"Reference 4G rootSeq: {reference_4g_rootseq}")
                     logger.info(f"Reference 5G NRCells: {reference_5g_nrcells}")
+                    logger.info(f"Reference VLAN data: {reference_vlan_data}")
+                    logger.info(f"Reference IP data: {reference_ip_data}")
+                    logger.info(f"Reference routing data: {reference_routing_data}")
+                    logger.info(f"Reference network params: {reference_network_params}")
             except Exception as e:
                 logger.warning(f"Error extracting parameters: {str(e)}")
             
@@ -94,6 +135,42 @@ class ModernizationGenerator:
                 )
             else:
                 logger.warning("BTS ID extraction failed, skipping ID replacement")
+            
+            # Replace VLAN IDs from IP Plan if available
+            if ip_plan_data and reference_vlan_data:
+                logger.info("Performing template-based VLAN ID replacement from IP Plan...")
+                updated_content = self._replace_vlan_ids(
+                    updated_content, reference_vlan_data, ip_plan_data['technologies']
+                )
+            else:
+                logger.info("IP Plan or reference VLAN data not available for VLAN replacement")
+            
+            # Replace IP addresses from IP Plan if available
+            if ip_plan_data and reference_ip_data:
+                logger.info("Performing template-based IP address replacement from IP Plan...")
+                updated_content = self._replace_ip_addresses(
+                    updated_content, reference_ip_data, ip_plan_data['technologies']
+                )
+            else:
+                logger.info("IP Plan or reference IP data not available for IP replacement")
+            
+            # Replace routing rules from IP Plan if available
+            if ip_plan_data and reference_routing_data:
+                logger.info("Performing template-based IPv4 routing replacement from IP Plan...")
+                updated_content = self._replace_routing_rules(
+                    updated_content, reference_routing_data, ip_plan_data['routing_rules']
+                )
+            else:
+                logger.info("IP Plan or reference routing data not available for routing replacement")
+            
+            # Replace network parameters (NRX2LINK, LNADJGNB) from IP Plan if available
+            if ip_plan_data and reference_network_params:
+                logger.info("Performing template-based network parameters replacement from IP Plan...")
+                updated_content = self._replace_network_parameters(
+                    updated_content, reference_network_params, ip_plan_data['technologies']
+                )
+            else:
+                logger.info("IP Plan or reference network parameters not available for network replacement")
             
             # Replace sctpPortMin if available
             if existing_sctp_port and reference_sctp_port:
@@ -546,4 +623,282 @@ class ModernizationGenerator:
                 logger.info(f"Mapped 4G cell {mapped_lncel_id} not found in existing station for 5G mapping")
         
         logger.info(f"Total 5G NRCELL physCellId replacements made: {total_replacements}")
+        return xml_content
+
+    def _replace_vlan_ids(self, xml_content, reference_vlan_data, ip_plan_technologies):
+        """Replace VLAN IDs from IP Plan data"""
+        logger.info(f"Replacing VLAN IDs from IP Plan")
+        logger.info(f"Reference VLAN data: {list(reference_vlan_data.keys()) if reference_vlan_data else 'None'}")
+        logger.info(f"IP Plan technologies: {list(ip_plan_technologies.keys()) if ip_plan_technologies else 'None'}")
+        
+        total_replacements = 0
+        import re
+        
+        # Map technology names for matching
+        tech_mapping = {
+            'OAM': ['OAM', 'MGT'],
+            '2G': ['2G', 'GSM'], 
+            '3G': ['3G', 'WCDMA'],
+            '4G': ['4G', 'LTE'],
+            '5G': ['5G', 'NR']
+        }
+        
+        for ip_plan_tech, ip_plan_data in ip_plan_technologies.items():
+            new_vlan_id = ip_plan_data.get('vlanId')
+            if not new_vlan_id:
+                continue
+                
+            # Find matching technology in reference VLAN data
+            for ref_tech, ref_vlan_info in reference_vlan_data.items():
+                # Check if technologies match
+                tech_matches = False
+                for mapped_tech, tech_variants in tech_mapping.items():
+                    if (ip_plan_tech in tech_variants or ip_plan_tech == mapped_tech) and \
+                       (ref_tech in tech_variants or ref_tech == mapped_tech):
+                        tech_matches = True
+                        break
+                
+                if tech_matches:
+                    old_vlan_id = ref_vlan_info['vlanId']
+                    user_label = ref_vlan_info['userLabel']
+                    
+                    logger.info(f"Replacing VLAN: {ref_tech} ({user_label}) -> {old_vlan_id} with {new_vlan_id}")
+                    
+                    # Pattern to find VLANIF with specific userLabel and replace vlanId
+                    pattern = rf'(<managedObject[^>]*class="[^"]*VLANIF[^"]*"[^>]*>.*?<p\s+name="userLabel"[^>]*>\s*{re.escape(user_label)}\s*</p>.*?)(<p\s+name="vlanId"[^>]*>)\s*{re.escape(old_vlan_id)}\s*(</p>.*?</managedObject>)'
+                    
+                    def replace_vlan(match):
+                        before_vlan = match.group(1)
+                        vlan_start = match.group(2)
+                        after_vlan = match.group(3)
+                        return f"{before_vlan}{vlan_start}{new_vlan_id}{after_vlan}"
+                    
+                    # Count matches before replacement
+                    matches = re.findall(pattern, xml_content, re.DOTALL | re.IGNORECASE)
+                    param_replacements = len(matches)
+                    
+                    if param_replacements > 0:
+                        xml_content = re.sub(pattern, replace_vlan, xml_content, flags=re.DOTALL | re.IGNORECASE)
+                        logger.info(f"Replaced {param_replacements} instances of VLAN {user_label} '{old_vlan_id}' with '{new_vlan_id}'")
+                        total_replacements += param_replacements
+                    else:
+                        logger.warning(f"No instances of VLAN {user_label} '{old_vlan_id}' found for replacement")
+        
+        logger.info(f"Total VLAN replacements made: {total_replacements}")
+        return xml_content
+
+    def _replace_ip_addresses(self, xml_content, reference_ip_data, ip_plan_technologies):
+        """Replace IP addresses, masks, and gateways from IP Plan data"""
+        logger.info(f"Replacing IP addresses from IP Plan")
+        logger.info(f"Reference IP data: {list(reference_ip_data.keys()) if reference_ip_data else 'None'}")
+        logger.info(f"IP Plan technologies: {list(ip_plan_technologies.keys()) if ip_plan_technologies else 'None'}")
+        
+        total_replacements = 0
+        import re
+        
+        # Map technology names for matching
+        tech_mapping = {
+            'OAM': ['OAM', 'MGT'],
+            '2G': ['2G', 'GSM'],
+            '3G': ['3G', 'WCDMA'], 
+            '4G': ['4G', 'LTE'],
+            '5G': ['5G', 'NR']
+        }
+        
+        for ip_plan_tech, ip_plan_data in ip_plan_technologies.items():
+            new_ip = ip_plan_data.get('localIpAddr')
+            new_mask = ip_plan_data.get('localIpPrefixLength')
+            new_gateway = ip_plan_data.get('gateway')
+            
+            if not new_ip:
+                continue
+                
+            # Find matching technology in reference IP data
+            for ref_tech, ref_ip_info in reference_ip_data.items():
+                # Check if technologies match
+                tech_matches = False
+                for mapped_tech, tech_variants in tech_mapping.items():
+                    if (ip_plan_tech in tech_variants or ip_plan_tech == mapped_tech) and \
+                       (ref_tech in tech_variants or ref_tech == mapped_tech):
+                        tech_matches = True
+                        break
+                
+                if tech_matches:
+                    old_ip = ref_ip_info['localIpAddr']
+                    old_mask = ref_ip_info.get('localIpPrefixLength')
+                    old_gateway = ref_ip_info.get('gateway')
+                    user_label = ref_ip_info.get('userLabel', ref_tech)
+                    
+                    logger.info(f"Replacing IP: {ref_tech} ({user_label}) -> IP: {old_ip}->{new_ip}, Mask: {old_mask}->{new_mask}, GW: {old_gateway}->{new_gateway}")
+                    
+                    # Replace localIpAddr
+                    if old_ip and new_ip:
+                        ip_pattern = rf'(<p\s+name="localIpAddr"[^>]*>)\s*{re.escape(old_ip)}\s*(</p>)'
+                        ip_replacement = rf'\g<1>{new_ip}\g<2>'
+                        ip_matches = re.findall(ip_pattern, xml_content, re.IGNORECASE)
+                        if ip_matches:
+                            xml_content = re.sub(ip_pattern, ip_replacement, xml_content, flags=re.IGNORECASE)
+                            total_replacements += len(ip_matches)
+                            logger.info(f"Replaced {len(ip_matches)} instances of localIpAddr '{old_ip}' with '{new_ip}'")
+                    
+                    # Replace localIpPrefixLength
+                    if old_mask and new_mask:
+                        mask_pattern = rf'(<p\s+name="localIpPrefixLength"[^>]*>)\s*{re.escape(old_mask)}\s*(</p>)'
+                        mask_replacement = rf'\g<1>{new_mask}\g<2>'
+                        mask_matches = re.findall(mask_pattern, xml_content, re.IGNORECASE)
+                        if mask_matches:
+                            xml_content = re.sub(mask_pattern, mask_replacement, xml_content, flags=re.IGNORECASE)
+                            total_replacements += len(mask_matches)
+                            logger.info(f"Replaced {len(mask_matches)} instances of localIpPrefixLength '{old_mask}' with '{new_mask}'")
+                    
+                    # Replace gateway
+                    if old_gateway and new_gateway:
+                        gw_pattern = rf'(<p\s+name="gateway"[^>]*>)\s*{re.escape(old_gateway)}\s*(</p>)'
+                        gw_replacement = rf'\g<1>{new_gateway}\g<2>'
+                        gw_matches = re.findall(gw_pattern, xml_content, re.IGNORECASE)
+                        if gw_matches:
+                            xml_content = re.sub(gw_pattern, gw_replacement, xml_content, flags=re.IGNORECASE)
+                            total_replacements += len(gw_matches)
+                            logger.info(f"Replaced {len(gw_matches)} instances of gateway '{old_gateway}' with '{new_gateway}'")
+        
+        logger.info(f"Total IP replacements made: {total_replacements}")
+        return xml_content
+
+    def _replace_routing_rules(self, xml_content, reference_routing_data, ip_plan_routing_rules):
+        """Replace IPv4 routing rules from IP Plan data"""
+        logger.info(f"Replacing IPv4 routing rules from IP Plan")
+        logger.info(f"Reference routing data: {list(reference_routing_data.keys()) if reference_routing_data else 'None'}")
+        logger.info(f"IP Plan routing rules: {ip_plan_routing_rules if ip_plan_routing_rules else 'None'}")
+        
+        total_replacements = 0
+        import re
+        
+        if not ip_plan_routing_rules:
+            logger.info("No IP Plan routing rules provided")
+            return xml_content
+        
+        # Process IPRT-1 mappings
+        iprt1_mappings = ip_plan_routing_rules.get('IPRT-1', {})
+        for ip_prefix, new_gateway in iprt1_mappings.items():
+            if not new_gateway:
+                continue
+                
+            # Find matching routes in reference data
+            if 'IPRT-1' in reference_routing_data:
+                ref_routes = reference_routing_data['IPRT-1']
+                if ip_prefix in ref_routes:
+                    old_gateway = ref_routes[ip_prefix]['gateway']
+                    dest_ip = ref_routes[ip_prefix]['destIpAddr']
+                    
+                    logger.info(f"Replacing IPRT-1 route: {ip_prefix} -> gateway {old_gateway} with {new_gateway}")
+                    
+                    # Pattern to replace gateway for specific destination IP
+                    pattern = rf'(<managedObject[^>]*class="[^"]*IPRT[^"]*"[^>]*>.*?<p\s+name="destIpAddr"[^>]*>\s*{re.escape(dest_ip)}\s*</p>.*?)(<p\s+name="gateway"[^>]*>)\s*{re.escape(old_gateway)}\s*(</p>.*?</managedObject>)'
+                    
+                    def replace_route_gw(match):
+                        before_gw = match.group(1)
+                        gw_start = match.group(2)
+                        after_gw = match.group(3)
+                        return f"{before_gw}{gw_start}{new_gateway}{after_gw}"
+                    
+                    matches = re.findall(pattern, xml_content, re.DOTALL | re.IGNORECASE)
+                    if matches:
+                        xml_content = re.sub(pattern, replace_route_gw, xml_content, flags=re.DOTALL | re.IGNORECASE)
+                        total_replacements += len(matches)
+                        logger.info(f"Replaced {len(matches)} instances of IPRT-1 gateway for {dest_ip}")
+        
+        # Process IPRT-2 NR mappings  
+        iprt2_mappings = ip_plan_routing_rules.get('IPRT-2 NR', {})
+        for ip_prefix, new_gateway in iprt2_mappings.items():
+            if not new_gateway:
+                continue
+                
+            # Find matching routes in reference data
+            for iprt_type in ['IPRT-2', 'IPRT-2 NR']:
+                if iprt_type in reference_routing_data:
+                    ref_routes = reference_routing_data[iprt_type]
+                    if ip_prefix in ref_routes:
+                        old_gateway = ref_routes[ip_prefix]['gateway']
+                        dest_ip = ref_routes[ip_prefix]['destIpAddr']
+                        
+                        logger.info(f"Replacing {iprt_type} route: {ip_prefix} -> gateway {old_gateway} with {new_gateway}")
+                        
+                        # Pattern to replace gateway for specific destination IP
+                        pattern = rf'(<managedObject[^>]*class="[^"]*IPRT[^"]*"[^>]*>.*?<p\s+name="destIpAddr"[^>]*>\s*{re.escape(dest_ip)}\s*</p>.*?)(<p\s+name="gateway"[^>]*>)\s*{re.escape(old_gateway)}\s*(</p>.*?</managedObject>)'
+                        
+                        def replace_route_gw(match):
+                            before_gw = match.group(1)
+                            gw_start = match.group(2) 
+                            after_gw = match.group(3)
+                            return f"{before_gw}{gw_start}{new_gateway}{after_gw}"
+                        
+                        matches = re.findall(pattern, xml_content, re.DOTALL | re.IGNORECASE)
+                        if matches:
+                            xml_content = re.sub(pattern, replace_route_gw, xml_content, flags=re.DOTALL | re.IGNORECASE)
+                            total_replacements += len(matches)
+                            logger.info(f"Replaced {len(matches)} instances of {iprt_type} gateway for {dest_ip}")
+        
+        logger.info(f"Total routing replacements made: {total_replacements}")
+        return xml_content
+
+    def _replace_network_parameters(self, xml_content, reference_network_params, ip_plan_technologies):
+        """Replace network parameters (NRX2LINK_TRUST, LNADJGNB) from IP Plan data"""
+        logger.info(f"Replacing network parameters from IP Plan")
+        logger.info(f"Reference network params: {list(reference_network_params.keys()) if reference_network_params else 'None'}")
+        logger.info(f"IP Plan technologies: {list(ip_plan_technologies.keys()) if ip_plan_technologies else 'None'}")
+        
+        total_replacements = 0
+        import re
+        
+        # Replace NRX2LINK_TRUST ipV4Addr with LTE IP from IP Plan
+        if 'NRX2LINK_TRUST_ipV4Addr' in reference_network_params:
+            old_ip = reference_network_params['NRX2LINK_TRUST_ipV4Addr']['value']
+            
+            # Get LTE IP from IP Plan
+            new_ip = None
+            for tech, tech_data in ip_plan_technologies.items():
+                if tech in ['4G', 'LTE']:
+                    new_ip = tech_data.get('localIpAddr')
+                    break
+            
+            if old_ip and new_ip:
+                logger.info(f"Replacing NRX2LINK_TRUST ipV4Addr: {old_ip} -> {new_ip}")
+                
+                pattern = rf'(<p\s+name="ipV4Addr"[^>]*>)\s*{re.escape(old_ip)}\s*(</p>)'
+                replacement = rf'\g<1>{new_ip}\g<2>'
+                
+                matches = re.findall(pattern, xml_content, re.IGNORECASE)
+                if matches:
+                    xml_content = re.sub(pattern, replacement, xml_content, flags=re.IGNORECASE)
+                    total_replacements += len(matches)
+                    logger.info(f"Replaced {len(matches)} instances of NRX2LINK_TRUST ipV4Addr")
+            else:
+                logger.warning("Could not replace NRX2LINK_TRUST ipV4Addr - missing old or new IP")
+        
+        # Replace LNADJGNB cPlaneIpAddr with 5G IP from IP Plan
+        if 'LNADJGNB_cPlaneIpAddr' in reference_network_params:
+            old_ip = reference_network_params['LNADJGNB_cPlaneIpAddr']['value']
+            
+            # Get 5G IP from IP Plan
+            new_ip = None
+            for tech, tech_data in ip_plan_technologies.items():
+                if tech in ['5G', 'NR']:
+                    new_ip = tech_data.get('localIpAddr')
+                    break
+            
+            if old_ip and new_ip:
+                logger.info(f"Replacing LNADJGNB cPlaneIpAddr: {old_ip} -> {new_ip}")
+                
+                pattern = rf'(<p\s+name="cPlaneIpAddr"[^>]*>)\s*{re.escape(old_ip)}\s*(</p>)'
+                replacement = rf'\g<1>{new_ip}\g<2>'
+                
+                matches = re.findall(pattern, xml_content, re.IGNORECASE)
+                if matches:
+                    xml_content = re.sub(pattern, replacement, xml_content, flags=re.IGNORECASE)
+                    total_replacements += len(matches)
+                    logger.info(f"Replaced {len(matches)} instances of LNADJGNB cPlaneIpAddr")
+            else:
+                logger.warning("Could not replace LNADJGNB cPlaneIpAddr - missing old or new IP")
+        
+        logger.info(f"Total network parameter replacements made: {total_replacements}")
         return xml_content

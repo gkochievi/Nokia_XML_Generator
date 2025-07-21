@@ -78,7 +78,7 @@
         @media (max-width: 768px) {
             .container-fluid {
                 padding: 1rem;
-            }
+        }
             
             .upload-area {
                 padding: 1.5rem 1rem;
@@ -135,7 +135,7 @@
                 visibility: visible !important;
                 flex-direction: row !important;
                 align-items: center !important;
-            }
+        }
             
             .navbar-collapse {
                 display: flex !important;
@@ -167,7 +167,7 @@
             .nav-link {
                 margin: 0.25rem 0;
                 color: rgba(255, 255, 255, 0.9) !important;
-            }
+        }
             
             .nav-link:hover {
                 background-color: rgba(255, 255, 255, 0.1) !important;
@@ -176,7 +176,7 @@
         }
     </style>
 </head>
- <body>
+<body>
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg" style="background: rgba(102, 126, 234, 0.9) !important; backdrop-filter: blur(15px); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2); padding: 0.75rem 0; display: block !important; visibility: visible !important; position: relative !important; z-index: 9999 !important; width: 100% !important; min-height: 60px !important;">
         <div class="container-fluid" style="display: flex !important; visibility: visible !important;">
@@ -262,7 +262,7 @@
                                 </label>
                                 
                                 <!-- Dropdown for existing files -->
-                                <div class="mb-3">
+            <div class="mb-3">
                                     <select class="form-select" id="referenceXmlSelection" name="referenceXmlSelection">
                                         <option value="">მონაცემები იტვირთება...</option>
                                     </select>
@@ -277,7 +277,7 @@
                                         <i class="bi bi-plus-circle me-1"></i>არჩევა
                                     </button>
                                 </div>
-                            </div>
+            </div>
 
                             <!-- IP Plan Excel Section -->
                             <div class="col-md-6 mb-4">
@@ -286,7 +286,7 @@
                                 </label>
                                 
                                 <!-- Dropdown for existing files -->
-                                <div class="mb-3">
+            <div class="mb-3">
                                     <select class="form-select" id="ipPlanSelection" name="ipPlanSelection">
                                         <option value="">მონაცემები იტვირთება...</option>
                                     </select>
@@ -319,26 +319,26 @@
 
                     <!-- Alert Container -->
                     <div id="rollout-alert" class="alert mt-4 d-none" role="alert"></div>
-                </div>
             </div>
-        </div>
+            </div>
     </div>
+</div>
 <script>
 // Form validation and submission
 document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('rolloutForm');
-    const alertBox = document.getElementById('rollout-alert');
+const form = document.getElementById('rolloutForm');
+const alertBox = document.getElementById('rollout-alert');
 
     // Load existing files for dropdowns
     loadExistingFiles();
 
     // Bootstrap validation
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
+form.addEventListener('submit', async function(e) {
+    e.preventDefault();
         e.stopPropagation();
         
         if (form.checkValidity()) {
-            alertBox.classList.add('d-none');
+    alertBox.classList.add('d-none');
             
             // Show loading state
             const submitBtn = form.querySelector('button[type="submit"]');
@@ -347,11 +347,11 @@ document.addEventListener('DOMContentLoaded', function() {
             submitBtn.innerHTML = '<i class="bi bi-arrow-clockwise me-2 spinner-border spinner-border-sm"></i>მუშავდება...';
             
             try {
-                const formData = new FormData(form);
-                const res = await fetch('/api/rollout', { method: 'POST', body: formData });
-                const data = await res.json();
+    const formData = new FormData(form);
+    const res = await fetch('/api/rollout', { method: 'POST', body: formData });
+    const data = await res.json();
                 
-                if (data.success) {
+    if (data.success) {
                     alertBox.className = 'alert alert-success mt-4';
                     alertBox.innerHTML = `
                         <div class="d-flex align-items-center">
@@ -433,7 +433,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     option.textContent = file;
                     ipSelect.appendChild(option);
                 });
-            } else {
+    } else {
                 ipSelect.innerHTML = '<option value="">არ მოიძებნა Excel ფაილები</option>';
             }
             
@@ -526,7 +526,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const textElement = uploadArea.querySelector('p');
         if (textElement) {
             textElement.innerHTML = `<i class="bi bi-check-circle-fill me-1 text-success"></i>არჩეულია: <strong>${fileName}</strong>`;
-        }
+    }
     }
 });
 </script>

@@ -699,6 +699,7 @@ document.addEventListener('DOMContentLoaded', function() {
             setupConsoleToggle();
             setupTabHandling(); // Initialize tab handling
             addSystemLog('საიტი წარმატებით ჩაიტვირთა', 'success');
+            addSystemLog('IP Plan parsing ფუნქციონალი მზადაა (რეალურ დროში)', 'info');
         });
 
         // Load example files from server
@@ -763,7 +764,16 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             document.getElementById('ipPlanUpload').addEventListener('change', function(e) {
+                const stationName = document.getElementById('stationName').value;
+                if (!stationName || stationName.trim() === '') {
+                    addExtractionLog('⚠ ჯერ ატვირთეთ არსებული სადგურის XML, რომ ამოვიღოთ სადგურის სახელი და მხოლოდ ამის შემდეგ აირჩიეთ IP Plan Excel!', 'warning');
+                    showAlert('warning', 'სადგურის სახელი ჯერ არ არის ამოღებული XML-დან. გთხოვთ, ჯერ ატვირთეთ არსებული სადგურის XML.');
+                    return;
+                }
                 handleFileUpload(e.target.files[0], 'excel');
+                if (e.target.files && e.target.files[0]) {
+                    setTimeout(() => parseIpPlanExcel(), 100);
+                }
             });
 
             // Existing XML file handler - extract btsName
@@ -778,6 +788,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 const selectedFile = e.target.value;
                 if (selectedFile && selectedFile !== 'upload') {
                     extractBtsNameFromExampleFile(selectedFile, 'reference');
+                }
+            });
+
+            // IP Plan dropdown handler - parse IP Plan
+            document.getElementById('ipPlanSelection').addEventListener('change', function(e) {
+                const stationName = document.getElementById('stationName').value;
+                if (!stationName || stationName.trim() === '') {
+                    addExtractionLog('⚠ ჯერ ატვირთეთ არსებული სადგურის XML, რომ ამოვიღოთ სადგურის სახელი და მხოლოდ ამის შემდეგ აირჩიეთ IP Plan Excel!', 'warning');
+                    showAlert('warning', 'სადგურის სახელი ჯერ არ არის ამოღებული XML-დან. გთხოვთ, ჯერ ატვირთეთ არსებული სადგურის XML.');
+                    return;
+                }
+                const selectedFile = e.target.value;
+                if (selectedFile && selectedFile !== '') {
+                    setTimeout(() => parseIpPlanExcel(), 100);
                 }
             });
 
@@ -989,6 +1013,101 @@ const form = document.getElementById('modernizationForm');
             }
         }
 
+        // Parse IP Plan Excel file
+        async function parseIpPlanExcel() {
+            const ipPlanSelection = document.getElementById('ipPlanSelection').value;
+            const ipPlanUpload = document.getElementById('ipPlanUpload').files[0];
+            const stationName = document.getElementById('stationName').value;
+            
+            if (!stationName || stationName.trim() === '') {
+                addExtractionLog('⚠ ჯერ ატვირთეთ არსებული სადგურის XML, რომ ამოვიღოთ სადგურის სახელი და მხოლოდ ამის შემდეგ აირჩიეთ IP Plan Excel!', 'warning');
+                showAlert('warning', 'სადგურის სახელი ჯერ არ არის ამოღებული XML-დან. გთხოვთ, ჯერ ატვირთეთ არსებული სადგურის XML.');
+                return null;
+            }
+            
+            let ipPlanData = null;
+            
+            if (ipPlanSelection && ipPlanSelection !== '') {
+                // Use selected example file
+                addExtractionLog(`IP Plan parsing იწყება example file-დან: ${ipPlanSelection}`, 'info');
+                addSystemLog(`IP Plan Excel file: ${ipPlanSelection}`, 'info');
+                
+                try {
+                    const response = await fetch(`/api/parse-ip-plan-from-example?station_name=${encodeURIComponent(stationName)}&filename=${encodeURIComponent(ipPlanSelection)}`);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        ipPlanData = data.data;
+                        addExtractionLog(`✓ IP Plan წარმატებით დაპარსდა: ${data.debug.found_station}`, 'success');
+                        addExtractionLog(`მოძებნა row ${data.debug.station_row}-ზე`, 'info');
+                        addExtractionLog(`Technologies: ${data.debug.technologies_found.join(', ')}`, 'info');
+                    } else {
+                        addExtractionLog(`✗ IP Plan parsing ვერ მოხერხდა: ${data.error}`, 'error');
+                    }
+                } catch (error) {
+                    addExtractionLog(`✗ IP Plan parsing network error: ${error.message}`, 'error');
+                }
+                
+            } else if (ipPlanUpload) {
+                // Use uploaded file
+                addExtractionLog(`IP Plan parsing იწყება ატვირთული file-დან: ${ipPlanUpload.name}`, 'info');
+                addSystemLog(`IP Plan Excel file: ${ipPlanUpload.name}`, 'info');
+                
+                try {
+                    const formData = new FormData();
+                    formData.append('stationName', stationName);
+                    formData.append('ipPlanFile', ipPlanUpload);
+                    
+                    const response = await fetch('/api/parse-ip-plan', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        ipPlanData = data.data;
+                        addExtractionLog(`✓ IP Plan წარმატებით დაპარსდა: ${data.debug.found_station}`, 'success');
+                        addExtractionLog(`მოძებნა row ${data.debug.station_row}-ზე`, 'info');
+                        addExtractionLog(`Technologies: ${data.debug.technologies_found.join(', ')}`, 'info');
+                    } else {
+                        addExtractionLog(`✗ IP Plan parsing ვერ მოხერხდა: ${data.error}`, 'error');
+                    }
+                } catch (error) {
+                    addExtractionLog(`✗ IP Plan parsing network error: ${error.message}`, 'error');
+                }
+            } else {
+                addExtractionLog('IP Plan Excel file არ არის არჩეული', 'warning');
+                return null;
+            }
+            
+            // Log detailed IP Plan data
+            if (ipPlanData && ipPlanData.technologies) {
+                addExtractionLog('--- IP Plan Network Details ---', 'info');
+                Object.entries(ipPlanData.technologies).forEach(([tech, data]) => {
+                    if (data.vlanId || data.localIpAddr) {
+                        addExtractionLog(`${tech}: VLAN=${data.vlanId}, IP=${data.localIpAddr}, Mask=${data.localIpPrefixLength}, GW=${data.gateway}`, 'info');
+                    }
+                });
+                
+                // Log routing rules
+                if (ipPlanData.routing_rules) {
+                    addExtractionLog('--- IPv4 Routing Rules ---', 'info');
+                    Object.entries(ipPlanData.routing_rules).forEach(([iprt, rules]) => {
+                        addExtractionLog(`${iprt}:`, 'info');
+                        Object.entries(rules).forEach(([prefix, gateway]) => {
+                            if (gateway) {
+                                addExtractionLog(`  ${prefix}.x.x → ${gateway}`, 'info');
+                            }
+                        });
+                    });
+                }
+                
+                addExtractionLog('--- End IP Plan Details ---', 'info');
+            }
+            
+            return ipPlanData;
+        }
+
         // Extract btsName, BTS ID, sctpPortMin, and 2G parameters from example file (dropdown selection)
         async function extractBtsNameFromExampleFile(filename, type) {
             addSystemLog(`${type} XML-დან ყველა პარამეტრის ამოღება: ${filename}`, 'info');
@@ -1082,6 +1201,31 @@ const form = document.getElementById('modernizationForm');
             addGenerationLog('XML გენერაცია დაიწყო...', 'info');
             clearConsole('generationConsole'); // Clear previous logs
             addGenerationLog('XML გენერაცია დაიწყო...', 'info');
+            
+            // Parse IP Plan Excel before generation
+            addGenerationLog('IP Plan Excel parsing...', 'info');
+            const ipPlanData = await parseIpPlanExcel();
+            
+            if (ipPlanData) {
+                addGenerationLog(`✓ IP Plan data მზადაა ჩანაცვლებისთვის`, 'success');
+                addGenerationLog(`Station: ${ipPlanData.station_name}`, 'info');
+                
+                // Count valid technologies
+                const validTechs = Object.entries(ipPlanData.technologies).filter(([tech, data]) => 
+                    data.vlanId || data.localIpAddr
+                ).map(([tech]) => tech);
+                
+                if (validTechs.length > 0) {
+                    addGenerationLog(`ქსელის პარამეტრები მოძებნულია: ${validTechs.join(', ')}`, 'success');
+                } else {
+                    addGenerationLog(`ქსელის პარამეტრები ვერ მოიძებნა`, 'warning');
+                }
+                
+                // Store IP Plan data globally for later use
+                window.ipPlanData = ipPlanData;
+            } else {
+                addGenerationLog(`⚠ IP Plan data ვერ მოიძებნა - XML generation გაგრძელდება IP Plan-ის გარეშე`, 'warning');
+            }
 
             const submitBtn = form.querySelector('button[type="submit"]');
             const btnContent = submitBtn.querySelector('.btn-content');

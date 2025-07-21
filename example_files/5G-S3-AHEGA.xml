@@ -16965,23 +16965,23 @@
     </managedObject>
     <managedObject class="com.nokia.srbts.tnl:VLANIF" distName="MRBTS-90217/TNLSVC-1/TNL-1/ETHSVC-1/ETHIF-1/VLANIF-1" version="TNL24R1_2322_110" operation="create">
       <p name="userLabel">OAM</p>
-      <p name="vlanId">3980</p>
+      <p name="vlanId">99801</p>
     </managedObject>
     <managedObject class="com.nokia.srbts.tnl:VLANIF" distName="MRBTS-90217/TNLSVC-1/TNL-1/ETHSVC-1/ETHIF-1/VLANIF-2" version="TNL24R1_2322_110" operation="create">
       <p name="userLabel">2G</p>
-      <p name="vlanId">3950</p>
+      <p name="vlanId">9950</p>
     </managedObject>
     <managedObject class="com.nokia.srbts.tnl:VLANIF" distName="MRBTS-90217/TNLSVC-1/TNL-1/ETHSVC-1/ETHIF-1/VLANIF-3" version="TNL24R1_2322_110" operation="create">
       <p name="userLabel">3G</p>
-      <p name="vlanId">3960</p>
+      <p name="vlanId">99602</p>
     </managedObject>
     <managedObject class="com.nokia.srbts.tnl:VLANIF" distName="MRBTS-90217/TNLSVC-1/TNL-1/ETHSVC-1/ETHIF-1/VLANIF-4" version="TNL24R1_2322_110" operation="create">
       <p name="userLabel">4G</p>
-      <p name="vlanId">3990</p>
+      <p name="vlanId">99903</p>
     </managedObject>
     <managedObject class="com.nokia.srbts.tnl:VLANIF" distName="MRBTS-90217/TNLSVC-1/TNL-1/ETHSVC-1/ETHIF-1/VLANIF-5" version="TNL24R1_2322_110" operation="create">
       <p name="userLabel">5G</p>
-      <p name="vlanId">3970</p>
+      <p name="vlanId">99704</p>
     </managedObject>
     <managedObject class="com.nokia.srbts.tnl:ETHIF" distName="MRBTS-90217/TNLSVC-1/TNL-1/ETHSVC-1/ETHIF-2" version="TNL24R1_2322_110" operation="create">
       <p name="linkSelectorDN">MRBTS-90217/TNLSVC-1/TNL-1/ETHSVC-1/L2SWI-1/BRGPRT-1</p>

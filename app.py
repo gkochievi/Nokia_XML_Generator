@@ -5,6 +5,7 @@ import tempfile
 from werkzeug.utils import secure_filename
 from modules.xml_parser import XMLParser
 from modules.xml_viewer import XMLViewer
+from modules.excel_parser import ExcelParser
 from modules.modernization import ModernizationGenerator
 from modules.rollout import RolloutGenerator
 import logging
@@ -194,11 +195,15 @@ def modernization():
             existing_sctp_port = parser.extract_sctp_port_min(existing_tree)
             existing_2g_params = parser.extract_2g_parameters(existing_tree)
             existing_4g_cells = parser.extract_4g_cells(existing_tree)
+            existing_4g_rootseq = parser.extract_4g_rootseq(existing_tree)
+            existing_5g_nrcells = parser.extract_5g_nrcells(existing_tree)
             logger.info(f"Existing station btsName: {existing_bts_name}")
             logger.info(f"Existing station BTS ID: {existing_bts_id}")
             logger.info(f"Existing station sctpPortMin: {existing_sctp_port}")
             logger.info(f"Existing station 2G params: {existing_2g_params}")
             logger.info(f"Existing station 4G cells: {existing_4g_cells}")
+            logger.info(f"Existing station 4G rootSeq: {existing_4g_rootseq}")
+            logger.info(f"Existing station 5G NRCells: {existing_5g_nrcells}")
             
             # Extract reference template data
             reference_tree = parser.parse_file(file_paths['reference5gXml'])
@@ -207,11 +212,15 @@ def modernization():
             reference_sctp_port = parser.extract_sctp_port_min(reference_tree)
             reference_2g_params = parser.extract_2g_parameters(reference_tree)
             reference_4g_cells = parser.extract_4g_cells(reference_tree)
+            reference_4g_rootseq = parser.extract_4g_rootseq(reference_tree)
+            reference_5g_nrcells = parser.extract_5g_nrcells(reference_tree)
             logger.info(f"Reference template btsName: {reference_bts_name}")
             logger.info(f"Reference template BTS ID: {reference_bts_id}")
             logger.info(f"Reference template sctpPortMin: {reference_sctp_port}")
             logger.info(f"Reference template 2G params: {reference_2g_params}")
             logger.info(f"Reference template 4G cells: {reference_4g_cells}")
+            logger.info(f"Reference template 4G rootSeq: {reference_4g_rootseq}")
+            logger.info(f"Reference template 5G NRCells: {reference_5g_nrcells}")
             
             if not existing_bts_name:
                 return jsonify({'error': 'არსებული XML ფაილში btsName ვერ მოიძებნა'}), 400
@@ -230,7 +239,8 @@ def modernization():
             transmission_excel_path=file_paths['transmissionExcel'],
             output_folder=app.config['GENERATED_FOLDER'],
             existing_bts_name=existing_bts_name,
-            reference_bts_name=reference_bts_name
+            reference_bts_name=reference_bts_name,
+            ip_plan_excel_path=file_paths['transmissionExcel']
         )
         
         # Clean up temporary files (only the ones we created)
@@ -259,11 +269,17 @@ def modernization():
                 'reference_2g_params': reference_2g_params,
                 'existing_4g_cells': existing_4g_cells,
                 'reference_4g_cells': reference_4g_cells,
+                'existing_4g_rootseq': existing_4g_rootseq,
+                'reference_4g_rootseq': reference_4g_rootseq,
+                'existing_5g_nrcells': existing_5g_nrcells,
+                'reference_5g_nrcells': reference_5g_nrcells,
                 'replacement_performed': bool(existing_bts_name and reference_bts_name),
                 'bts_id_replacement_performed': bool(existing_bts_id and reference_bts_id),
                 'sctp_port_replacement_performed': bool(existing_sctp_port and reference_sctp_port),
                 'params_2g_replacement_performed': bool(existing_2g_params and reference_2g_params),
-                'cells_4g_replacement_performed': bool(existing_4g_cells and reference_4g_cells)
+                'cells_4g_replacement_performed': bool(existing_4g_cells and reference_4g_cells),
+                'rootseq_4g_replacement_performed': bool(existing_4g_rootseq and reference_4g_rootseq),
+                'nrcells_5g_replacement_performed': bool(existing_4g_cells and reference_5g_nrcells)
             }
         })
         
@@ -1267,6 +1283,160 @@ def view_uploaded_xml(filename):
         })
     except Exception as e:
         logger.error(f"Error viewing uploaded XML: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/parse-ip-plan', methods=['POST'])
+def parse_ip_plan():
+    """Parse IP Plan Excel file for network parameters (debug endpoint)"""
+    try:
+        # Check if station name is provided
+        station_name = request.form.get('stationName')
+        if not station_name:
+            return jsonify({'error': 'Station name is required'}), 400
+        
+        # Check if IP Plan Excel file is provided
+        if 'ipPlanFile' not in request.files:
+            return jsonify({'error': 'IP Plan Excel file is required'}), 400
+        
+        ip_plan_file = request.files['ipPlanFile']
+        if ip_plan_file.filename == '':
+            return jsonify({'error': 'No IP Plan file selected'}), 400
+        
+        if not allowed_file(ip_plan_file.filename):
+            return jsonify({'error': 'Invalid IP Plan file format'}), 400
+        
+        # Save uploaded IP Plan file temporarily
+        ip_plan_temp_path = None
+        try:
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as tmp:
+                ip_plan_file.save(tmp.name)
+                ip_plan_temp_path = tmp.name
+            
+            # Parse IP Plan Excel
+            excel_parser = ExcelParser()
+            ip_plan_data = excel_parser.parse_ip_plan_excel(ip_plan_temp_path, station_name)
+            
+            if ip_plan_data is None:
+                return jsonify({
+                    'success': False,
+                    'error': f'Station "{station_name}" not found in IP Plan Excel file'
+                }), 404
+            
+            # Log parsed data for debugging
+            logger.info("=== IP PLAN PARSING DEBUG ===")
+            logger.info(f"Station Name: {station_name}")
+            logger.info(f"Found Station: {ip_plan_data.get('station_name')}")
+            logger.info(f"Station Row: {ip_plan_data.get('station_row')}")
+            
+            # Log technology data
+            technologies = ip_plan_data.get('technologies', {})
+            for tech, data in technologies.items():
+                logger.info(f"\n{tech} Technology:")
+                logger.info(f"  VLAN ID: {data.get('vlanId')}")
+                logger.info(f"  IP Address: {data.get('localIpAddr')}")
+                logger.info(f"  Subnet Mask: {data.get('localIpPrefixLength')}")
+                logger.info(f"  Gateway: {data.get('gateway')}")
+            
+            # Log routing rules
+            routing_rules = ip_plan_data.get('routing_rules', {})
+            logger.info("\nRouting Rules:")
+            for iprt, rules in routing_rules.items():
+                logger.info(f"  {iprt}:")
+                for prefix, gateway in rules.items():
+                    logger.info(f"    {prefix}.x.x -> {gateway}")
+            
+            logger.info("=== END IP PLAN DEBUG ===")
+            
+            return jsonify({
+                'success': True,
+                'data': ip_plan_data,
+                'debug': {
+                    'station_name': station_name,
+                    'found_station': ip_plan_data.get('station_name'),
+                    'station_row': ip_plan_data.get('station_row'),
+                    'technologies_found': list(technologies.keys()),
+                    'routing_rules_count': len(routing_rules)
+                }
+            })
+            
+        finally:
+            # Clean up temporary file
+            if ip_plan_temp_path and os.path.exists(ip_plan_temp_path):
+                os.unlink(ip_plan_temp_path)
+    
+    except Exception as e:
+        logger.error(f"Error parsing IP Plan: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/parse-ip-plan-from-example', methods=['GET'])
+def parse_ip_plan_from_example():
+    """Parse IP Plan from example file (debug endpoint)"""
+    try:
+        station_name = request.args.get('station_name')
+        filename = request.args.get('filename')
+        
+        if not station_name:
+            return jsonify({'error': 'Station name is required'}), 400
+        
+        if not filename:
+            return jsonify({'error': 'Filename is required'}), 400
+        
+        # Find the file in example_files directory
+        file_path = os.path.join(app.config['EXAMPLE_FILES_FOLDER'], filename)
+        if not os.path.exists(file_path):
+            return jsonify({'error': f'File {filename} not found in example files'}), 404
+        
+        # Parse IP Plan Excel
+        excel_parser = ExcelParser()
+        ip_plan_data = excel_parser.parse_ip_plan_excel(file_path, station_name)
+        
+        if ip_plan_data is None:
+            return jsonify({
+                'success': False,
+                'error': f'Station "{station_name}" not found in IP Plan Excel file'
+            }), 404
+        
+        # Log parsed data for debugging
+        logger.info("=== IP PLAN PARSING DEBUG (Example File) ===")
+        logger.info(f"File: {filename}")
+        logger.info(f"Station Name: {station_name}")
+        logger.info(f"Found Station: {ip_plan_data.get('station_name')}")
+        logger.info(f"Station Row: {ip_plan_data.get('station_row')}")
+        
+        # Log technology data
+        technologies = ip_plan_data.get('technologies', {})
+        for tech, data in technologies.items():
+            logger.info(f"\n{tech} Technology:")
+            logger.info(f"  VLAN ID: {data.get('vlanId')}")
+            logger.info(f"  IP Address: {data.get('localIpAddr')}")
+            logger.info(f"  Subnet Mask: {data.get('localIpPrefixLength')}")
+            logger.info(f"  Gateway: {data.get('gateway')}")
+        
+        # Log routing rules
+        routing_rules = ip_plan_data.get('routing_rules', {})
+        logger.info("\nRouting Rules:")
+        for iprt, rules in routing_rules.items():
+            logger.info(f"  {iprt}:")
+            for prefix, gateway in rules.items():
+                logger.info(f"    {prefix}.x.x -> {gateway}")
+        
+        logger.info("=== END IP PLAN DEBUG ===")
+        
+        return jsonify({
+            'success': True,
+            'data': ip_plan_data,
+            'debug': {
+                'filename': filename,
+                'station_name': station_name,
+                'found_station': ip_plan_data.get('station_name'),
+                'station_row': ip_plan_data.get('station_row'),
+                'technologies_found': list(technologies.keys()),
+                'routing_rules_count': len(routing_rules)
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error parsing IP Plan from example: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
