@@ -4,62 +4,63 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>XML Viewer - Nokia WebEM Generator</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
         body {
             min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            margin: 0;
-            width: 100vw;
-            overflow-x: hidden;
+            background: var(--primary-gradient);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        .viewer-card {
-            border-radius: 1.5rem;
-            box-shadow: 0 8px 32px 0 rgba(76, 68, 182, 0.18);
-            background: rgba(255,255,255,0.98);
-            max-width: 100vw;
-            width: 100%;
-            margin: 0 auto;
-            padding: 2.5rem 2vw 2rem 2vw;
-            overflow-x: auto;
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
         }
-        .viewer-header {
-            text-align: center;
-            color: #667eea;
-            margin-bottom: 1.5rem;
+
+        .gradient-border {
+            border: 2px solid transparent;
+            background: linear-gradient(white, white) padding-box, var(--primary-gradient) border-box;
         }
-        .viewer-header i {
-            font-size: 2.5rem;
-            color: #764ba2;
-            margin-bottom: 0.5rem;
-        }
-        .form-label {
-            font-weight: 500;
-            color: #333;
-        }
-        .form-control, .form-control:focus {
-            border-radius: 0.8rem;
-            border: 2px solid #e0e0e0;
-            box-shadow: none;
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+        .btn-gradient {
+            background: var(--primary-gradient);
             border: none;
-            border-radius: 0.8rem;
-            font-size: 1.15rem;
-            padding: 0.75rem 2.5rem;
-            box-shadow: 0 4px 16px 0 rgba(102, 126, 234, 0.12);
-            transition: background 0.2s;
+            box-shadow: 0 4px 15px 0 rgba(102, 126, 234, 0.35);
+            transition: all 0.3s ease;
         }
-        .btn-primary:hover {
-            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+
+        .btn-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px 0 rgba(102, 126, 234, 0.5);
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
         }
 
         /* Navigation styling for all screen sizes */
         .navbar {
-            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
-            z-index: 1050;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1) !important;
+            z-index: 9999 !important;
+            display: block !important;
+            visibility: visible !important;
+            position: relative !important;
+            width: 100% !important;
+            min-height: 60px !important;
         }
 
         .navbar-brand {
@@ -86,11 +87,25 @@
         @media (min-width: 992px) {
             .navbar-nav {
                 display: flex !important;
+                visibility: visible !important;
+                flex-direction: row !important;
+                align-items: center !important;
             }
             
             .navbar-collapse {
                 display: flex !important;
                 flex-basis: auto;
+                visibility: visible !important;
+            }
+            
+            .nav-item {
+                display: block !important;
+                visibility: visible !important;
+            }
+            
+            .nav-link {
+                display: block !important;
+                visibility: visible !important;
             }
         }
 
@@ -114,67 +129,169 @@
                 color: white !important;
             }
         }
-        .xml-tree { font-family: monospace; font-size: 1em; }
-        .xml-tag { color: #764ba2; }
-        .xml-attr { color: #667eea; }
+
+        /* Upload area styling */
+        .upload-area {
+            border: 2px dashed #c3cef7;
+            background-color: #f8f9ff;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea;
+            background-color: #f0f2ff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.1);
+        }
+
+        .dragover {
+            border-color: #667eea !important;
+            background-color: rgba(102, 126, 234, 0.1) !important;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.3) !important;
+        }
+
+        /* Info cards styling */
+        .info-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 16px 0 rgba(31, 38, 135, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .info-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px 0 rgba(31, 38, 135, 0.15);
+        }
+
+        /* Table styling */
+        .table {
+            --bs-table-bg: rgba(255, 255, 255, 0.9);
+        }
+
+        .table thead th {
+            background: #667eea !important;
+            color: white;
+            border: none;
+            font-weight: 600;
+        }
+
+        .table tbody tr:hover {
+            background-color: rgba(102, 126, 234, 0.1);
+        }
+
+        /* Filter controls */
+        .filter-controls {
+            background: rgba(248, 249, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(102, 126, 234, 0.15);
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+        }
+
+        /* Badge styling */
+        .badge {
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        /* Tab styling */
+        .nav-tabs {
+            border-bottom: 2px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .nav-tabs .nav-link {
+            border: none;
+            color: #667eea;
+            font-weight: 500;
+            padding: 0.75rem 1.25rem;
+            margin-right: 0.5rem;
+            border-radius: 0.5rem 0.5rem 0 0;
+            transition: all 0.3s ease;
+        }
+
+        .nav-tabs .nav-link:hover {
+            background-color: rgba(102, 126, 234, 0.1);
+            color: #667eea !important;
+        }
+
+        .nav-tabs .nav-link.active {
+            background: var(--primary-gradient);
+            color: white !important;
+            border: none;
+        }
+
+        /* Fix for nav-tabs hover conflicts */
+        .nav-tabs .nav-link:not(.active):hover {
+            background-color: rgba(102, 126, 234, 0.1) !important;
+            color: #667eea !important;
+            border: none !important;
+        }
+
+        /* Specific fix for XML viewer tabs */
+        #cellsTab .nav-link:not(.active):hover,
+        #cellRadioTab .nav-link:not(.active):hover {
+            background-color: rgba(102, 126, 234, 0.1) !important;
+            color: #667eea !important;
+            border: none !important;
+        }
+
+        /* XML tree styling */
+        .xml-tree { 
+            font-family: 'Cascadia Code', 'Consolas', 'Monaco', 'Courier New', monospace; 
+            font-size: 0.9rem;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 0.5rem;
+            padding: 1rem;
+        }
+        
+        .xml-tag { color: #667eea; font-weight: 600; }
+        .xml-attr { color: #764ba2; }
         .xml-text { color: #333; }
-        .collapsible { cursor: pointer; }
+        .collapsible { cursor: pointer; user-select: none; }
         .content { display: none; margin-left: 20px; }
         .collapsible::before {
             content: '\25B6'; /* ▶ */
             display: inline-block;
             margin-right: 6px;
             transition: transform 0.2s;
+            color: #667eea;
         }
         .collapsible.active::before {
             content: '\25BC'; /* ▼ */
+            transform: rotate(0deg);
         }
-        .container.py-5 {
-            padding-top: 2rem !important;
-            padding-bottom: 2rem !important;
-            max-width: 100vw;
-            width: 100vw;
-            margin: 0 auto;
-            overflow-x: auto;
-        }
-        @media (min-width: 1200px) {
-            .viewer-card {
-                padding-left: 5vw;
-                padding-right: 5vw;
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .container-fluid {
+                padding: 1rem;
             }
-        }
-        .table-responsive {
-            overflow-x: auto;
-            max-width: 100vw;
-        }
-        table.table {
-            min-width: 900px;
-            width: 100%;
-        }
-        @media (max-width: 900px) {
-            table.table {
-                min-width: 600px;
+            
+            .glass-card {
+                padding: 1.5rem !important;
             }
-            .viewer-card {
-                padding-left: 0.5vw;
-                padding-right: 0.5vw;
+            
+            .upload-area {
+                padding: 1.5rem 1rem;
             }
-        }
-        @media (max-width: 600px) {
-            table.table {
-                min-width: 400px;
-            }
-            .viewer-card {
-                padding-left: 0;
-                padding-right: 0;
+            
+            .table-responsive {
+                font-size: 0.8rem;
             }
         }
     </style>
 </head>
- <body>
+<body class="min-h-screen">
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg" style="background: rgba(102, 126, 234, 0.9) !important; backdrop-filter: blur(15px); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2); padding: 0.75rem 0;">
-        <div class="container-fluid">
+    <nav class="navbar navbar-expand-lg" style="background: rgba(102, 126, 234, 0.9) !important; backdrop-filter: blur(15px); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2); padding: 0.75rem 0; display: block !important; visibility: visible !important; position: relative !important; z-index: 9999 !important; width: 100% !important; min-height: 60px !important;">
+        <div class="container-fluid" style="display: flex !important; visibility: visible !important;">
             <a class="navbar-brand fw-bold d-flex align-items-center" href="/" style="color: white;">
                 <i class="bi bi-cpu me-2" style="font-size: 1.5rem;"></i>
                 Nokia WebEM
@@ -183,25 +300,25 @@
                     style="box-shadow: none; outline: none;">
                 <span class="navbar-toggler-icon" style="background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAiIGhlaWdodD0iMzAiIHZpZXdCb3g9IjAgMCAzMCAzMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTYgOUgyNEg2WiIgZmlsbD0iI2ZmZmZmZiIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjIiLz4KPHBhdGggZD0iTTYgMTVIMjRINloiIGZpbGw9IiNmZmZmZmYiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSIyIi8+CjxwYXRoIGQ9Ik02IDIxSDI0SDZaIiBmaWxsPSIjZmZmZmZmIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K');"></span>
             </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link px-3 py-2" href="/" style="color: rgba(255, 255, 255, 0.8); font-weight: 500; transition: all 0.3s ease;">
+            <div class="navbar-collapse show" id="navbarNav" style="display: flex !important; visibility: visible !important;">
+                <ul class="navbar-nav ms-auto" style="display: flex !important; visibility: visible !important; flex-direction: row !important; align-items: center !important;">
+                    <li class="nav-item" style="display: block !important; visibility: visible !important;">
+                        <a class="nav-link px-3 py-2" href="/" style="color: rgba(255, 255, 255, 0.8) !important; font-weight: 500; display: block !important; visibility: visible !important; transition: all 0.3s ease;">
                             <i class="bi bi-house me-1"></i>მთავარი
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link px-3 py-2" href="/modernization" style="color: rgba(255, 255, 255, 0.8); font-weight: 500; transition: all 0.3s ease;">
+                    <li class="nav-item" style="display: block !important; visibility: visible !important;">
+                        <a class="nav-link px-3 py-2" href="/modernization" style="color: rgba(255, 255, 255, 0.8) !important; font-weight: 500; display: block !important; visibility: visible !important; transition: all 0.3s ease;">
                             <i class="bi bi-arrow-repeat me-1"></i>5G Modernization
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link px-3 py-2" href="/rollout" style="color: rgba(255, 255, 255, 0.8); font-weight: 500; transition: all 0.3s ease;">
+                    <li class="nav-item" style="display: block !important; visibility: visible !important;">
+                        <a class="nav-link px-3 py-2" href="/rollout" style="color: rgba(255, 255, 255, 0.8) !important; font-weight: 500; display: block !important; visibility: visible !important; transition: all 0.3s ease;">
                             <i class="bi bi-plus-circle me-1"></i>ახალი სადგური
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link px-3 py-2 rounded-2 mx-1" href="/xml-viewer" style="background: rgba(255, 255, 255, 0.2); color: white; font-weight: 600; border: 1px solid rgba(255, 255, 255, 0.3); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);">
+                    <li class="nav-item" style="display: block !important; visibility: visible !important;">
+                        <a class="nav-link px-3 py-2 rounded-2 mx-1" href="/xml-viewer" style="background: rgba(255, 255, 255, 0.2) !important; color: white !important; font-weight: 600; display: block !important; visibility: visible !important; border: 1px solid rgba(255, 255, 255, 0.3); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);">
                             <i class="bi bi-file-earmark-code me-1"></i>XML Viewer
                         </a>
                     </li>
@@ -210,34 +327,93 @@
         </div>
     </nav>
 
-<div class="container py-5">
-    <div class="viewer-card">
-        <div class="viewer-header">
-            <i class="bi bi-file-earmark-code"></i>
-            <h2>XML Viewer</h2>
-            <div class="text-muted mb-2">XML კონფიგურაციის სწრაფი და ვიზუალური დათვალიერება</div>
-        </div>
-        <!-- Multi-file XML upload and file selection UI -->
-        <div class="mb-4">
-            <form id="multi-upload-form" enctype="multipart/form-data">
-                <div class="row align-items-end g-2">
-                    <div class="col-md-6">
-                        <label for="xml_files" class="form-label"><i class="bi bi-files me-2"></i>ატვირთე რამდენიმე XML ფაილი</label>
-                        <input class="form-control" type="file" id="xml_files" name="xmlFiles" accept=".xml" multiple>
+    <div class="container-fluid py-4">
+        <div class="row justify-content-center">
+            <div class="col-12 col-lg-11 col-xl-10">
+                <div class="glass-card rounded-4 p-4 p-md-5">
+                    <!-- Header -->
+                    <div class="text-center mb-5">
+                        <div class="mb-4">
+                            <i class="bi bi-file-earmark-code display-3 text-primary mb-3" style="background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"></i>
+                        </div>
+                        <h1 class="h1 fw-bold mb-2" style="background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">XML Viewer</h1>
+                        <p class="text-muted fs-5 mb-0">XML კონფიგურაციის სწრაფი და ვიზუალური ანალიზი</p>
+                        <hr class="my-4 mx-auto" style="width: 100px; height: 3px; background: var(--primary-gradient); border: none; border-radius: 2px;">
                     </div>
-                    <div class="col-md-4">
-                        <label for="file-select" class="form-label">ატვირთული ფაილები</label>
-                        <div class="input-group">
-                            <select class="form-select" id="file-select"></select>
-                            <button class="btn btn-danger" id="delete-file-btn" type="button" title="ფაილის წაშლა"><i class="bi bi-trash"></i></button>
+
+                    <!-- File Upload Section -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <form id="multi-upload-form" enctype="multipart/form-data">
+                                <!-- Upload Area -->
+                                <div class="row mb-4">
+                                    <div class="col-12">
+                                        <label class="form-label fw-semibold">
+                                            <i class="bi bi-cloud-upload me-2 text-primary"></i>XML ფაილების ატვირთვა
+                                        </label>
+                                        <div class="upload-area rounded-3" id="xmlUploadArea">
+                                            <i class="bi bi-cloud-upload text-muted mb-2" style="font-size: 2rem;"></i>
+                                            <p class="mb-2">ატვირთეთ ერთი ან მეტი XML ფაილი</p>
+                                            <input type="file" class="d-none" id="xml_files" name="xmlFiles" accept=".xml" multiple>
+                                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="document.getElementById('xml_files').click()">
+                                                <i class="bi bi-plus-circle me-1"></i>არჩევა
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- File Selection -->
+                                <div class="row mb-4">
+                                    <div class="col-12">
+                                        <label class="form-label fw-semibold">
+                                            <i class="bi bi-files me-2 text-success"></i>ატვირთული ფაილები
+                                        </label>
+                                        <div class="input-group">
+                                            <select class="form-select" id="file-select">
+                                                <option value="">ფაილები იტვირთება...</option>
+                                            </select>
+                                            <button class="btn btn-outline-danger" id="delete-file-btn" type="button" title="ფაილის წაშლა">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
                         </div>
                     </div>
+
+                    <!-- Info Blocks Container -->
+                    <div id="info-blocks"></div>
                 </div>
-            </form>
+            </div>
         </div>
-        <!-- Placeholder for info blocks -->
-        <div id="info-blocks"></div>
-        <script>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Navigation Enhancement Script -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Fix mobile navigation collapse issue
+        const navbarToggler = document.querySelector('.navbar-toggler');
+        const navbarCollapse = document.querySelector('.navbar-collapse');
+        
+        // Close navbar on link click (mobile)
+        document.querySelectorAll('.navbar-nav .nav-link').forEach(link => {
+            link.addEventListener('click', function() {
+                if (window.innerWidth < 992) { // Only on mobile
+                    const collapse = new bootstrap.Collapse(navbarCollapse, {
+                        toggle: false
+                    });
+                    collapse.hide();
+                }
+            });
+        });
+    });
+    </script>
+
+    <script>
         // Helper: fetch and update file list
         async function updateFileList(selected) {
             const resp = await fetch('/api/list-xmls');
@@ -264,20 +440,73 @@
         document.getElementById('xml_files').addEventListener('change', async function() {
             const files = this.files;
             if (!files.length) return;
+            await uploadFiles(files);
+            this.value = '';
+        });
+
+        // Drag and drop functionality
+        const uploadArea = document.getElementById('xmlUploadArea');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, () => uploadArea.classList.add('dragover'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, () => uploadArea.classList.remove('dragover'), false);
+        });
+
+        // Handle dropped files
+        uploadArea.addEventListener('drop', async function(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            if (files.length > 0) {
+                await uploadFiles(files);
+            }
+        });
+
+        // Upload files function
+        async function uploadFiles(files) {
             // Only allow .xml files
             for (let f of files) {
                 if (!f.name.toLowerCase().endsWith('.xml')) {
                     alert('მხოლოდ .xml ფაილების ატვირთვა შეიძლება!');
-                    this.value = '';
                     return;
                 }
             }
-            const formData = new FormData();
-            for (let f of files) formData.append('xmlFiles', f);
-            await fetch('/api/upload-xmls', { method: 'POST', body: formData });
-            await updateFileList(files[0].name);
-            this.value = '';
-        });
+
+            // Update upload area to show loading
+            const uploadText = uploadArea.querySelector('p');
+            const originalText = uploadText.textContent;
+            uploadText.innerHTML = '<i class="spinner-border spinner-border-sm me-2" role="status"></i>ფაილები ატვირთება...';
+
+            try {
+                const formData = new FormData();
+                for (let f of files) formData.append('xmlFiles', f);
+                await fetch('/api/upload-xmls', { method: 'POST', body: formData });
+                await updateFileList(files[0].name);
+                
+                // Success message
+                uploadText.innerHTML = '<i class="bi bi-check-circle text-success me-2"></i>ფაილები წარმატებით აიტვირთა!';
+                setTimeout(() => {
+                    uploadText.textContent = originalText;
+                }, 3000);
+            } catch (error) {
+                uploadText.innerHTML = '<i class="bi bi-x-circle text-danger me-2"></i>ატვირთვისას შეცდომა მოხდა';
+                setTimeout(() => {
+                    uploadText.textContent = originalText;
+                }, 3000);
+            }
+        }
         // File select handler
         document.getElementById('file-select').onchange = async function() {
             const filename = this.value;
@@ -302,8 +531,11 @@
             await fetch('/api/delete-xml/' + encodeURIComponent(filename), { method: 'DELETE' });
             await updateFileList();
         };
-        // Initial file list load
-        updateFileList();
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateFileList();
+        });
+        
         // Collapsible logic
         function bindCollapsibles() {
             const toggles = document.getElementsByClassName('collapsible');
@@ -325,8 +557,8 @@
                 return;
             }
             // 1. ძირითადი ინფორმაცია
-            infoHtml += `<div class="mt-4 mb-4 p-3 rounded" style="background: #f7f8fa; border: 1px solid #e0e0e0;">
-            <h5 class="mb-3"><i class="bi bi-info-circle me-2"></i>ძირითადი ინფორმაცია</h5>
+            infoHtml += `<div class="info-card mt-4 mb-4 p-4 rounded-4">
+            <h5 class="mb-3 fw-bold" style="color: #667eea;"><i class="bi bi-info-circle me-2"></i>ძირითადი ინფორმაცია</h5>
             <div class="row">
                 <div class="col-md-6 mb-2">
                     <b>სადგურის ID:</b> ${config_data.stationInfo?.mrbtsId || '-'}<br>
@@ -346,8 +578,8 @@
             </div>
             </div>`;
             // 2. სექტორები და ქერიერები
-            infoHtml += `<div class="mt-4 mb-4 p-3 rounded" style="background: #f7f8fa; border: 1px solid #e0e0e0;">
-            <h5 class="mb-3"><i class="bi bi-diagram-3-fill me-2"></i>სექტორები და ქერიერები</h5>
+            infoHtml += `<div class="info-card mt-4 mb-4 p-4 rounded-4">
+            <h5 class="mb-3 fw-bold" style="color: #667eea;"><i class="bi bi-diagram-3-fill me-2"></i>სექტორები და ქერიერები</h5>
             <b>ტექნოლოგიები:</b> ${(config_data.radioInfo?.technologies || []).join(', ')}<br>
             <b>სექტორების რაოდენობა:</b> ${config_data.radioInfo?.sectorCount || '-'}<br>
             ${(config_data.radioInfo?.sectorDetails && Object.keys(config_data.radioInfo.sectorDetails).length) ? renderSectorsTable(config_data.radioInfo.sectorDetails) : ''}
@@ -357,8 +589,8 @@
             // 3.1. Cell-Radio Mapping
             infoHtml += renderCellRadioMappingSection(config_data.cellRadioMapping || []);
             // 4. ქსელის ინფორმაცია
-            infoHtml += `<div class="mt-4 mb-4 p-3 rounded" style="background: #f7f8fa; border: 1px solid #e0e0e0;">
-            <h5 class="mb-3"><i class="bi bi-diagram-2 me-2"></i>ქსელის ინფორმაცია (VLAN + IP)</h5>
+            infoHtml += `<div class="info-card mt-4 mb-4 p-4 rounded-4">
+            <h5 class="mb-3 fw-bold" style="color: #667eea;"><i class="bi bi-diagram-2 me-2"></i>ქსელის ინფორმაცია (VLAN + IP)</h5>
             <div class="table-responsive">
             <table class="table table-bordered table-sm align-middle text-center mt-2">
                 <thead class="table-light">
@@ -378,8 +610,8 @@
             </table></div>
             </div>`;
             // 5. მეზობლები და კაბინეტები
-            infoHtml += `<div class="mt-4 mb-4 p-3 rounded" style="background: #f7f8fa; border: 1px solid #e0e0e0;">
-            <h5 class="mb-3"><i class="bi bi-diagram-2-fill me-2"></i>მეზობლები და კაბინეტები</h5>
+            infoHtml += `<div class="info-card mt-4 mb-4 p-4 rounded-4">
+            <h5 class="mb-3 fw-bold" style="color: #667eea;"><i class="bi bi-diagram-2-fill me-2"></i>მეზობლები და კაბინეტები</h5>
             <b>კაბინეტების რაოდენობა:</b> ${config_data.hardwareInfo?.cabinetCount || '-'}<br>
             <b>მეზობლები:</b> <b>LTE:</b> ${config_data.neighborInfo?.lteNeighborCount} | <b>NR:</b> ${config_data.neighborInfo?.nrNeighborCount} | <b>X2:</b> ${config_data.neighborInfo?.x2LinkCount}
             </div>`;
@@ -416,9 +648,10 @@
                 { key: '4G', label: '4G (LTE)' },
                 { key: '5G', label: '5G NR' }
             ];
-            let html = `<div class="mt-4 mb-4 p-3 rounded" style="background: #f7f8fa; border: 1px solid #e0e0e0;">
-                <h5 class="mb-3"><i class="bi bi-diagram-3 me-2"></i>Cells</h5>
+            let html = `<div class="info-card mt-4 mb-4 p-4 rounded-4">
+                <h5 class="mb-3 fw-bold" style="color: #667eea;"><i class="bi bi-diagram-3 me-2"></i>Cells</h5>
                 <!-- Filter Controls -->
+                <div class="filter-controls">
                 <div class="row mb-3">
                     <div class="col-md-2">
                         <label class="form-label small">სელის სახელი:</label>
@@ -466,6 +699,7 @@
                         </button>
                         <span class="text-muted small" id="cells-count"></span>
                     </div>
+                </div>
                 </div>
                 <ul class="nav nav-tabs mb-3" id="cellsTab" role="tablist">
                     <li class="nav-item" role="presentation">
@@ -698,9 +932,10 @@
         }
         function renderCellRadioMappingSection(mapping) {
             if (!mapping || mapping.length === 0) return '';
-            let html = `<div class="mt-4 mb-4 p-3 rounded" style="background: #f7f8fa; border: 1px solid #e0e0e0;">
-                <h5 class="mb-3"><i class="bi bi-hdd-network me-2"></i>სელების რადიო მოდულებზე მიბმა</h5>
+            let html = `<div class="info-card mt-4 mb-4 p-4 rounded-4">
+                <h5 class="mb-3 fw-bold" style="color: #667eea;"><i class="bi bi-hdd-network me-2"></i>სელების რადიო მოდულებზე მიბმა</h5>
                 <!-- Filter Controls -->
+                <div class="filter-controls">
                 <div class="row mb-3">
                     <div class="col-md-2">
                         <label class="form-label small">Cell ID:</label>
@@ -750,6 +985,7 @@
                         </button>
                         <span class="text-muted small" id="radio-count"></span>
                     </div>
+                </div>
                 </div>
                 <ul class="nav nav-tabs mb-3" id="cellRadioTab" role="tablist">
                     <li class="nav-item" role="presentation">

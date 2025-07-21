@@ -283,18 +283,32 @@
 
                     <!-- Form -->
                     <form id="modernizationForm" class="needs-validation" novalidate>
-                        <!-- Station Name -->
+                        <!-- Existing Station XML - Primary Upload -->
                         <div class="row mb-4">
                             <div class="col-12">
-                                <label for="stationName" class="form-label fw-semibold">
-                                    <i class="bi bi-broadcast me-2 text-primary"></i>სადგურის სახელი
+                                <label for="existingXml" class="form-label fw-semibold">
+                                    <i class="bi bi-file-earmark-xml me-2 text-danger"></i>არსებული სადგურის XML
                                 </label>
-                                <input type="text" class="form-control form-control-lg gradient-border" 
-                                       id="stationName" name="stationName" required 
-                                       placeholder="შეიყვანეთ სადგურის სახელი">
-                                <div class="invalid-feedback">გთხოვთ შეიყვანოთ სადგურის სახელი</div>
+                                <input type="file" class="form-control form-control-lg" 
+                                       id="existingXml" name="existingXml" accept=".xml" required>
+                                <div class="form-text">ატვირთეთ არსებული სადგურის XML კონფიგურაცია</div>
+                                <div class="invalid-feedback">გთხოვთ ატვირთოთ არსებული სადგურის XML ფაილი</div>
                             </div>
-        </div>
+                        </div>
+
+                        <!-- Station Name Display (appears after XML upload) -->
+                        <div class="row mb-4" id="stationNameDisplay" style="display: none;">
+                            <div class="col-12">
+                                <div class="alert alert-info d-flex align-items-center" role="alert">
+                                    <i class="bi bi-broadcast me-3 text-primary" style="font-size: 1.5rem;"></i>
+                                    <div>
+                                        <strong>სადგურის სახელი:</strong>
+                                        <span id="extractedStationName" class="ms-2 fw-bold text-primary"></span>
+                                        <input type="hidden" id="stationName" name="stationName">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
                         <div class="row">
                             <!-- Reference 5G XML Section -->
@@ -346,18 +360,7 @@
                             </div>
                         </div>
 
-                        <!-- Existing Station XML -->
-                        <div class="row mb-4">
-                            <div class="col-12">
-                                <label for="existingXml" class="form-label fw-semibold">
-                                    <i class="bi bi-file-earmark-xml me-2 text-danger"></i>არსებული სადგურის XML
-                                </label>
-                                <input type="file" class="form-control form-control-lg" 
-                                       id="existingXml" name="existingXml" accept=".xml" required>
-                                <div class="form-text">ატვირთეთ არსებული სადგურის XML კონფიგურაცია</div>
-                                <div class="invalid-feedback">გთხოვთ ატვირთოთ არსებული სადგურის XML ფაილი</div>
-                            </div>
-                        </div>
+
 
                         <!-- Submit Button -->
                         <div class="d-grid gap-2">
@@ -827,26 +830,19 @@ const form = document.getElementById('modernizationForm');
 
         // Extract btsName from uploaded XML file
         async function extractBtsName(file) {
-            const stationNameInput = document.getElementById('stationName');
+            const extractedStationNameSpan = document.getElementById('extractedStationName');
+            const stationNameHidden = document.getElementById('stationName');
+            const stationNameDisplay = document.getElementById('stationNameDisplay');
             
             addExtractionLog(`XML ფაილის ამოღება დაიწყო: ${file.name}`, 'info');
-            
-            // If station name is already filled, ask user if they want to replace it
-            if (stationNameInput.value.trim() !== '') {
-                if (!confirm('სადგურის სახელი უკვე შევსებულია. გსურთ ავტომატური შევსება XML ფაილიდან?')) {
-                    addExtractionLog('მომხმარებელმა გააუქმა ავტომატური შევსება', 'warning');
-                    return;
-                }
-            }
 
             const formData = new FormData();
             formData.append('xmlFile', file);
 
             try {
-                // Show loading indicator on station name field
-                const originalPlaceholder = stationNameInput.placeholder;
-                stationNameInput.placeholder = 'btsName იკითხება...';
-                stationNameInput.disabled = true;
+                // Show loading indicator
+                extractedStationNameSpan.innerHTML = '<i class="spinner-border spinner-border-sm me-2" role="status"></i>XML ფაილი იკითხება...';
+                stationNameDisplay.style.display = 'block';
                 
                 addExtractionLog('XML ფაილი იგზავნება სერვერზე ანალიზისთვის...', 'info');
 
@@ -915,9 +911,11 @@ const form = document.getElementById('modernizationForm');
 
                 // Handle btsName result
                 if (btsNameData.success && btsNameData.btsName) {
-                    stationNameInput.value = btsNameData.btsName;
+                    extractedStationNameSpan.textContent = btsNameData.btsName;
+                    stationNameHidden.value = btsNameData.btsName;
                     addExtractionLog(`✓ btsName წარმატებით ამოიღო: "${btsNameData.btsName}"`, 'success');
                 } else {
+                    extractedStationNameSpan.innerHTML = '<span class="text-danger">ვერ მოიძებნა</span>';
                     addExtractionLog(`✗ btsName ვერ ამოიღო: ${btsNameData.error || 'უცნობი შეცდომა'}`, 'error');
                 }
                 
@@ -964,33 +962,29 @@ const form = document.getElementById('modernizationForm');
                     }
                     showAlert('success', message);
                 } else {
-                    let errorMsg = 'btsName და BTS ID ვერ მოიძებნა XML ფაილში. sctpPortMin და 2G პარამეტრები არც მოიძებნა (ნორმალურია 5G-only სადგურებისთვის)';
+                    // If no critical data extracted, hide the display and show error
+                    if (!btsNameData.success || !btsNameData.btsName) {
+                        stationNameDisplay.style.display = 'none';
+                    }
+                    
+                    let errorMsg = 'სადგურის სახელი ვერ მოიძებნა XML ფაილში. გთხოვთ დარწმუნდეთ, რომ ფაილი სწორი ფორმატისაა.';
                     addExtractionLog(`⚠ ამოღება ვერ მოხერხდა: ${errorMsg}`, 'warning');
                     
-                    // Add debug info to error message
-                    if (btsNameData.debug) {
-                        errorMsg += `<br><br><strong>Debug ინფორმაცია:</strong><br>`;
-                        errorMsg += `- Root element: ${btsNameData.debug.root_tag}<br>`;
-                        errorMsg += `- Managed Objects ნაპოვნი: ${btsNameData.debug.managed_objects.length}<br>`;
-                        
-                        if (btsNameData.debug.managed_objects.length > 0) {
-                            errorMsg += `<br><strong>ნაპოვნი Objects:</strong><br>`;
-                            btsNameData.debug.managed_objects.forEach((obj, index) => {
-                                errorMsg += `${index + 1}. class: "${obj.class}"<br>`;
-                            });
-                        }
+                    // Add debug info to error message if needed
+                    if (btsNameData.debug && btsNameData.debug.managed_objects.length > 0) {
+                        errorMsg += `<br><br><small><strong>Debug:</strong> ნაპოვნი ${btsNameData.debug.managed_objects.length} Managed Objects</small>`;
                     }
                     
                     showAlert('warning', errorMsg);
                 }
             } catch (error) {
+                // Hide display on error
+                stationNameDisplay.style.display = 'none';
                 addExtractionLog(`✗ ნეტვორკის შეცდომა: ${error.message}`, 'error');
                 showAlert('danger', 'პარამეტრების ამოღებისას მოხდა შეცდომა');
                 console.error('Error extracting parameters:', error);
             } finally {
-                // Reset field state
-                stationNameInput.placeholder = originalPlaceholder;
-                stationNameInput.disabled = false;
+                // Reset loading state - keep display visible with extracted name or error
                 addExtractionLog('XML ამოღების პროცესი დასრულდა', 'info');
             }
         }
@@ -1104,27 +1098,18 @@ const form = document.getElementById('modernizationForm');
                 
                 // Log form data
                 const stationName = formData.get('stationName');
-                const stationNameDirect = document.getElementById('stationName').value;
                 const reference5gSelection = formData.get('reference5gXmlSelection');
                 const ipPlanSelection = formData.get('ipPlanSelection');
                 
-                addGenerationLog(`სადგურის სახელი (FormData): "${stationName}"`, 'info');
-                addGenerationLog(`სადგურის სახელი (Direct): "${stationNameDirect}"`, 'info');
+                addGenerationLog(`სადგურის სახელი: "${stationName}"`, 'info');
                 addGenerationLog(`Reference 5G XML: ${reference5gSelection || 'ატვირთული ფაილი'}`, 'info');
                 addGenerationLog(`IP Plan: ${ipPlanSelection || 'ატვირთული ფაილი'}`, 'info');
                 
-                // Use direct value if FormData is null
-                const finalStationName = stationName || stationNameDirect;
-                if (!finalStationName || finalStationName.trim() === '') {
-                    addGenerationLog('✗ სადგურის სახელი ცარიელია!', 'error');
-                    showAlert('danger', 'გთხოვთ შეიყვანოთ სადგურის სახელი');
+                // Check if station name is available (should be auto-extracted from XML)
+                if (!stationName || stationName.trim() === '') {
+                    addGenerationLog('✗ სადგურის სახელი ცარიელია! გთხოვთ ატვირთოთ არსებული სადგურის XML ფაილი.', 'error');
+                    showAlert('danger', 'გთხოვთ ჯერ ატვირთოთ არსებული სადგურის XML ფაილი სადგურის სახელის ავტომატური ამოღებისთვის');
                     return;
-                }
-
-                // Update FormData with correct station name
-                if (!stationName && finalStationName) {
-                    formData.set('stationName', finalStationName);
-                    addGenerationLog(`FormData updated with station name: "${finalStationName}"`, 'info');
                 }
 
                 addGenerationLog('მონაცემები იგზავნება სერვერზე...', 'info');
