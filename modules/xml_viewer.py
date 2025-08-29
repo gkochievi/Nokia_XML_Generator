@@ -8,12 +8,9 @@ class XMLViewer:
     """Viewer for Nokia WebEM XML configuration files"""
     
     MODEL_CODE_MAP = {
-        "473997A": "AHPMDA",
         "474090A": "AHEGB",
         "473995A": "AHEGA",
-        "475824A": "AKQJ",
-        "474090A.101": "AHEGB",
-        "475130A": "AZQL"
+        "474090A.101": "AHEGB"
     }
     
     def extract_configuration_data(self, tree):
@@ -479,8 +476,10 @@ class XMLViewer:
             }
             for p in rmod.findall(".//p"):
                 name = p.get('name')
-                if name == 'prodCodePlanned':
-                    module_data['productCode'] = p.text
+                # Support multiple possible product code field names
+                if name in ['prodCodePlanned', 'prodCode', 'prodCodeProposed', 'prodCodeActual']:
+                    if p.text:
+                        module_data['productCode'] = p.text
                 elif name == 'administrativeState':
                     module_data['state'] = p.text
             info['modules'].append(module_data)

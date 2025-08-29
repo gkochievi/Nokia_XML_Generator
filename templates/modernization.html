@@ -305,6 +305,12 @@
                                         <strong>სადგურის სახელი:</strong>
                                         <span id="extractedStationName" class="ms-2 fw-bold text-primary"></span>
                                         <input type="hidden" id="stationName" name="stationName">
+                                        <!-- Auto-suggest summary (compact, no extra panel) -->
+                                        <div id="autoSuggestSummary" class="d-none mt-2">
+                                            <div class="small">Detected: <span id="detect2g" class="badge bg-light text-dark">2G: ?</span> <span id="detect3g" class="badge bg-light text-dark ms-1">3G: ?</span> <span id="detectSectors" class="badge bg-light text-dark ms-1">Sectors: ?</span></div>
+                                            <div class="small mt-1">Modules: <span id="detectModules" class="badge bg-light text-dark">-</span></div>
+                                            <div class="small mt-1">Suggestion: <span id="detectSuggestion" class="badge bg-light text-dark">-</span></div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -314,15 +320,34 @@
                             <!-- Reference 5G XML Section -->
                             <div class="col-md-6 mb-4">
                                 <label class="form-label fw-semibold">
-                                    <i class="bi bi-file-earmark-xml me-2 text-success"></i>Reference 5G XML
+                                    <i class="bi bi-file-earmark-code me-2 text-primary"></i>Reference 5G XML
                                 </label>
                                 
-                                <!-- Dropdown for existing files -->
-            <div class="mb-3">
-                                    <select class="form-select" id="reference5gXmlSelection" name="reference5gXmlSelection">
-                                        <option value="">მონაცემები იტვირთება...</option>
-                                    </select>
+                                <!-- Filters -->
+                                <div class="mb-2" style="min-height:36px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                                    <div class="form-check form-check-inline align-middle">
+                                        <input class="form-check-input" type="checkbox" id="filterNo2g" value="no2G">
+                                        <label class="form-check-label" for="filterNo2g">no2G</label>
+                                    </div>
+                                    <div class="form-check form-check-inline align-middle">
+                                        <input class="form-check-input" type="checkbox" id="filterS2" value="S2">
+                                        <label class="form-check-label" for="filterS2">S2</label>
+                                    </div>
+                                    <div class="form-check form-check-inline align-middle">
+                                        <input class="form-check-input" type="checkbox" id="filterS3" value="S3">
+                                        <label class="form-check-label" for="filterS3">S3</label>
+                                    </div>
+                                    <div class="form-check form-check-inline align-middle">
+                                        <input class="form-check-input" type="checkbox" id="filterS4" value="S4">
+                                        <label class="form-check-label" for="filterS4">S4</label>
+                                    </div>
                                 </div>
+                                 <!-- Dropdown for existing files -->
+                                 <div class="mb-3">
+                                     <select class="form-select" id="reference5gXmlSelection" name="reference5gXmlSelection">
+                                         <option value="">მონაცემები იტვირთება...</option>
+                                     </select>
+                                 </div>
 
                                 <!-- Upload area -->
                                 <div class="upload-area rounded-3 p-4 text-center" id="reference5gUploadArea">
@@ -333,13 +358,15 @@
                                         <i class="bi bi-plus-circle me-1"></i>არჩევა
                                     </button>
                                 </div>
-            </div>
+                            </div>
 
                             <!-- IP Plan Excel Section -->
                             <div class="col-md-6 mb-4">
                                 <label class="form-label fw-semibold">
                                     <i class="bi bi-file-earmark-excel me-2 text-warning"></i>IP Plan Excel
                                 </label>
+                                <!-- Spacer to align with Reference filters row -->
+                                <div class="mb-2" style="min-height:36px"></div>
                                 
                                 <!-- Dropdown for existing files -->
             <div class="mb-3">
@@ -763,6 +790,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 handleFileUpload(e.target.files[0], 'xml');
             });
 
+            // Filter handlers
+            ['filterNo2g','filterS2','filterS3','filterS4'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('change', applyReferenceFilters);
+            });
+         
+            // Drag and drop handlers
+            document.getElementById('reference5gUploadArea').addEventListener('dragover', function(e) {
+                e.preventDefault();
+                this.classList.add('drag-over');
+            });
+
             document.getElementById('ipPlanUpload').addEventListener('change', function(e) {
                 const stationName = document.getElementById('stationName').value;
                 if (!stationName || stationName.trim() === '') {
@@ -780,6 +819,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('existingXml').addEventListener('change', function(e) {
                 if (e.target.files && e.target.files[0]) {
                     extractBtsName(e.target.files[0]);
+                    inspectExistingXml(e.target.files[0]);
                 }
             });
 
@@ -1587,6 +1627,72 @@ const form = document.getElementById('modernizationForm');
 
         // Initialize drag and drop after DOM is loaded
         document.addEventListener('DOMContentLoaded', setupDragAndDrop);
+
+        // Inspect existing XML to suggest proper Reference and show summary
+        async function inspectExistingXml(file) {
+            try {
+                const fd = new FormData();
+                fd.append('existingXml', file);
+                const res = await fetch('/api/modernization/inspect', { method: 'POST', body: fd });
+                const data = await res.json();
+                if (!data.success) return;
+                const d = data.data;
+                // Summary UI
+                document.getElementById('autoSuggestSummary').classList.remove('d-none');
+                document.getElementById('detect2g').textContent = `2G: ${d.has2G ? 'YES' : 'NO'}`;
+                document.getElementById('detect3g').textContent = `3G: ${d.has3G ? 'YES' : 'NO'}`;
+                document.getElementById('detectSectors').textContent = `Sectors: ${d.sectorCount}`;
+                const modelList = (d.models && d.models.length) ? d.models : (d.modelCodes || []);
+                document.getElementById('detectModules').textContent = modelList.length ? modelList.join(', ') : '-';
+                document.getElementById('detectSuggestion').textContent = d.suggestedReference || '-';
+                // Pre-fill filters
+                document.getElementById('filterNo2g').checked = !d.has2G;
+                document.getElementById('filterS2').checked = d.sectorCount === 2;
+                document.getElementById('filterS3').checked = d.sectorCount === 3;
+                document.getElementById('filterS4').checked = d.sectorCount === 4;
+                // Apply filter and select suggestion
+                await loadExampleFiles(); // ensure dropdown options loaded before filtering
+                window.detectedHas2G = !!d.has2G;
+                applyReferenceFilters(modelList); // filter options using model tokens
+                if (d.suggestedReference) {
+                    const select = document.getElementById('reference5gXmlSelection');
+                    const opt = Array.from(select.options).find(o => o.value === d.suggestedReference);
+                    if (opt) select.value = d.suggestedReference;
+                }
+            } catch (e) {
+                console.warn('Inspect error', e);
+            }
+        }
+
+        function applyReferenceFilters(modelHints = []) {
+            const select = document.getElementById('reference5gXmlSelection');
+            const no2g = document.getElementById('filterNo2g').checked;
+            const s2 = document.getElementById('filterS2').checked;
+            const s3 = document.getElementById('filterS3').checked;
+            const s4 = document.getElementById('filterS4').checked;
+            const tokens = [];
+            // 'no2G' checkbox now means "include no2G references" when checked
+            if (s2) tokens.push('S2');
+            if (s3) tokens.push('S3');
+            if (s4) tokens.push('S4');
+ 
+            const allOptions = Array.from(select.options);
+            allOptions.forEach(opt => {
+                if (!opt.value || opt.value === 'upload') return;
+                const name = opt.value;
+                let ok = true;
+                tokens.forEach(t => { if (ok && !name.includes(t)) ok = false; });
+                // if model hints provided, prefer those only when any are set
+                if (ok && modelHints.length) {
+                    ok = modelHints.some(m => name.includes(m));
+                }
+                // Auto-hide no2G references when detectedHas2G === true and include-no2G not checked
+                if (ok && window.detectedHas2G === true && !no2g && name.includes('no2G')) {
+                    ok = false;
+                }
+                opt.hidden = !ok;
+            });
+        }
 </script>
 </body>
 </html> 

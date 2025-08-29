@@ -648,7 +648,7 @@ class ModernizationGenerator:
         """
         import xml.etree.ElementTree as ET
         import re
-
+        
         def normalize_tech(label):
             if not label:
                 return None
@@ -710,7 +710,7 @@ class ModernizationGenerator:
             class_attr = mo.get('class', '')
             if 'VLANIF' not in class_attr:
                 continue
-
+                
             user_label = None
             vlan_elem = None
             for p in mo.findall('p'):

@@ -9,6 +9,7 @@ from modules.excel_parser import ExcelParser
 from modules.modernization import ModernizationGenerator
 from modules.rollout import RolloutGenerator
 import logging
+from lxml import etree
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -287,6 +288,127 @@ def modernization():
     except Exception as e:
         logger.error(f"Error in modernization: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/modernization/inspect', methods=['POST'])
+def modernization_inspect():
+    """Inspect uploaded existing XML to extract hardware/radio info and suggest a Reference 5G XML."""
+    try:
+        if 'existingXml' not in request.files or request.files['existingXml'].filename == '':
+            return jsonify({'success': False, 'error': 'existingXml file is required'}), 400
+
+        xml_file = request.files['existingXml']
+        if not allowed_file(xml_file.filename):
+            return jsonify({'success': False, 'error': 'Invalid file type for existing XML'}), 400
+
+        temp_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(xml_file.filename))
+        xml_file.save(temp_path)
+
+        try:
+            parser = etree.XMLParser(remove_blank_text=True)
+            tree = etree.parse(temp_path, parser)
+            viewer = XMLViewer()
+            info = viewer.extract_configuration_data(tree)
+        finally:
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
+
+        # Gather summary
+        station = info.get('stationInfo', {})
+        radio = info.get('radioInfo', {})
+        hardware = info.get('hardwareInfo', {})
+        has2g = station.get('has2G', False)
+        has3g = station.get('has3G', False)
+        sector_count = radio.get('sectorCount', 0)
+        model_codes = []
+        models = []
+        code_map = XMLViewer.MODEL_CODE_MAP if hasattr(XMLViewer, 'MODEL_CODE_MAP') else {}
+        for m in hardware.get('modules', []):
+            code = (m.get('productCode') or '').strip().upper()
+            if not code:
+                continue
+            model_codes.append(code)
+            mapped = code_map.get(code)
+            if not mapped and '.' in code:
+                base = code.split('.')[0]
+                mapped = code_map.get(base)
+            if not mapped:
+                # fallback: prefix match
+                for base, name in code_map.items():
+                    if code.startswith(base):
+                        mapped = name
+                        break
+            if mapped and mapped not in models:
+                models.append(mapped)
+        # fallback: if no mapped models, keep unique raw codes as models
+        if not models and model_codes:
+            models = list(dict.fromkeys(model_codes))
+
+        # Suggest a Reference 5G XML based on naming convention in example_files
+        examples_dir = app.config['EXAMPLE_FILES_FOLDER']
+        try:
+            files = [f for f in os.listdir(examples_dir) if f.startswith('5G') and f.endswith('.xml')]
+        except Exception:
+            files = []
+
+        # Build desired tokens
+        tokens = []
+        tokens.append('no2G' if not has2g else '5G')
+        if sector_count in [2, 3, 4]:
+            tokens.append(f'S{sector_count}')
+        # Prefer model token present in filename (AHEGA/AHEGB/AZQL/etc.) if any known from XMLViewer map
+        model_candidates = set(models)
+        preferred = None
+        for fname in files:
+            ok = True
+            # Match sector tokens etc.
+            for t in tokens:
+                if t != '5G' and t not in fname:
+                    ok = False
+                    break
+            # If station has 2G, avoid suggestions that contain 'no2G'
+            if ok and has2g and 'no2G' in fname:
+                ok = False
+            # If station does NOT have 2G, prefer only no2G files
+            if ok and (not has2g) and 'no2G' not in fname:
+                ok = False
+            if ok:
+                if model_candidates:
+                    if any(mc in fname for mc in model_candidates):
+                        preferred = fname
+                        break
+                if not preferred:
+                    preferred = fname
+        suggestion = preferred or (files[0] if files else None)
+
+        # Infer model from suggestion if none detected
+        if (not models) and suggestion:
+            try:
+                model_tokens = set(XMLViewer.MODEL_CODE_MAP.values()) if hasattr(XMLViewer, 'MODEL_CODE_MAP') else set()
+            except Exception:
+                model_tokens = set()
+            inferred = None
+            for tok in model_tokens:
+                if tok and tok in suggestion:
+                    inferred = tok
+                    break
+            if inferred:
+                models = [inferred]
+
+        return jsonify({
+            'success': True,
+            'data': {
+                'has2G': has2g,
+                'has3G': has3g,
+                'sectorCount': sector_count,
+                'models': models or model_codes,
+                'modelCodes': model_codes,
+                'suggestedReference': suggestion,
+                'availableReferences': files
+            }
+        })
+    except Exception as e:
+        logger.error(f"Error in modernization_inspect: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/rollout', methods=['POST'])
 def rollout():
