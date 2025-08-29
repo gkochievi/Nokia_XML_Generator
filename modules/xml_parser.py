@@ -805,56 +805,70 @@ class XMLParser:
             return {}
 
     def extract_ip_parameters(self, tree):
-        """Extract IP parameters from IPNO and other IP-related objects"""
+        """Extract IP parameters from IPIF and IPADDRESSV4 objects, mapped by technology"""
         ip_data = {}
         
         try:
             logger.info("Starting IP parameters extraction...")
             
-            # Find all IPNO managedObjects with IP configuration (namespace-agnostic)
-            ipno_objects = tree.xpath("//*[local-name()='managedObject' and contains(@class, 'IPNO')]")
-            logger.info(f"Found {len(ipno_objects)} IPNO objects")
+            # Collect IPIF objects to map userLabel -> technology and distName
+            ipif_objects = tree.xpath("//*[local-name()='managedObject' and contains(@class, 'IPIF')]")
+            logger.info(f"Found {len(ipif_objects)} IPIF objects")
             
-            for obj in ipno_objects:
+            ipif_map = {}  # distName -> { userLabel, tech_name }
+            for obj in ipif_objects:
                 dist_name = obj.get('distName', '')
+                user_label_elem = obj.find(".//*[local-name()='p'][@name='userLabel']")
+                user_label = user_label_elem.text.strip() if user_label_elem is not None and user_label_elem.text else None
+                if not dist_name or not user_label:
+                    continue
+                tech_mapping = {
+                    'OAM': 'OAM', 'MGT': 'OAM',
+                    '2G': '2G', 'GSM': '2G',
+                    '3G': '3G', 'WCDMA': '3G',
+                    '4G': '4G', 'LTE': '4G',
+                    '5G': '5G', 'NR': '5G'
+                }
+                tech_name = tech_mapping.get(user_label.upper(), user_label)
+                ipif_map[dist_name] = { 'userLabel': user_label, 'tech': tech_name }
+            
+            # Now collect IPADDRESSV4 objects and pair them with their IPIF via distName
+            ipaddr_objects = tree.xpath("//*[local-name()='managedObject' and contains(@class, 'IPADDRESSV4')]")
+            logger.info(f"Found {len(ipaddr_objects)} IPADDRESSV4 objects")
+            
+            for obj in ipaddr_objects:
+                dist_name = obj.get('distName', '')
+                if not dist_name:
+                    continue
+                # Parent IPIF DN is the part before '/IPADDRESSV4-'
+                parent_ipif_dn = dist_name.split('/IPADDRESSV4-', 1)[0]
+                if parent_ipif_dn not in ipif_map:
+                    # Try alternative separators just in case
+                    if '/IPADDRESSV4/' in dist_name:
+                        parent_ipif_dn = dist_name.split('/IPADDRESSV4/', 1)[0]
+                info = ipif_map.get(parent_ipif_dn)
+                if not info:
+                    continue
                 
-                # Extract IP-related parameters (namespace-agnostic)
                 local_ip_elem = obj.find(".//*[local-name()='p'][@name='localIpAddr']")
                 prefix_len_elem = obj.find(".//*[local-name()='p'][@name='localIpPrefixLength']")
                 gateway_elem = obj.find(".//*[local-name()='p'][@name='gateway']")
-                user_label_elem = obj.find(".//*[local-name()='p'][@name='userLabel']")
                 
-                if local_ip_elem is not None and local_ip_elem.text:
-                    local_ip = local_ip_elem.text.strip()
-                    prefix_len = prefix_len_elem.text.strip() if prefix_len_elem is not None and prefix_len_elem.text else None
-                    gateway = gateway_elem.text.strip() if gateway_elem is not None and gateway_elem.text else None
-                    user_label = user_label_elem.text.strip() if user_label_elem is not None and user_label_elem.text else None
-                    
-                    # Try to identify technology from distName or userLabel
-                    tech_name = 'UNKNOWN'
-                    if user_label:
-                        tech_mapping = {
-                            'OAM': 'OAM',
-                            'MGT': 'OAM',
-                            '2G': '2G',
-                            'GSM': '2G',
-                            '3G': '3G', 
-                            'WCDMA': '3G',
-                            '4G': '4G',
-                            'LTE': '4G',
-                            '5G': '5G',
-                            'NR': '5G'
-                        }
-                        tech_name = tech_mapping.get(user_label.upper(), user_label)
-                    
+                local_ip = local_ip_elem.text.strip() if local_ip_elem is not None and local_ip_elem.text else None
+                prefix_len = prefix_len_elem.text.strip() if prefix_len_elem is not None and prefix_len_elem.text else None
+                gateway = gateway_elem.text.strip() if gateway_elem is not None and gateway_elem.text else None
+                
+                tech_name = info['tech']
+                user_label = info['userLabel']
+                if tech_name:
                     ip_data[tech_name] = {
                         'localIpAddr': local_ip,
                         'localIpPrefixLength': prefix_len,
                         'gateway': gateway,
                         'userLabel': user_label,
-                        'distName': dist_name
+                        'distName': parent_ipif_dn
                     }
-                    logger.info(f"Found IP config: {tech_name} -> IP: {local_ip}, Gateway: {gateway}")
+                    logger.info(f"Found IP config: {tech_name} -> IP: {local_ip}, Prefix: {prefix_len}, Gateway: {gateway}")
             
             logger.info(f"IP extraction completed. Found {len(ip_data)} IP configs: {list(ip_data.keys())}")
             return ip_data

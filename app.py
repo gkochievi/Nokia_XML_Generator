@@ -232,7 +232,7 @@ def modernization():
             logger.error(f"Error extracting station parameters: {str(e)}")
             return jsonify({'error': f'სადგურის პარამეტრების ამოღების შეცდომა: {str(e)}'}), 500
         
-        output_filename = generator.generate(
+        output_filename, debug_log = generator.generate(
             station_name=station_name,
             existing_xml_path=file_paths['existingXml'],
             reference_5g_xml_path=file_paths['reference5gXml'],
@@ -280,7 +280,8 @@ def modernization():
                 'cells_4g_replacement_performed': bool(existing_4g_cells and reference_4g_cells),
                 'rootseq_4g_replacement_performed': bool(existing_4g_rootseq and reference_4g_rootseq),
                 'nrcells_5g_replacement_performed': bool(existing_4g_cells and reference_5g_nrcells)
-            }
+            },
+            'debug_log': debug_log
         })
         
     except Exception as e:
@@ -1347,18 +1348,32 @@ def parse_ip_plan():
             
             logger.info("=== END IP PLAN DEBUG ===")
             
-            return jsonify({
-                'success': True,
-                'data': ip_plan_data,
-                'debug': {
-                    'station_name': station_name,
-                    'found_station': ip_plan_data.get('station_name'),
-                    'station_row': ip_plan_data.get('station_row'),
-                    'technologies_found': list(technologies.keys()),
-                    'routing_rules_count': len(routing_rules)
-                }
-            })
-            
+            if ip_plan_data.get('success', True):
+                return jsonify({
+                    'success': True,
+                    'data': ip_plan_data,
+                    'debug': {
+                        'station_name': station_name,
+                        'found_station': ip_plan_data.get('station_name'),
+                        'station_row': ip_plan_data.get('station_row'),
+                        'technologies_found': list(ip_plan_data.get('technologies', {}).keys()),
+                        'routing_rules_count': len(ip_plan_data.get('routing_rules', {}))
+                    }
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'error': ip_plan_data.get('error', 'Unknown error'),
+                    'data': ip_plan_data,
+                    'debug': {
+                        'station_name': station_name,
+                        'found_station': ip_plan_data.get('station_name'),
+                        'station_row': ip_plan_data.get('station_row'),
+                        'technologies_found': [],
+                        'routing_rules_count': 0
+                    }
+                })
+                
         finally:
             # Clean up temporary file
             if ip_plan_temp_path and os.path.exists(ip_plan_temp_path):

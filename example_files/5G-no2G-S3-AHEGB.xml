@@ -16575,7 +16575,7 @@
     <managedObject class="com.nokia.srbts.tnl:IPADDRESSV4" distName="MRBTS-90334/TNLSVC-1/TNL-1/IPNO-1/IPIF-1/IPADDRESSV4-1" version="TNL24R1_2322_110" operation="create">
       <p name="ipAddressAllocationMethod">MANUAL</p>
       <p name="localIpAddr">10.110.10.3</p>
-      <p name="localIpPrefixLength">27</p>
+      <p name="localIpPrefixLength">23</p>
     </managedObject>
     <managedObject class="com.nokia.srbts.tnl:IPIF" distName="MRBTS-90334/TNLSVC-1/TNL-1/IPNO-1/IPIF-2" version="TNL24R1_2322_110" operation="create">
       <p name="interfaceDN">MRBTS-90334/TNLSVC-1/TNL-1/ETHSVC-1/ETHIF-1/VLANIF-2</p>
@@ -16585,7 +16585,7 @@
     <managedObject class="com.nokia.srbts.tnl:IPADDRESSV4" distName="MRBTS-90334/TNLSVC-1/TNL-1/IPNO-1/IPIF-2/IPADDRESSV4-1" version="TNL24R1_2322_110" operation="create">
       <p name="ipAddressAllocationMethod">MANUAL</p>
       <p name="localIpAddr">10.171.10.3</p>
-      <p name="localIpPrefixLength">27</p>
+      <p name="localIpPrefixLength">24</p>
     </managedObject>
     <managedObject class="com.nokia.srbts.tnl:IPIF" distName="MRBTS-90334/TNLSVC-1/TNL-1/IPNO-1/IPIF-3" version="TNL24R1_2322_110" operation="create">
       <p name="interfaceDN">MRBTS-90334/TNLSVC-1/TNL-1/ETHSVC-1/ETHIF-1/VLANIF-3</p>
@@ -16595,7 +16595,7 @@
     <managedObject class="com.nokia.srbts.tnl:IPADDRESSV4" distName="MRBTS-90334/TNLSVC-1/TNL-1/IPNO-1/IPIF-3/IPADDRESSV4-1" version="TNL24R1_2322_110" operation="create">
       <p name="ipAddressAllocationMethod">MANUAL</p>
       <p name="localIpAddr">10.141.138.3</p>
-      <p name="localIpPrefixLength">27</p>
+      <p name="localIpPrefixLength">25</p>
     </managedObject>
     <managedObject class="com.nokia.srbts.tnl:IPIF" distName="MRBTS-90334/TNLSVC-1/TNL-1/IPNO-1/IPIF-4" version="TNL24R1_2322_110" operation="create">
       <p name="interfaceDN">MRBTS-90334/TNLSVC-1/TNL-1/ETHSVC-1/ETHIF-1/VLANIF-4</p>
@@ -16605,7 +16605,7 @@
     <managedObject class="com.nokia.srbts.tnl:IPADDRESSV4" distName="MRBTS-90334/TNLSVC-1/TNL-1/IPNO-1/IPIF-4/IPADDRESSV4-1" version="TNL24R1_2322_110" operation="create">
       <p name="ipAddressAllocationMethod">MANUAL</p>
       <p name="localIpAddr">10.111.10.3</p>
-      <p name="localIpPrefixLength">27</p>
+      <p name="localIpPrefixLength">26</p>
     </managedObject>
     <managedObject class="com.nokia.srbts.tnl:IPIF" distName="MRBTS-90334/TNLSVC-1/TNL-1/IPNO-1/IPIF-5" version="TNL24R1_2322_110" operation="create">
       <p name="interfaceDN">MRBTS-90334/TNLSVC-1/TNL-1/ETHSVC-1/ETHIF-1/VLANIF-5</p>

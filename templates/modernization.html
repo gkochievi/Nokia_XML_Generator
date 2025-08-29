@@ -767,7 +767,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const stationName = document.getElementById('stationName').value;
                 if (!stationName || stationName.trim() === '') {
                     addExtractionLog('⚠ ჯერ ატვირთეთ არსებული სადგურის XML, რომ ამოვიღოთ სადგურის სახელი და მხოლოდ ამის შემდეგ აირჩიეთ IP Plan Excel!', 'warning');
-                    showAlert('warning', 'სადგურის სახელი ჯერ არ არის ამოღებული XML-დან. გთხოვთ, ჯერ ატვირთეთ არსებული სადგურის XML.');
+                    showAlert('warning', 'სადგურის სახელი ჯერ არ არის ამოღებული XML-დან. გთხოვთ, ჯერ ატვირთეთ არსებული სადგურის XML ფაილი სადგურის სახელის ავტომატური ამოღებისთვის');
                     return;
                 }
                 handleFileUpload(e.target.files[0], 'excel');
@@ -1041,8 +1041,42 @@ const form = document.getElementById('modernizationForm');
                         addExtractionLog(`✓ IP Plan წარმატებით დაპარსდა: ${data.debug.found_station}`, 'success');
                         addExtractionLog(`მოძებნა row ${data.debug.station_row}-ზე`, 'info');
                         addExtractionLog(`Technologies: ${data.debug.technologies_found.join(', ')}`, 'info');
+                        
+                        // Add detailed debug logs from Excel parsing
+                        if (data.data.debug_log && data.data.debug_log.length > 0) {
+                            addExtractionLog('--- Excel Parsing Details ---', 'info');
+                            data.data.debug_log.forEach(logMsg => {
+                                if (logMsg.startsWith('✓')) {
+                                    addExtractionLog(logMsg, 'success');
+                                } else if (logMsg.startsWith('✗')) {
+                                    addExtractionLog(logMsg, 'error');
+                                } else if (logMsg.startsWith('○')) {
+                                    addExtractionLog(logMsg, 'warning');
+                                } else {
+                                    addExtractionLog(logMsg, 'info');
+                                }
+                            });
+                            addExtractionLog('--- End Excel Details ---', 'info');
+                        }
                     } else {
                         addExtractionLog(`✗ IP Plan parsing ვერ მოხერხდა: ${data.error}`, 'error');
+                        
+                        // Add debug logs even when parsing fails
+                        if (data.data && data.data.debug_log && data.data.debug_log.length > 0) {
+                            addExtractionLog('--- Excel Parsing Debug (Failed) ---', 'info');
+                            data.data.debug_log.forEach(logMsg => {
+                                if (logMsg.startsWith('✓')) {
+                                    addExtractionLog(logMsg, 'success');
+                                } else if (logMsg.startsWith('✗')) {
+                                    addExtractionLog(logMsg, 'error');
+                                } else if (logMsg.startsWith('○')) {
+                                    addExtractionLog(logMsg, 'warning');
+                                } else {
+                                    addExtractionLog(logMsg, 'info');
+                                }
+                            });
+                            addExtractionLog('--- End Debug ---', 'info');
+                        }
                     }
                 } catch (error) {
                     addExtractionLog(`✗ IP Plan parsing network error: ${error.message}`, 'error');
@@ -1069,8 +1103,42 @@ const form = document.getElementById('modernizationForm');
                         addExtractionLog(`✓ IP Plan წარმატებით დაპარსდა: ${data.debug.found_station}`, 'success');
                         addExtractionLog(`მოძებნა row ${data.debug.station_row}-ზე`, 'info');
                         addExtractionLog(`Technologies: ${data.debug.technologies_found.join(', ')}`, 'info');
+                        
+                        // Add detailed debug logs from Excel parsing
+                        if (data.data.debug_log && data.data.debug_log.length > 0) {
+                            addExtractionLog('--- Excel Parsing Details ---', 'info');
+                            data.data.debug_log.forEach(logMsg => {
+                                if (logMsg.startsWith('✓')) {
+                                    addExtractionLog(logMsg, 'success');
+                                } else if (logMsg.startsWith('✗')) {
+                                    addExtractionLog(logMsg, 'error');
+                                } else if (logMsg.startsWith('○')) {
+                                    addExtractionLog(logMsg, 'warning');
+                                } else {
+                                    addExtractionLog(logMsg, 'info');
+                                }
+                            });
+                            addExtractionLog('--- End Excel Details ---', 'info');
+                        }
                     } else {
                         addExtractionLog(`✗ IP Plan parsing ვერ მოხერხდა: ${data.error}`, 'error');
+                        
+                        // Add debug logs even when parsing fails
+                        if (data.data && data.data.debug_log && data.data.debug_log.length > 0) {
+                            addExtractionLog('--- Excel Parsing Debug (Failed) ---', 'info');
+                            data.data.debug_log.forEach(logMsg => {
+                                if (logMsg.startsWith('✓')) {
+                                    addExtractionLog(logMsg, 'success');
+                                } else if (logMsg.startsWith('✗')) {
+                                    addExtractionLog(logMsg, 'error');
+                                } else if (logMsg.startsWith('○')) {
+                                    addExtractionLog(logMsg, 'warning');
+                                } else {
+                                    addExtractionLog(logMsg, 'info');
+                                }
+                            });
+                            addExtractionLog('--- End Debug ---', 'info');
+                        }
                     }
                 } catch (error) {
                     addExtractionLog(`✗ IP Plan parsing network error: ${error.message}`, 'error');
@@ -1322,6 +1390,24 @@ const form = document.getElementById('modernizationForm');
                         }
                         
                         addGenerationLog(`--- End Replacement Details ---`, 'info');
+                    }
+                    
+                    // Log backend debug_log if present (VLAN/IP replacements etc.)
+                    if (data.debug_log && Array.isArray(data.debug_log) && data.debug_log.length > 0) {
+                        addGenerationLog('--- Backend Debug Log ---', 'info');
+                        data.debug_log.forEach((msg) => {
+                            if (typeof msg !== 'string') return;
+                            if (msg.startsWith('✓')) {
+                                addGenerationLog(msg, 'success');
+                            } else if (msg.startsWith('✗')) {
+                                addGenerationLog(msg, 'error');
+                            } else if (msg.startsWith('○') || msg.toLowerCase().includes('warning')) {
+                                addGenerationLog(msg, 'warning');
+                            } else {
+                                addGenerationLog(msg, 'info');
+                            }
+                        });
+                        addGenerationLog('--- End Backend Debug Log ---', 'info');
                     }
                     
                     // Start automatic download

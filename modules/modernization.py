@@ -117,6 +117,7 @@ class ModernizationGenerator:
             
             # Perform template replacements
             updated_content = template_content
+            debug_log = []
             
             # Replace station names if available
             if existing_bts_name and reference_bts_name:
@@ -137,19 +138,19 @@ class ModernizationGenerator:
                 logger.warning("BTS ID extraction failed, skipping ID replacement")
             
             # Replace VLAN IDs from IP Plan if available
-            if ip_plan_data and reference_vlan_data:
+            if ip_plan_data:
                 logger.info("Performing template-based VLAN ID replacement from IP Plan...")
                 updated_content = self._replace_vlan_ids(
-                    updated_content, reference_vlan_data, ip_plan_data['technologies']
+                    updated_content, reference_vlan_data or {}, ip_plan_data['technologies'], debug_log
                 )
             else:
                 logger.info("IP Plan or reference VLAN data not available for VLAN replacement")
             
             # Replace IP addresses from IP Plan if available
-            if ip_plan_data and reference_ip_data:
+            if ip_plan_data:
                 logger.info("Performing template-based IP address replacement from IP Plan...")
                 updated_content = self._replace_ip_addresses(
-                    updated_content, reference_ip_data, ip_plan_data['technologies']
+                    updated_content, reference_ip_data, ip_plan_data['technologies'], debug_log
                 )
             else:
                 logger.info("IP Plan or reference IP data not available for IP replacement")
@@ -236,7 +237,8 @@ class ModernizationGenerator:
                 f.write(updated_content)
             
             logger.info(f"Successfully generated: {output_filename}")
-            return output_filename
+            # OPTIONAL: return debug_log for frontend if needed
+            return output_filename, debug_log
             
         except Exception as e:
             logger.error(f"Error generating 5G modernization: {str(e)}")
@@ -625,144 +627,218 @@ class ModernizationGenerator:
         logger.info(f"Total 5G NRCELL physCellId replacements made: {total_replacements}")
         return xml_content
 
-    def _replace_vlan_ids(self, xml_content, reference_vlan_data, ip_plan_technologies):
-        """Replace VLAN IDs from IP Plan data"""
-        logger.info(f"Replacing VLAN IDs from IP Plan")
-        logger.info(f"Reference VLAN data: {list(reference_vlan_data.keys()) if reference_vlan_data else 'None'}")
-        logger.info(f"IP Plan technologies: {list(ip_plan_technologies.keys()) if ip_plan_technologies else 'None'}")
-        
-        total_replacements = 0
+    def _replace_vlan_ids(self, xml_content, reference_vlan_data, ip_plan_technologies, debug_log=None):
+        """
+        ჩაანაცვლებს VLAN ID-ებს XML-ში userLabel-ის მიხედვით reference_vlan_data-სა და ip_plan_technologies სტრუქტურებიდან.
+        xml_content: XML string
+        reference_vlan_data: dict, მაგალითად {'2G': {'userLabel': '2G', 'vlanId': '3950'}, ...}
+        ip_plan_technologies: dict, მაგალითად {'2G': {'userLabel': '2G', 'vlanId': '1234'}, ...}
+        debug_log: optional list for step-by-step logging
+        აბრუნებს განახლებულ XML string-ს.
+        """
+        import xml.etree.ElementTree as ET
         import re
-        
-        # Map technology names for matching
-        tech_mapping = {
-            'OAM': ['OAM', 'MGT'],
-            '2G': ['2G', 'GSM'], 
-            '3G': ['3G', 'WCDMA'],
-            '4G': ['4G', 'LTE'],
-            '5G': ['5G', 'NR']
-        }
-        
-        for ip_plan_tech, ip_plan_data in ip_plan_technologies.items():
-            new_vlan_id = ip_plan_data.get('vlanId')
-            if not new_vlan_id:
-                continue
-                
-            # Find matching technology in reference VLAN data
-            for ref_tech, ref_vlan_info in reference_vlan_data.items():
-                # Check if technologies match
-                tech_matches = False
-                for mapped_tech, tech_variants in tech_mapping.items():
-                    if (ip_plan_tech in tech_variants or ip_plan_tech == mapped_tech) and \
-                       (ref_tech in tech_variants or ref_tech == mapped_tech):
-                        tech_matches = True
-                        break
-                
-                if tech_matches:
-                    old_vlan_id = ref_vlan_info['vlanId']
-                    user_label = ref_vlan_info['userLabel']
-                    
-                    logger.info(f"Replacing VLAN: {ref_tech} ({user_label}) -> {old_vlan_id} with {new_vlan_id}")
-                    
-                    # Pattern to find VLANIF with specific userLabel and replace vlanId
-                    pattern = rf'(<managedObject[^>]*class="[^"]*VLANIF[^"]*"[^>]*>.*?<p\s+name="userLabel"[^>]*>\s*{re.escape(user_label)}\s*</p>.*?)(<p\s+name="vlanId"[^>]*>)\s*{re.escape(old_vlan_id)}\s*(</p>.*?</managedObject>)'
-                    
-                    def replace_vlan(match):
-                        before_vlan = match.group(1)
-                        vlan_start = match.group(2)
-                        after_vlan = match.group(3)
-                        return f"{before_vlan}{vlan_start}{new_vlan_id}{after_vlan}"
-                    
-                    # Count matches before replacement
-                    matches = re.findall(pattern, xml_content, re.DOTALL | re.IGNORECASE)
-                    param_replacements = len(matches)
-                    
-                    if param_replacements > 0:
-                        xml_content = re.sub(pattern, replace_vlan, xml_content, flags=re.DOTALL | re.IGNORECASE)
-                        logger.info(f"Replaced {param_replacements} instances of VLAN {user_label} '{old_vlan_id}' with '{new_vlan_id}'")
-                        total_replacements += param_replacements
-                    else:
-                        logger.warning(f"No instances of VLAN {user_label} '{old_vlan_id}' found for replacement")
-        
-        logger.info(f"Total VLAN replacements made: {total_replacements}")
-        return xml_content
 
-    def _replace_ip_addresses(self, xml_content, reference_ip_data, ip_plan_technologies):
-        """Replace IP addresses, masks, and gateways from IP Plan data"""
-        logger.info(f"Replacing IP addresses from IP Plan")
-        logger.info(f"Reference IP data: {list(reference_ip_data.keys()) if reference_ip_data else 'None'}")
-        logger.info(f"IP Plan technologies: {list(ip_plan_technologies.keys()) if ip_plan_technologies else 'None'}")
-        
+        def normalize_tech(label):
+            if not label:
+                return None
+            name = str(label).strip().upper()
+            mapping = {
+                'OAM': 'OAM', 'MGT': 'OAM',
+                '2G': '2G', 'GSM': '2G',
+                '3G': '3G', 'WCDMA': '3G',
+                '4G': '4G', 'LTE': '4G',
+                '5G': '5G', 'NR': '5G'
+            }
+            return mapping.get(name, name)
+
+        def coerce_vlan(value):
+            if value is None:
+                return None
+            s = str(value).strip()
+            if not s or s.lower() == 'nan':
+                return None
+            try:
+                # handle values like 3980, '3980', 3980.0
+                vlan_int = int(float(s))
+                if vlan_int < 1 or vlan_int > 4094:
+                    return None
+                return str(vlan_int)
+            except Exception:
+                return None
+
+        if debug_log is None:
+            debug_log = []
+
+        debug_log.append("[VLAN] XML parsing started")
+
+        # Remove default namespace for easier parsing
+        xml_content = re.sub(r'xmlns="[^"]+"', '', xml_content, count=1)
+        root = ET.fromstring(xml_content)
+
+        # Build lookup maps
+        old_vlan_by_tech = {}
+        for key, info in (reference_vlan_data or {}).items():
+            tech_norm = normalize_tech(info.get('userLabel', key))
+            if tech_norm:
+                old_vlan_by_tech[tech_norm] = str(info.get('vlanId')) if info.get('vlanId') is not None else None
+
+        new_vlan_by_tech = {}
+        for key, info in (ip_plan_technologies or {}).items():
+            tech_norm = normalize_tech(info.get('userLabel', key))
+            vlan_norm = coerce_vlan(info.get('vlanId'))
+            if tech_norm and vlan_norm:
+                new_vlan_by_tech[tech_norm] = vlan_norm
+
+        ref_pairs = ', '.join([f'{k}:{v}' for k, v in old_vlan_by_tech.items() if v]) or 'none'
+        new_pairs = ', '.join([f'{k}:{v}' for k, v in new_vlan_by_tech.items()]) or 'none'
+        debug_log.append(f"[VLAN] Reference VLANs detected: {ref_pairs}")
+        debug_log.append(f"[VLAN] New VLANs from IP Plan: {new_pairs}")
+
+        replacements = 0
+        for mo in root.findall('.//managedObject'):
+            class_attr = mo.get('class', '')
+            if 'VLANIF' not in class_attr:
+                continue
+
+            user_label = None
+            vlan_elem = None
+            for p in mo.findall('p'):
+                if p.get('name') == 'userLabel':
+                    user_label = p.text.strip() if p.text else None
+                if p.get('name') == 'vlanId':
+                    vlan_elem = p
+
+            if not user_label or vlan_elem is None:
+                continue
+
+            tech_norm = normalize_tech(user_label)
+            if not tech_norm:
+                debug_log.append(f"[VLAN] Skipped unknown tech label '{user_label}'")
+                continue
+
+            new_vlan = new_vlan_by_tech.get(tech_norm)
+            if not new_vlan:
+                debug_log.append(f"[VLAN] No new VLAN for tech '{tech_norm}' (userLabel='{user_label}')")
+                continue
+
+            current_vlan_text = vlan_elem.text.strip() if vlan_elem.text else ''
+            expected_old_vlan = old_vlan_by_tech.get(tech_norm)
+
+            if expected_old_vlan and current_vlan_text and current_vlan_text != expected_old_vlan:
+                debug_log.append(f"[VLAN] Warning: for tech '{tech_norm}' current XML VLAN '{current_vlan_text}' != reference '{expected_old_vlan}'")
+
+            vlan_elem.text = new_vlan
+            replacements += 1
+            debug_log.append(f"[VLAN] userLabel '{user_label}' ({tech_norm}): VLAN {current_vlan_text or 'N/A'} -> {new_vlan}")
+
+        debug_log.append(f"[VLAN] Total VLAN replacements: {replacements}")
+
+        # Convert back to string
+        updated_xml = ET.tostring(root, encoding='unicode')
+        return updated_xml
+
+    def _replace_ip_addresses(self, xml_content, reference_ip_data, ip_plan_technologies, debug_log=None):
+        """Replace IP addresses, masks, and gateways from IP Plan data using structural mapping (IPIF → IPADDRESSV4)."""
+        logger.info(f"Replacing IP addresses from IP Plan (structural)")
         total_replacements = 0
         import re
-        
-        # Map technology names for matching
-        tech_mapping = {
-            'OAM': ['OAM', 'MGT'],
-            '2G': ['2G', 'GSM'],
-            '3G': ['3G', 'WCDMA'], 
-            '4G': ['4G', 'LTE'],
-            '5G': ['5G', 'NR']
-        }
-        
-        for ip_plan_tech, ip_plan_data in ip_plan_technologies.items():
-            new_ip = ip_plan_data.get('localIpAddr')
-            new_mask = ip_plan_data.get('localIpPrefixLength')
-            new_gateway = ip_plan_data.get('gateway')
-            
-            if not new_ip:
-                continue
-                
-            # Find matching technology in reference IP data
-            for ref_tech, ref_ip_info in reference_ip_data.items():
-                # Check if technologies match
-                tech_matches = False
-                for mapped_tech, tech_variants in tech_mapping.items():
-                    if (ip_plan_tech in tech_variants or ip_plan_tech == mapped_tech) and \
-                       (ref_tech in tech_variants or ref_tech == mapped_tech):
-                        tech_matches = True
+        import xml.etree.ElementTree as ET
+
+        if debug_log is None:
+            debug_log = []
+
+        def normalize_tech(label):
+            if not label:
+                return None
+            name = str(label).strip().upper()
+            mapping = {
+                'OAM': 'OAM', 'MGT': 'OAM',
+                '2G': '2G', 'GSM': '2G',
+                '3G': '3G', 'WCDMA': '3G',
+                '4G': '4G', 'LTE': '4G',
+                '5G': '5G', 'NR': '5G'
+            }
+            return mapping.get(name, name)
+
+        def coerce_prefix(value):
+            if value is None:
+                return None
+            s = str(value).strip()
+            if not s or s.lower() == 'nan':
+                return None
+            try:
+                n = int(float(s))
+                return str(n)
+            except Exception:
+                return s
+
+        # Namespace strip for easier parsing
+        xml_content = re.sub(r'xmlns="[^"]+"', '', xml_content, count=1)
+        root = ET.fromstring(xml_content)
+
+        # Build IPIF map: distName -> userLabel
+        ipif_label_by_dn = {}
+        for mo in root.findall('.//managedObject'):
+            class_attr = mo.get('class', '')
+            if 'IPIF' in class_attr and 'IPADDRESSV4' not in class_attr:
+                dn = mo.get('distName', '')
+                user_label = None
+                for p in mo.findall('p'):
+                    if p.get('name') == 'userLabel':
+                        user_label = p.text.strip() if p.text else None
                         break
-                
-                if tech_matches:
-                    old_ip = ref_ip_info['localIpAddr']
-                    old_mask = ref_ip_info.get('localIpPrefixLength')
-                    old_gateway = ref_ip_info.get('gateway')
-                    user_label = ref_ip_info.get('userLabel', ref_tech)
-                    
-                    logger.info(f"Replacing IP: {ref_tech} ({user_label}) -> IP: {old_ip}->{new_ip}, Mask: {old_mask}->{new_mask}, GW: {old_gateway}->{new_gateway}")
-                    
-                    # Replace localIpAddr
-                    if old_ip and new_ip:
-                        ip_pattern = rf'(<p\s+name="localIpAddr"[^>]*>)\s*{re.escape(old_ip)}\s*(</p>)'
-                        ip_replacement = rf'\g<1>{new_ip}\g<2>'
-                        ip_matches = re.findall(ip_pattern, xml_content, re.IGNORECASE)
-                        if ip_matches:
-                            xml_content = re.sub(ip_pattern, ip_replacement, xml_content, flags=re.IGNORECASE)
-                            total_replacements += len(ip_matches)
-                            logger.info(f"Replaced {len(ip_matches)} instances of localIpAddr '{old_ip}' with '{new_ip}'")
-                    
-                    # Replace localIpPrefixLength
-                    if old_mask and new_mask:
-                        mask_pattern = rf'(<p\s+name="localIpPrefixLength"[^>]*>)\s*{re.escape(old_mask)}\s*(</p>)'
-                        mask_replacement = rf'\g<1>{new_mask}\g<2>'
-                        mask_matches = re.findall(mask_pattern, xml_content, re.IGNORECASE)
-                        if mask_matches:
-                            xml_content = re.sub(mask_pattern, mask_replacement, xml_content, flags=re.IGNORECASE)
-                            total_replacements += len(mask_matches)
-                            logger.info(f"Replaced {len(mask_matches)} instances of localIpPrefixLength '{old_mask}' with '{new_mask}'")
-                    
-                    # Replace gateway
-                    if old_gateway and new_gateway:
-                        gw_pattern = rf'(<p\s+name="gateway"[^>]*>)\s*{re.escape(old_gateway)}\s*(</p>)'
-                        gw_replacement = rf'\g<1>{new_gateway}\g<2>'
-                        gw_matches = re.findall(gw_pattern, xml_content, re.IGNORECASE)
-                        if gw_matches:
-                            xml_content = re.sub(gw_pattern, gw_replacement, xml_content, flags=re.IGNORECASE)
-                            total_replacements += len(gw_matches)
-                            logger.info(f"Replaced {len(gw_matches)} instances of gateway '{old_gateway}' with '{new_gateway}'")
-        
-        logger.info(f"Total IP replacements made: {total_replacements}")
-        return xml_content
+                if dn and user_label:
+                    ipif_label_by_dn[dn] = user_label
+
+        # Iterate IPADDRESSV4 and set IP/mask by matching parent IPIF label
+        for mo in root.findall('.//managedObject'):
+            class_attr = mo.get('class', '')
+            if 'IPADDRESSV4' not in class_attr:
+                continue
+            ipaddr_dn = mo.get('distName', '')
+            if not ipaddr_dn:
+                continue
+            parent_ipif_dn = '/'.join(ipaddr_dn.split('/')[:-1])
+            user_label = ipif_label_by_dn.get(parent_ipif_dn)
+            if not user_label:
+                continue
+            tech = normalize_tech(user_label)
+            tech_info = ip_plan_technologies.get(tech) if ip_plan_technologies else None
+            if not tech_info:
+                debug_log.append(f"[IP] No IP Plan data for tech '{tech}' (label='{user_label}')")
+                continue
+
+            new_ip = tech_info.get('localIpAddr')
+            new_mask = coerce_prefix(tech_info.get('localIpPrefixLength'))
+
+            # Locate fields to update
+            ip_elem = None
+            mask_elem = None
+            for p in mo.findall('p'):
+                if p.get('name') == 'localIpAddr':
+                    ip_elem = p
+                elif p.get('name') == 'localIpPrefixLength':
+                    mask_elem = p
+
+            replaced_any = False
+            if ip_elem is not None and new_ip:
+                old = ip_elem.text.strip() if ip_elem.text else ''
+                ip_elem.text = str(new_ip)
+                total_replacements += 1
+                replaced_any = True
+                debug_log.append(f"[IP] {tech} ({user_label}) IP {old or 'N/A'} -> {new_ip}")
+            if mask_elem is not None and new_mask:
+                old = mask_elem.text.strip() if mask_elem.text else ''
+                mask_elem.text = str(new_mask)
+                total_replacements += 1
+                replaced_any = True
+                debug_log.append(f"[IP] {tech} ({user_label}) Prefix {old or 'N/A'} -> {new_mask}")
+            if not replaced_any:
+                debug_log.append(f"[IP] {tech} ({user_label}) nothing to replace (missing elements or values)")
+
+        logger.info(f"Total IP/mask replacements made: {total_replacements}")
+        return ET.tostring(root, encoding='unicode')
 
     def _replace_routing_rules(self, xml_content, reference_routing_data, ip_plan_routing_rules):
         """Replace IPv4 routing rules from IP Plan data"""
