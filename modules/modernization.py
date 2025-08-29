@@ -152,6 +152,11 @@ class ModernizationGenerator:
                 updated_content = self._replace_ip_addresses(
                     updated_content, reference_ip_data, ip_plan_data['technologies'], debug_log
                 )
+                # Replace gateway routes based on technology mapping
+                logger.info("Performing gateway replacement from IP Plan...")
+                updated_content = self._replace_gateways_by_tech(
+                    updated_content, ip_plan_data['technologies'], debug_log
+                )
             else:
                 logger.info("IP Plan or reference IP data not available for IP replacement")
             
@@ -978,3 +983,124 @@ class ModernizationGenerator:
         
         logger.info(f"Total network parameter replacements made: {total_replacements}")
         return xml_content
+
+    def _replace_gateways_by_tech(self, xml_content, ip_plan_technologies, debug_log=None):
+        """Replace gateway IPs in IPRT static routes using Excel gateways per technology.
+        Mapping:
+          - IPRT-1 items by destIpAddr: 0.0.0.0->OAM, 10.0.0.192->3G, 10.0.7.112->2G, 10.111.0.0->4G
+          - IPRT-2 (or userLabel NR) -> 5G
+        """
+        import re
+        import xml.etree.ElementTree as ET
+        if debug_log is None:
+            debug_log = []
+
+        def normalize_tech(label):
+            if not label:
+                return None
+            name = str(label).strip().upper()
+            mapping = {
+                'OAM': 'OAM', 'MGT': 'OAM',
+                '2G': '2G', 'GSM': '2G',
+                '3G': '3G', 'WCDMA': '3G',
+                '4G': '4G', 'LTE': '4G',
+                '5G': '5G', 'NR': '5G'
+            }
+            return mapping.get(name, name)
+
+        # Prepare gateway lookup from Excel
+        gw_by_tech = {}
+        for key, info in (ip_plan_technologies or {}).items():
+            tech = normalize_tech(info.get('userLabel', key))
+            gw = info.get('gateway')
+            if tech and gw:
+                gw_by_tech[tech] = str(gw).strip()
+
+        # Early exit if nothing to replace
+        if not gw_by_tech:
+            debug_log.append("[GW] No gateways provided by IP Plan; skipping gateway replacement")
+            return xml_content
+
+        # Strip namespace and parse
+        xml_no_ns = re.sub(r'xmlns="[^\"]+"', '', xml_content, count=1)
+        root = ET.fromstring(xml_no_ns)
+
+        # destIpAddr -> tech mapping for IPRT-1
+        dest_to_tech = {
+            '0.0.0.0': 'OAM',
+            # 3G / WCDMA
+            '10.0.0.192': '3G',
+            '10.0.1.192': '3G',
+            # 2G / GSM
+            '10.0.7.112': '2G',
+            '10.0.7.144': '2G',
+            '10.0.7.96': '2G',
+            # 4G / LTE
+            '10.111.0.0': '4G',
+            '10.121.0.0': '4G',
+            '10.131.0.0': '4G',
+            '172.28.16.64': '4G',
+            '172.28.37.80': '4G',
+            '172.28.37.96': '4G',
+            '172.28.44.64': '4G',
+            '172.28.44.80': '4G',
+            '172.29.16.64': '4G',
+            '172.29.37.16': '4G',
+            '172.29.37.32': '4G',
+            '172.30.157.240': '4G',
+            '172.30.160.32': '4G',
+            '10.112.0.0': '4G'
+        }
+
+        replacements = 0
+        for mo in root.findall('.//managedObject'):
+            class_attr = mo.get('class', '')
+            if 'IPRT' not in class_attr:
+                continue
+
+            dn = mo.get('distName', '')
+            iprt_type = 'IPRT-2' if 'IPRT-2' in dn else 'IPRT-1'
+            mo_label = None
+            for p in mo.findall('p'):
+                if p.get('name') == 'userLabel':
+                    mo_label = p.text.strip() if p.text else None
+
+            # Process staticRoutes items
+            for list_elem in mo.findall('list'):
+                if list_elem.get('name') != 'staticRoutes':
+                    continue
+                for item in list_elem.findall('item'):
+                    dest = None
+                    gw_elem = None
+                    for p in item.findall('p'):
+                        if p.get('name') == 'destIpAddr':
+                            dest = p.text.strip() if p.text else None
+                        elif p.get('name') == 'gateway':
+                            gw_elem = p
+
+                    if gw_elem is None:
+                        continue
+
+                    target_tech = None
+                    if iprt_type == 'IPRT-2' or (mo_label and normalize_tech(mo_label) == '5G'):
+                        target_tech = '5G'
+                    else:
+                        target_tech = dest_to_tech.get(dest)
+
+                    if not target_tech:
+                        continue
+
+                    new_gw = gw_by_tech.get(target_tech)
+                    if not new_gw:
+                        debug_log.append(f"[GW] No Excel gateway for tech '{target_tech}' (dest={dest})")
+                        continue
+
+                    old_gw = gw_elem.text.strip() if gw_elem.text else ''
+                    if old_gw == new_gw:
+                        continue
+                    gw_elem.text = new_gw
+                    replacements += 1
+                    debug_log.append(f"[GW] {iprt_type} dest={dest or '-'} tech={target_tech}: GW {old_gw or 'N/A'} -> {new_gw}")
+
+        debug_log.append(f"[GW] Total gateway replacements: {replacements}")
+        return ET.tostring(root, encoding='unicode')
