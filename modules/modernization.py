@@ -157,6 +157,11 @@ class ModernizationGenerator:
                 updated_content = self._replace_gateways_by_tech(
                     updated_content, ip_plan_data['technologies'], debug_log
                 )
+                # Replace specific network parameters structurally (NRX2LINK_TRUST-1, LNADJGNB-0)
+                logger.info("Performing structural network parameter replacement (NRX2LINK_TRUST-1, LNADJGNB-0)...")
+                updated_content = self._replace_network_parameters_structural(
+                    updated_content, ip_plan_data['technologies'], debug_log
+                )
             else:
                 logger.info("IP Plan or reference IP data not available for IP replacement")
             
@@ -1103,4 +1108,68 @@ class ModernizationGenerator:
                     debug_log.append(f"[GW] {iprt_type} dest={dest or '-'} tech={target_tech}: GW {old_gw or 'N/A'} -> {new_gw}")
 
         debug_log.append(f"[GW] Total gateway replacements: {replacements}")
+        return ET.tostring(root, encoding='unicode')
+
+    def _replace_network_parameters_structural(self, xml_content, ip_plan_technologies, debug_log=None):
+        """Replace network parameters using Excel IPs structurally:
+        - NRX2LINK_TRUST-1 ipV4Addr <- LTE/4G IP
+        - LNADJGNB-0 cPlaneIpAddr <- 5G/NR IP
+        """
+        import re
+        import xml.etree.ElementTree as ET
+        if debug_log is None:
+            debug_log = []
+
+        def get_ip_for_tech(tech_key_variants):
+            for key in tech_key_variants:
+                data = ip_plan_technologies.get(key)
+                if data and data.get('localIpAddr'):
+                    return str(data.get('localIpAddr')).strip()
+            return None
+
+        # Strip namespace to simplify searching
+        xml_no_ns = re.sub(r'xmlns="[^\"]+"', '', xml_content, count=1)
+        root = ET.fromstring(xml_no_ns)
+
+        total = 0
+
+        # NRX2LINK_TRUST-1 -> LTE IP
+        lte_ip = get_ip_for_tech(['4G', 'LTE'])
+        if lte_ip:
+            for mo in root.findall('.//managedObject'):
+                cls = mo.get('class', '')
+                dn = mo.get('distName', '')
+                if 'NRX2LINK_TRUST' in cls and dn.endswith('/NRX2LINK_TRUST-1'):
+                    ip_elem = None
+                    for p in mo.findall('p'):
+                        if p.get('name') == 'ipV4Addr':
+                            ip_elem = p
+                            break
+                    if ip_elem is not None:
+                        old = ip_elem.text.strip() if ip_elem.text else ''
+                        if old != lte_ip:
+                            ip_elem.text = lte_ip
+                            total += 1
+                            debug_log.append(f"[NET] NRX2LINK_TRUST-1 ipV4Addr {old or 'N/A'} -> {lte_ip}")
+
+        # LNADJGNB-0 -> 5G IP
+        nr_ip = get_ip_for_tech(['5G', 'NR'])
+        if nr_ip:
+            for mo in root.findall('.//managedObject'):
+                cls = mo.get('class', '')
+                dn = mo.get('distName', '')
+                if 'LNADJGNB' in cls and dn.endswith('/LNADJGNB-0'):
+                    ip_elem = None
+                    for p in mo.findall('p'):
+                        if p.get('name') == 'cPlaneIpAddr':
+                            ip_elem = p
+                            break
+                    if ip_elem is not None:
+                        old = ip_elem.text.strip() if ip_elem.text else ''
+                        if old != nr_ip:
+                            ip_elem.text = nr_ip
+                            total += 1
+                            debug_log.append(f"[NET] LNADJGNB-0 cPlaneIpAddr {old or 'N/A'} -> {nr_ip}")
+
+        debug_log.append(f"[NET] Total network param replacements: {total}")
         return ET.tostring(root, encoding='unicode')
