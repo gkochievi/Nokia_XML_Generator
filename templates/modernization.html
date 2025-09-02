@@ -341,6 +341,14 @@
                                         <input class="form-check-input" type="checkbox" id="filterS4" value="S4">
                                         <label class="form-check-label" for="filterS4">S4</label>
                                     </div>
+                                    <div class="form-check form-check-inline align-middle">
+                                        <input class="form-check-input" type="checkbox" id="filterModelAHEGA" value="AHEGA">
+                                        <label class="form-check-label" for="filterModelAHEGA">AHEGA</label>
+                                    </div>
+                                    <div class="form-check form-check-inline align-middle">
+                                        <input class="form-check-input" type="checkbox" id="filterModelAHEGB" value="AHEGB">
+                                        <label class="form-check-label" for="filterModelAHEGB">AHEGB</label>
+                                    </div>
                                 </div>
                                  <!-- Dropdown for existing files -->
                                  <div class="mb-3">
@@ -781,6 +789,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 option.textContent = file;
                 select.appendChild(option);
             });
+            // Auto-select latest (assumes server returns sorted by time asc/desc; pick last)
+            if (excelFiles && excelFiles.length > 0) {
+                const latest = excelFiles[excelFiles.length - 1];
+                select.value = latest;
+                // If station name already extracted, auto-parse
+                const stationNameVal = document.getElementById('stationName')?.value || '';
+                if (stationNameVal.trim() !== '') {
+                    setTimeout(() => parseIpPlanExcel(), 50);
+                }
+            }
         }
 
         // Setup event listeners
@@ -791,9 +809,9 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             // Filter handlers
-            ['filterNo2g','filterS2','filterS3','filterS4'].forEach(id => {
+            ['filterNo2g','filterS2','filterS3','filterS4','filterModelAHEGA','filterModelAHEGB'].forEach(id => {
                 const el = document.getElementById(id);
-                if (el) el.addEventListener('change', applyReferenceFilters);
+                if (el) el.addEventListener('change', () => applyReferenceFilters());
             });
          
             // Drag and drop handlers
@@ -1650,6 +1668,14 @@ const form = document.getElementById('modernizationForm');
                 document.getElementById('filterS2').checked = d.sectorCount === 2;
                 document.getElementById('filterS3').checked = d.sectorCount === 3;
                 document.getElementById('filterS4').checked = d.sectorCount === 4;
+                // Auto-check model filters if detected
+                const hasAHEGA = modelList.some(m => String(m).toUpperCase().includes('AHEGA'));
+                const hasAHEGB = modelList.some(m => String(m).toUpperCase().includes('AHEGB'));
+                const modelA = document.getElementById('filterModelAHEGA');
+                const modelB = document.getElementById('filterModelAHEGB');
+                if (modelA) modelA.checked = hasAHEGA && !hasAHEGB; // prefer single selection when clear
+                if (modelB) modelB.checked = hasAHEGB && !hasAHEGA;
+                if (modelA && modelB && hasAHEGA && hasAHEGB) { modelA.checked = true; modelB.checked = true; }
                 // Apply filter and select suggestion
                 await loadExampleFiles(); // ensure dropdown options loaded before filtering
                 window.detectedHas2G = !!d.has2G;
@@ -1670,25 +1696,42 @@ const form = document.getElementById('modernizationForm');
             const s2 = document.getElementById('filterS2').checked;
             const s3 = document.getElementById('filterS3').checked;
             const s4 = document.getElementById('filterS4').checked;
+            const mA = document.getElementById('filterModelAHEGA').checked;
+            const mB = document.getElementById('filterModelAHEGB').checked;
             const tokens = [];
             // 'no2G' checkbox now means "include no2G references" when checked
             if (s2) tokens.push('S2');
             if (s3) tokens.push('S3');
             if (s4) tokens.push('S4');
+            const selectedModels = [];
+            if (mA) selectedModels.push('AHEGA');
+            if (mB) selectedModels.push('AHEGB');
  
             const allOptions = Array.from(select.options);
             allOptions.forEach(opt => {
                 if (!opt.value || opt.value === 'upload') return;
                 const name = opt.value;
+                const upper = name.toUpperCase();
                 let ok = true;
                 tokens.forEach(t => { if (ok && !name.includes(t)) ok = false; });
-                // if model hints provided, prefer those only when any are set
-                if (ok && modelHints.length) {
-                    ok = modelHints.some(m => name.includes(m));
+                // Model filtering: explicit checkboxes override hints
+                if (ok) {
+                    if (selectedModels.length) {
+                        ok = selectedModels.some(m => name.includes(m));
+                    } else if (modelHints.length) {
+                        ok = modelHints.some(m => name.includes(m));
+                    }
                 }
-                // Auto-hide no2G references when detectedHas2G === true and include-no2G not checked
-                if (ok && window.detectedHas2G === true && !no2g && name.includes('no2G')) {
-                    ok = false;
+                // no2G filter behavior (case-insensitive)
+                if (ok) {
+                    if (no2g) {
+                        // When checked, show only no2G references
+                        if (!upper.includes('NO2G')) ok = false;
+                    } else {
+                        // When unchecked, if station has 2G -> hide no2G; if no 2G -> prefer only no2G
+                        if (window.detectedHas2G === true && upper.includes('NO2G')) ok = false;
+                        if (window.detectedHas2G === false && !upper.includes('NO2G')) ok = false;
+                    }
                 }
                 opt.hidden = !ok;
             });
