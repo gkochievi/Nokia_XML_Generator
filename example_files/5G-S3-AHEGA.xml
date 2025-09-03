@@ -2788,7 +2788,7 @@
       <p name="actDownSampling">false</p>
       <p name="actDrx">true</p>
       <p name="actDrxDuringMeasGap">true</p>
-      <p name="actDrxDuringTTIB">false</p>
+      <p name="actDrxDuringTTIB">true</p>
       <p name="actDynamicDataSessionProf">false</p>
       <p name="actEDrxIdle">false</p>
       <p name="actEicic">false</p>
@@ -3260,7 +3260,7 @@
     </managedObject>
     <managedObject class="NOKLTE:DRX" distName="MRBTS-90217/LNBTS-90217/LNCEL-11/DRX-0" version="xL24R1_2322_110" operation="create">
       <p name="applyOutOfSyncState">extendedDrxOnly</p>
-      <p name="drxApplyDeviceType">true</p>
+      <p name="drxApplyDeviceType">false</p>
       <p name="stInactFactor">1</p>
       <list name="drxProfile1">
         <item>
@@ -3852,7 +3852,7 @@
       <p name="actDownSampling">false</p>
       <p name="actDrx">true</p>
       <p name="actDrxDuringMeasGap">true</p>
-      <p name="actDrxDuringTTIB">false</p>
+      <p name="actDrxDuringTTIB">true</p>
       <p name="actDynamicDataSessionProf">false</p>
       <p name="actEDrxIdle">false</p>
       <p name="actEicic">false</p>
@@ -4324,7 +4324,7 @@
     </managedObject>
     <managedObject class="NOKLTE:DRX" distName="MRBTS-90217/LNBTS-90217/LNCEL-12/DRX-0" version="xL24R1_2322_110" operation="create">
       <p name="applyOutOfSyncState">extendedDrxOnly</p>
-      <p name="drxApplyDeviceType">true</p>
+      <p name="drxApplyDeviceType">false</p>
       <p name="stInactFactor">1</p>
       <list name="drxProfile1">
         <item>
@@ -4916,7 +4916,7 @@
       <p name="actDownSampling">false</p>
       <p name="actDrx">true</p>
       <p name="actDrxDuringMeasGap">true</p>
-      <p name="actDrxDuringTTIB">false</p>
+      <p name="actDrxDuringTTIB">true</p>
       <p name="actDynamicDataSessionProf">false</p>
       <p name="actEDrxIdle">false</p>
       <p name="actEicic">false</p>
@@ -5388,7 +5388,7 @@
     </managedObject>
     <managedObject class="NOKLTE:DRX" distName="MRBTS-90217/LNBTS-90217/LNCEL-13/DRX-0" version="xL24R1_2322_110" operation="create">
       <p name="applyOutOfSyncState">extendedDrxOnly</p>
-      <p name="drxApplyDeviceType">true</p>
+      <p name="drxApplyDeviceType">false</p>
       <p name="stInactFactor">1</p>
       <list name="drxProfile1">
         <item>
@@ -5980,7 +5980,7 @@
       <p name="actDownSampling">false</p>
       <p name="actDrx">true</p>
       <p name="actDrxDuringMeasGap">true</p>
-      <p name="actDrxDuringTTIB">false</p>
+      <p name="actDrxDuringTTIB">true</p>
       <p name="actDynamicDataSessionProf">false</p>
       <p name="actEDrxIdle">false</p>
       <p name="actEicic">false</p>
@@ -6452,7 +6452,7 @@
     </managedObject>
     <managedObject class="NOKLTE:DRX" distName="MRBTS-90217/LNBTS-90217/LNCEL-21/DRX-0" version="xL24R1_2322_110" operation="create">
       <p name="applyOutOfSyncState">extendedDrxOnly</p>
-      <p name="drxApplyDeviceType">true</p>
+      <p name="drxApplyDeviceType">false</p>
       <p name="stInactFactor">1</p>
       <list name="drxProfile1">
         <item>
@@ -7043,7 +7043,7 @@
       <p name="actDownSampling">false</p>
       <p name="actDrx">true</p>
       <p name="actDrxDuringMeasGap">true</p>
-      <p name="actDrxDuringTTIB">false</p>
+      <p name="actDrxDuringTTIB">true</p>
       <p name="actDynamicDataSessionProf">false</p>
       <p name="actEDrxIdle">false</p>
       <p name="actEicic">false</p>
@@ -7515,7 +7515,7 @@
     </managedObject>
     <managedObject class="NOKLTE:DRX" distName="MRBTS-90217/LNBTS-90217/LNCEL-22/DRX-0" version="xL24R1_2322_110" operation="create">
       <p name="applyOutOfSyncState">extendedDrxOnly</p>
-      <p name="drxApplyDeviceType">true</p>
+      <p name="drxApplyDeviceType">false</p>
       <p name="stInactFactor">1</p>
       <list name="drxProfile1">
         <item>
@@ -8106,7 +8106,7 @@
       <p name="actDownSampling">false</p>
       <p name="actDrx">true</p>
       <p name="actDrxDuringMeasGap">true</p>
-      <p name="actDrxDuringTTIB">false</p>
+      <p name="actDrxDuringTTIB">true</p>
       <p name="actDynamicDataSessionProf">false</p>
       <p name="actEDrxIdle">false</p>
       <p name="actEicic">false</p>
@@ -8578,7 +8578,7 @@
     </managedObject>
     <managedObject class="NOKLTE:DRX" distName="MRBTS-90217/LNBTS-90217/LNCEL-23/DRX-0" version="xL24R1_2322_110" operation="create">
       <p name="applyOutOfSyncState">extendedDrxOnly</p>
-      <p name="drxApplyDeviceType">true</p>
+      <p name="drxApplyDeviceType">false</p>
       <p name="stInactFactor">1</p>
       <list name="drxProfile1">
         <item>
