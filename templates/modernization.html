@@ -216,6 +216,12 @@
             transform: rotate(180deg);
         }
 
+        /* Adjustments for medium laptop screens (e.g., 14") */
+        @media (max-width: 1440px) and (min-width: 992px) {
+            .form-select, .form-control { font-size: 0.95rem; }
+            .upload-area { padding: 1.25rem; }
+        }
+
         @media (max-width: 768px) {
             .container-fluid {
                 padding: 1rem;
@@ -332,7 +338,7 @@
 
                         <div class="row">
                             <!-- Reference 5G XML Section -->
-                            <div class="col-md-6 mb-4">
+                            <div class="col-12 col-xxl-6 mb-4">
                                 <label class="form-label fw-semibold">
                                     <i class="bi bi-file-earmark-code me-2 text-primary"></i>Reference 5G XML
                                 </label>
@@ -383,7 +389,7 @@
                             </div>
 
                             <!-- IP Plan Excel Section -->
-                            <div class="col-md-6 mb-4">
+                            <div class="col-12 col-xxl-6 mb-4">
                                 <label class="form-label fw-semibold">
                                     <i class="bi bi-file-earmark-excel me-2 text-warning"></i>IP Plan Excel
                                 </label>
