@@ -38,6 +38,13 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 # Install dependencies
 pip install -r requirements.txt
 
+# Create .env with SFTP settings (or edit existing)
+echo "SFTP_HOST=172.30.179.127" >> .env
+echo "SFTP_PORT=22" >> .env
+echo "SFTP_USERNAME=root" >> .env
+echo "SFTP_PASSWORD=changeme" >> .env
+echo "SFTP_REMOTE_DIR=/d/oss/global/var/sct/backup_sites/mrbts" >> .env
+
 # Run the application
 python app.py
 ```
@@ -72,6 +79,7 @@ nokia_webem_generator/
 ├── requirements.txt       # Python dependencies
 ├── Dockerfile            # Docker configuration
 ├── docker-compose.yaml   # Docker Compose configuration
+├── sftp_downloader.py    # CLI tool to download backups from SFTP
 └── run.sh                # Quick start script
 ```
 

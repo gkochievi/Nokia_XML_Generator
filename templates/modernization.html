@@ -281,6 +281,20 @@
                         <hr class="my-4 mx-auto" style="width: 100px; height: 3px; background: var(--primary-gradient); border: none; border-radius: 2px;">
                     </div>
 
+                    <!-- SFTP Backup Downloader -->
+                    <div class="mb-4 p-3 border rounded-3 bg-light">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-8">
+                                <label class="form-label fw-semibold"><i class="bi bi-cloud-download me-2"></i>ჩამოტვირთე სარეზერვო XML SFTP-დან (ID ან სადგურის სახელი)</label>
+                                <input type="text" id="sftpQuery" class="form-control" placeholder="მაგ: 11532 ან ADJR-Beshumi">
+                            </div>
+                            <div class="col-md-4 d-grid">
+                                <button type="button" id="sftpDownloadBtn" class="btn btn-outline-primary"><i class="bi bi-download me-1"></i>ჩამოტვირთვა SFTP-დან</button>
+                            </div>
+                        </div>
+                        <div class="form-text">სერვერი მოძებნის Excel `example_files/data.xlsx` ფაილში ველს `Backup_Name` და მოახდენს ჩამოტვირთვას.</div>
+                    </div>
+
                     <!-- Form -->
                     <form id="modernizationForm" class="needs-validation" novalidate>
                         <!-- Existing Station XML - Primary Upload -->
@@ -735,6 +749,50 @@ document.addEventListener('DOMContentLoaded', function() {
             setupTabHandling(); // Initialize tab handling
             addSystemLog('საიტი წარმატებით ჩაიტვირთა', 'success');
             addSystemLog('IP Plan parsing ფუნქციონალი მზადაა (რეალურ დროში)', 'info');
+            // Attach SFTP download handler
+            const sftpBtn = document.getElementById('sftpDownloadBtn');
+            if (sftpBtn) {
+                sftpBtn.addEventListener('click', async () => {
+                    const q = document.getElementById('sftpQuery').value.trim();
+                    if (!q) {
+                        showAlert('warning', 'გთხოვთ შეიყვანოთ ID ან სადგურის სახელი');
+                        return;
+                    }
+                    try {
+                        addSystemLog(`SFTP ჩამოტვირთვის მოთხოვნა იგზავნება: ${q}`, 'info');
+                        const formData = new FormData();
+                        formData.append('query', q);
+                        const res = await fetch('/api/sftp-download', { method: 'POST', body: formData });
+                        if (!res.ok) {
+                            const err = await res.json().catch(() => ({ error: res.statusText }));
+                            showAlert('danger', `SFTP შეცდომა: ${err.error || 'უცნობი შეცდომა'}`);
+                            addSystemLog(`SFTP შეცდომა: ${err.error || res.statusText}`, 'error');
+                            return;
+                        }
+                        // Trigger download from response blob
+                        const blob = await res.blob();
+                        const disposition = res.headers.get('Content-Disposition') || '';
+                        let filename = 'backup.xml';
+                        const match = disposition.match(/filename\*=UTF-8''([^;\n\r]+)/) || disposition.match(/filename="?([^";\n\r]+)/);
+                        if (match && match[1]) {
+                            filename = decodeURIComponent(match[1]);
+                        }
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        showAlert('success', `ფაილი წარმატებით ჩამოიტვირთა: ${filename}`);
+                        addSystemLog(`SFTP ჩამოტვირთვა დასრულდა: ${filename}`, 'success');
+                    } catch (e) {
+                        showAlert('danger', `ქსელის შეცდომა: ${e.message}`);
+                        addSystemLog(`SFTP ქსელის შეცდომა: ${e.message}`, 'error');
+                    }
+                });
+            }
         });
 
         // Load example files from server

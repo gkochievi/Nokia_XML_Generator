@@ -7,4 +7,6 @@ services:
     volumes:
       - ./uploads:/app/uploads
       - ./generated:/app/generated
+    env_file:
+      - ./.env
     restart: unless-stopped 
