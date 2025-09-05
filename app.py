@@ -137,6 +137,12 @@ def modernization():
         if not station_name:
             return jsonify({'error': 'Station name is required'}), 400
 
+        # Mode and optional rollout overrides
+        mode = (request.form.get('mode') or 'modernization').strip().lower()
+        rollout_id_override = request.form.get('rolloutId')
+        rollout_name_override = request.form.get('rolloutName')
+        rollout_tac_override = request.form.get('rolloutTac')
+
         # Get file paths - either from uploads or example_files selections
         file_paths = {}
         
@@ -248,7 +254,13 @@ def modernization():
             output_folder=app.config['GENERATED_FOLDER'],
             existing_bts_name=existing_bts_name,
             reference_bts_name=reference_bts_name,
-            ip_plan_excel_path=file_paths['transmissionExcel']
+            ip_plan_excel_path=file_paths['transmissionExcel'],
+            mode=mode,
+            rollout_overrides={
+                'id': rollout_id_override,
+                'name': rollout_name_override,
+                'tac': rollout_tac_override
+            } if mode == 'rollout' else None
         )
         
         # Clean up temporary files (only the ones we created)

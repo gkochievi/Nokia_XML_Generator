@@ -301,6 +301,34 @@
                         <div class="form-text">სერვერი მოძებნის Excel `example_files/data.xlsx` ფაილში ველს `Backup_Name` და მოახდენს ჩამოტვირთვას.</div>
                     </div>
 
+                    <!-- Mode Switch: 5G Modernization / Rollout -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="fw-semibold"> რეჟიმი: </span>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="modeSwitch">
+                                <label class="form-check-label" for="modeSwitch">5G Modernization</label>
+                            </div>
+                            <span class="text-muted small" id="modeHint">Toggle to Rollout to input ID/Name/TAC</span>
+                        </div>
+                    </div>
+
+                    <!-- Rollout Inputs (hidden by default) -->
+                    <div class="row mb-4" id="rolloutInputs" style="display: none;">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-semibold">MRBTS ID</label>
+                            <input type="text" class="form-control" id="rolloutId" placeholder="e.g. 11532">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-semibold">MRBTS Name</label>
+                            <input type="text" class="form-control" id="rolloutName" placeholder="e.g. ADJR-Beshumi">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-semibold">TAC</label>
+                            <input type="text" class="form-control" id="rolloutTac" placeholder="e.g. 12345">
+                        </div>
+                    </div>
+
                     <!-- Form -->
                     <form id="modernizationForm" class="needs-validation" novalidate>
                         <!-- Existing Station XML - Primary Upload -->
@@ -798,6 +826,28 @@ document.addEventListener('DOMContentLoaded', function() {
                         addSystemLog(`SFTP ქსელის შეცდომა: ${e.message}`, 'error');
                     }
                 });
+            }
+
+            // Initialize mode switch (Modernization vs Rollout)
+            const modeSwitch = document.getElementById('modeSwitch');
+            const rolloutInputs = document.getElementById('rolloutInputs');
+            const modeLabel = document.querySelector('label[for="modeSwitch"]');
+            if (modeSwitch && rolloutInputs && modeLabel) {
+                const applyModeUI = () => {
+                    if (modeSwitch.checked) {
+                        // Rollout mode
+                        rolloutInputs.style.display = '';
+                        modeLabel.textContent = 'Rollout';
+                        addSystemLog('Mode switched to Rollout. Manual inputs enabled (ID/Name/TAC).', 'info');
+                    } else {
+                        // 5G Modernization mode
+                        rolloutInputs.style.display = 'none';
+                        modeLabel.textContent = '5G Modernization';
+                        addSystemLog('Mode switched to 5G Modernization. Inputs hidden.', 'info');
+                    }
+                };
+                modeSwitch.addEventListener('change', applyModeUI);
+                applyModeUI();
             }
         });
 
@@ -1429,6 +1479,18 @@ const form = document.getElementById('modernizationForm');
 
             try {
     const formData = new FormData(form);
+                // Append mode and rollout overrides
+                const modeSwitch = document.getElementById('modeSwitch');
+                const isRollout = !!(modeSwitch && modeSwitch.checked);
+                formData.append('mode', isRollout ? 'rollout' : 'modernization');
+                if (isRollout) {
+                    const rid = document.getElementById('rolloutId')?.value || '';
+                    const rname = document.getElementById('rolloutName')?.value || '';
+                    const rtac = document.getElementById('rolloutTac')?.value || '';
+                    if (rid) formData.append('rolloutId', rid.trim());
+                    if (rname) formData.append('rolloutName', rname.trim());
+                    if (rtac) formData.append('rolloutTac', rtac.trim());
+                }
                 
                 // Log form data
                 const stationName = formData.get('stationName');
@@ -1438,6 +1500,7 @@ const form = document.getElementById('modernizationForm');
                 addGenerationLog(`სადგურის სახელი: "${stationName}"`, 'info');
                 addGenerationLog(`Reference 5G XML: ${reference5gSelection || 'ატვირთული ფაილი'}`, 'info');
                 addGenerationLog(`IP Plan: ${ipPlanSelection || 'ატვირთული ფაილი'}`, 'info');
+                addGenerationLog(`Mode: ${modeSwitch && modeSwitch.checked ? 'Rollout' : '5G Modernization'}`, 'info');
                 
                 // Check if station name is available (should be auto-extracted from XML)
                 if (!stationName || stationName.trim() === '') {

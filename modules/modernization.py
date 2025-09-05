@@ -16,7 +16,7 @@ class ModernizationGenerator:
     
     def generate(self, station_name, existing_xml_path, reference_5g_xml_path, 
                  transmission_excel_path, output_folder, existing_bts_name=None, reference_bts_name=None,
-                 ip_plan_excel_path=None):
+                 ip_plan_excel_path=None, mode: str = 'modernization', rollout_overrides: dict | None = None):
         """Generate 5G modernization configuration using template replacement approach"""
         try:
             logger.info("Starting 5G modernization generation...")
@@ -28,12 +28,24 @@ class ModernizationGenerator:
             ip_plan_data = None
             if ip_plan_excel_path:
                 try:
-                    ip_plan_data = self.excel_parser.parse_ip_plan_excel(ip_plan_excel_path, station_name)
+                    # In Rollout mode, use the override MRBTS name to look up IP Plan
+                    lookup_station = station_name
+                    # rollout_overrides may not be defined yet here; safe access via locals()
+                    # We'll compute overrides a bit later, but for IP plan lookup we can reuse request intent:
+                    # if mode is 'rollout' and rollout_overrides provided in call, prefer its 'name'
+                    try:
+                        if (locals().get('mode') or 'modernization').lower() == 'rollout':
+                            ro = locals().get('rollout_overrides') or {}
+                            if isinstance(ro, dict) and ro.get('name'):
+                                lookup_station = str(ro.get('name')).strip()
+                    except Exception:
+                        pass
+                    ip_plan_data = self.excel_parser.parse_ip_plan_excel(ip_plan_excel_path, lookup_station)
                     if ip_plan_data:
-                        logger.info(f"IP Plan data loaded successfully for station: {station_name}")
+                        logger.info(f"IP Plan data loaded successfully for station: {lookup_station}")
                         logger.info(f"IP Plan technologies: {list(ip_plan_data['technologies'].keys())}")
                     else:
-                        logger.warning(f"No IP Plan data found for station: {station_name}")
+                        logger.warning(f"No IP Plan data found for station: {lookup_station}")
                 except Exception as e:
                     logger.error(f"Error parsing IP Plan Excel: {str(e)}")
                     ip_plan_data = None
@@ -119,23 +131,38 @@ class ModernizationGenerator:
             updated_content = template_content
             debug_log = []
             
-            # Replace station names if available
-            if existing_bts_name and reference_bts_name:
+            # Determine mode
+            mode = (mode or 'modernization').lower()
+            overrides = rollout_overrides or {}
+            
+            # Replace station names (Modernization: use existing; Rollout: use override when provided)
+            target_name = None
+            if mode == 'rollout' and overrides.get('name'):
+                target_name = str(overrides.get('name')).strip()
+            else:
+                target_name = existing_bts_name
+            
+            if target_name and reference_bts_name:
                 logger.info("Performing template-based name replacement...")
                 updated_content = self._replace_station_names(
-                    updated_content, reference_bts_name, existing_bts_name
+                    updated_content, reference_bts_name, target_name
                 )
             else:
-                logger.warning("btsName extraction failed, skipping name replacement")
+                logger.warning("btsName replacement skipped (missing target or reference name)")
             
             # Replace BTS IDs if available
-            if existing_bts_id and reference_bts_id:
+            target_id = None
+            if mode == 'rollout' and overrides.get('id'):
+                target_id = str(overrides.get('id')).strip()
+            else:
+                target_id = existing_bts_id
+            if target_id and reference_bts_id:
                 logger.info("Performing template-based BTS ID replacement...")
                 updated_content = self._replace_bts_ids(
-                    updated_content, reference_bts_id, existing_bts_id
+                    updated_content, reference_bts_id, target_id
                 )
             else:
-                logger.warning("BTS ID extraction failed, skipping ID replacement")
+                logger.warning("BTS ID replacement skipped (missing target or reference ID)")
             
             # Replace VLAN IDs from IP Plan if available
             if ip_plan_data:
@@ -209,6 +236,11 @@ class ModernizationGenerator:
                 )
             else:
                 logger.info("4G cell parameters not available for replacement - station may not have 4G cells")
+
+            # Rollout mode: override TAC across all LNCEL if provided
+            if mode == 'rollout' and overrides.get('tac'):
+                logger.info("Rollout mode: overriding TAC across all LNCEL objects")
+                updated_content = self._override_tac_all(updated_content, str(overrides.get('tac')).strip())
             
             # Replace 4G rootSeqIndex parameters if available
             if existing_4g_rootseq and reference_4g_rootseq:
@@ -239,7 +271,8 @@ class ModernizationGenerator:
                 station_data = {}
             
             # Generate output filename
-            output_filename = f"{station_name}_5G_modernization.xml"
+            output_base_name = target_name if (mode == 'rollout' and target_name) else station_name
+            output_filename = f"{output_base_name}_5G_modernization.xml"
             output_path = os.path.join(output_folder, output_filename)
             
             # Write result
@@ -311,46 +344,78 @@ class ModernizationGenerator:
                 config_data.append(ipno_elem) 
     
     def _replace_station_names(self, xml_content, old_name, new_name):
-        """Replace station names preserving format (dashes vs underscores)"""
-        logger.info(f"Replacing '{old_name}' with '{new_name}' in template")
-        
-        # Count replacements for logging
-        total_replacements = 0
-        
-        # Replace underscore version
+        """Replace station names while matching reference formatting:
+        - If reference uses underscores, output target with underscores and TitleCase tokens.
+        - If reference uses dashes, output target with dashes and TitleCase tokens.
+        - Preserve all-uppercase for the first token if the reference's first token is all uppercase (e.g., TBLS).
+        - Perform replacements for underscore variant, dash variant, and the original string.
+        """
+        logger.info(f"Replacing '{old_name}' with '{new_name}' in template (format-aware)")
+
+        def split_tokens(text: str):
+            import re as _re
+            return [t for t in _re.split(r'[-_]', str(text)) if t != '']
+
+        def style_like(reference: str, target_tokens: list[str]) -> str:
+            sep = '_' if ('_' in reference and '-' not in reference) else '-' if ('-' in reference and '_' not in reference) else None
+            ref_first = split_tokens(reference)[0] if split_tokens(reference) else ''
+            keep_upper_first = ref_first.isupper()
+            styled_tokens = []
+            for i, tok in enumerate(target_tokens):
+                if i == 0 and keep_upper_first:
+                    styled_tokens.append(tok.upper())
+                else:
+                    if tok:
+                        styled_tokens.append(tok[0].upper() + tok[1:].lower())
+                    else:
+                        styled_tokens.append(tok)
+            if sep is None:
+                # Fallback: keep original separators from new_name by guessing underscores
+                sep = '_' if '_' in new_name else '-'
+            return sep.join(styled_tokens)
+
+        # Prepare tokens from the provided target name
+        target_tokens = split_tokens(new_name)
+
+        # Build reference variants
         old_underscore = old_name.replace('-', '_')
-        new_underscore = new_name.replace('-', '_')
-        
-        if old_underscore != old_name:  # Only if they're different
-            before_count = xml_content.count(old_underscore)
-            xml_content = xml_content.replace(old_underscore, new_underscore)
-            after_count = xml_content.count(old_underscore)
-            replacements = before_count - after_count
-            total_replacements += replacements
-            logger.info(f"Replaced {replacements} instances of '{old_underscore}' with '{new_underscore}'")
-        
-        # Replace dash version  
         old_dash = old_name.replace('_', '-')
-        new_dash = new_name.replace('_', '-')
-        
-        if old_dash != old_name:  # Only if they're different
-            before_count = xml_content.count(old_dash)
+
+        # Build styled new names matching each reference format
+        new_underscore = style_like(old_underscore, target_tokens)
+        new_dash = style_like(old_dash, target_tokens)
+
+        total_replacements = 0
+
+        # Replace underscore variant
+        if old_underscore != old_name:
+            before = xml_content.count(old_underscore)
+            xml_content = xml_content.replace(old_underscore, new_underscore)
+            after = xml_content.count(old_underscore)
+            rep = before - after
+            total_replacements += rep
+            logger.info(f"Replaced {rep} '{old_underscore}' -> '{new_underscore}'")
+
+        # Replace dash variant
+        if old_dash != old_name:
+            before = xml_content.count(old_dash)
             xml_content = xml_content.replace(old_dash, new_dash)
-            after_count = xml_content.count(old_dash)
-            replacements = before_count - after_count
-            total_replacements += replacements
-            logger.info(f"Replaced {replacements} instances of '{old_dash}' with '{new_dash}'")
-        
-        # Replace original format as well
-        before_count = xml_content.count(old_name)
-        xml_content = xml_content.replace(old_name, new_name)
-        after_count = xml_content.count(old_name)
-        replacements = before_count - after_count
-        total_replacements += replacements
-        logger.info(f"Replaced {replacements} instances of '{old_name}' with '{new_name}'")
-        
-        logger.info(f"Total replacements made: {total_replacements}")
-        return xml_content 
+            after = xml_content.count(old_dash)
+            rep = before - after
+            total_replacements += rep
+            logger.info(f"Replaced {rep} '{old_dash}' -> '{new_dash}'")
+
+        # Replace original as well (choose format based on its separator)
+        new_like_original = style_like(old_name, target_tokens)
+        before = xml_content.count(old_name)
+        xml_content = xml_content.replace(old_name, new_like_original)
+        after = xml_content.count(old_name)
+        rep = before - after
+        total_replacements += rep
+        logger.info(f"Replaced {rep} '{old_name}' -> '{new_like_original}'")
+
+        logger.info(f"Total name replacements: {total_replacements}")
+        return xml_content
     
     def _replace_bts_ids(self, xml_content, old_id, new_id):
         """Replace BTS IDs in distName attributes (e.g., MRBTS-90217 -> MRBTS-12345)"""
@@ -389,6 +454,18 @@ class ModernizationGenerator:
         
         logger.info(f"Total BTS ID replacements made: {total_replacements}")
         return xml_content
+
+    def _override_tac_all(self, xml_content: str, new_tac: str) -> str:
+        """Force set <p name="tac"> to new_tac in all LNCEL managedObjects.
+        Works regardless of old value; uses structural regex within LNCEL blocks.
+        """
+        import re
+        # Pattern finds LNCEL managedObject blocks and replaces tac value within
+        pattern = r'(<managedObject[^>]*class="[^"]*:LNCEL"[^>]*>.*?<p\s+name="tac"[^>]*>)\s*[^<]*\s*(</p>.*?</managedObject>)'
+        def repl(match):
+            return f"{match.group(1)}{new_tac}{match.group(2)}"
+        updated = re.sub(pattern, repl, xml_content, flags=re.DOTALL | re.IGNORECASE)
+        return updated
     
     def _replace_sctp_port_min(self, xml_content, old_port, new_port):
         """Replace sctpPortMin values in XML content"""
