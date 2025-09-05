@@ -2154,7 +2154,7 @@
       <p name="actDlsOldtc">true</p>
       <p name="actDlsVoicePacketAgg">true</p>
       <p name="actDownSampling">false</p>
-      <p name="actDrx">false</p>
+      <p name="actDrx">true</p>
       <p name="actDrxDuringMeasGap">true</p>
       <p name="actDrxDuringTTIB">true</p>
       <p name="actDynamicDataSessionProf">false</p>
@@ -3219,7 +3219,7 @@
       <p name="actDlsOldtc">true</p>
       <p name="actDlsVoicePacketAgg">true</p>
       <p name="actDownSampling">false</p>
-      <p name="actDrx">false</p>
+      <p name="actDrx">true</p>
       <p name="actDrxDuringMeasGap">true</p>
       <p name="actDrxDuringTTIB">true</p>
       <p name="actDynamicDataSessionProf">false</p>
@@ -4284,7 +4284,7 @@
       <p name="actDlsOldtc">true</p>
       <p name="actDlsVoicePacketAgg">true</p>
       <p name="actDownSampling">false</p>
-      <p name="actDrx">false</p>
+      <p name="actDrx">true</p>
       <p name="actDrxDuringMeasGap">true</p>
       <p name="actDrxDuringTTIB">true</p>
       <p name="actDynamicDataSessionProf">false</p>
@@ -5349,7 +5349,7 @@
       <p name="actDlsOldtc">true</p>
       <p name="actDlsVoicePacketAgg">true</p>
       <p name="actDownSampling">false</p>
-      <p name="actDrx">false</p>
+      <p name="actDrx">true</p>
       <p name="actDrxDuringMeasGap">true</p>
       <p name="actDrxDuringTTIB">true</p>
       <p name="actDynamicDataSessionProf">false</p>
@@ -6414,7 +6414,7 @@
       <p name="actDlsOldtc">true</p>
       <p name="actDlsVoicePacketAgg">true</p>
       <p name="actDownSampling">false</p>
-      <p name="actDrx">false</p>
+      <p name="actDrx">true</p>
       <p name="actDrxDuringMeasGap">true</p>
       <p name="actDrxDuringTTIB">true</p>
       <p name="actDynamicDataSessionProf">false</p>
@@ -7479,7 +7479,7 @@
       <p name="actDlsOldtc">true</p>
       <p name="actDlsVoicePacketAgg">true</p>
       <p name="actDownSampling">false</p>
-      <p name="actDrx">false</p>
+      <p name="actDrx">true</p>
       <p name="actDrxDuringMeasGap">true</p>
       <p name="actDrxDuringTTIB">true</p>
       <p name="actDynamicDataSessionProf">false</p>
