@@ -373,6 +373,10 @@
                                 
                                 <!-- Filters -->
                                 <div class="mb-2" style="min-height:36px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                                    <div class="form-check form-switch align-middle">
+                                        <input class="form-check-input" type="checkbox" id="regionSwitch">
+                                        <label class="form-check-label" for="regionSwitch">East</label>
+                                    </div>
                                     <div class="form-check form-check-inline align-middle">
                                         <input class="form-check-input" type="checkbox" id="filterNo2g" value="no2G">
                                         <label class="form-check-label" for="filterNo2g">no2G</label>
@@ -855,9 +859,10 @@ document.addEventListener('DOMContentLoaded', function() {
         async function loadExampleFiles() {
             try {
                 addSystemLog('Example ფაილების ჩატვირთვა დაიწყო...', 'info');
+                const region = document.getElementById('regionSwitch')?.checked ? 'West' : 'East';
                 
-                // Load XML files
-                const xmlResponse = await fetch('/api/example-files/xml');
+                // Load XML files by region
+                const xmlResponse = await fetch(`/api/example-files/xml?region=${encodeURIComponent(region)}&_ts=${Date.now()}`);
                 const xmlData = await xmlResponse.json();
                 if (xmlData.success) {
                     xmlFiles = xmlData.files;
@@ -866,7 +871,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 // Load Excel files
-                const excelResponse = await fetch('/api/example-files/excel');
+                const excelResponse = await fetch(`/api/example-files/excel?category=ip&_ts=${Date.now()}`);
                 const excelData = await excelResponse.json();
                 if (excelData.success) {
                     excelFiles = excelData.files;
@@ -927,6 +932,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 const el = document.getElementById(id);
                 if (el) el.addEventListener('change', () => applyReferenceFilters());
             });
+
+            // Region switch: label + reload XML list
+            const regionSwitch = document.getElementById('regionSwitch');
+            const regionLabel = document.querySelector('label[for="regionSwitch"]');
+            const applyRegionUI = () => {
+                if (!regionSwitch || !regionLabel) return;
+                regionLabel.textContent = regionSwitch.checked ? 'West' : 'East';
+                addSystemLog(`Region set to ${regionSwitch.checked ? 'West' : 'East'}`, 'info');
+            };
+            if (regionSwitch) {
+                regionSwitch.addEventListener('change', async () => {
+                    applyRegionUI();
+                    await loadExampleFiles();
+                });
+                // initialize label on load
+                applyRegionUI();
+            }
          
             // Drag and drop handlers
             document.getElementById('reference5gUploadArea').addEventListener('dragover', function(e) {
@@ -999,6 +1021,13 @@ const form = document.getElementById('modernizationForm');
             
             const formData = new FormData();
             formData.append('file', file);
+            // Route uploads based on region/category
+            const region = document.getElementById('regionSwitch')?.checked ? 'West' : 'East';
+            if (type === 'xml') {
+                formData.append('region', region);
+            } else if (type === 'excel') {
+                formData.append('category', 'ip');
+            }
 
             try {
                 addSystemLog('ფაილი იგზავნება სერვერზე...', 'info');
@@ -1010,9 +1039,10 @@ const form = document.getElementById('modernizationForm');
                 const data = await response.json();
 
                 if (data.success) {
-                    addSystemLog(`✓ ფაილი წარმატებით აიტვირთა: ${data.filename}`, 'success');
-                    showAlert('success', `ფაილი ${data.filename} წარმატებით აიტვირთა`);
-                    loadExampleFiles(); // Reload files
+                    const savedTo = data.saved_to ? ` (${data.saved_to})` : '';
+                    addSystemLog(`✓ ფაილი წარმატებით აიტვირთა: ${data.filename}${savedTo}`, 'success');
+                    showAlert('success', `ფაილი ${data.filename} წარმატებით აიტვირთა${savedTo ? '<br><small>ჩაითავსა: '+savedTo+'</small>' : ''}`);
+                    await loadExampleFiles(); // Reload files (with region)
                 } else {
                     addSystemLog(`✗ ფაილის ატვირთვისას შეცდომა: ${data.error}`, 'error');
                     showAlert('danger', data.error || 'ფაილის ატვირთვისას მოხდა შეცდომა');
@@ -1353,11 +1383,12 @@ const form = document.getElementById('modernizationForm');
             addSystemLog(`${type} XML-დან ყველა პარამეტრის ამოღება: ${filename}`, 'info');
             
             try {
+                const region = document.getElementById('regionSwitch')?.checked ? 'West' : 'East';
                 const [btsNameResponse, btsIdResponse, sctpPortResponse, params2gResponse] = await Promise.all([
-                    fetch(`/api/example-files/extract-bts-name/${encodeURIComponent(filename)}`),
-                    fetch(`/api/example-files/extract-bts-id/${encodeURIComponent(filename)}`),
-                    fetch(`/api/example-files/extract-sctp-port/${encodeURIComponent(filename)}`),
-                    fetch(`/api/example-files/extract-2g-params/${encodeURIComponent(filename)}`)
+                    fetch(`/api/example-files/extract-bts-name/${encodeURIComponent(filename)}?region=${encodeURIComponent(region)}`),
+                    fetch(`/api/example-files/extract-bts-id/${encodeURIComponent(filename)}?region=${encodeURIComponent(region)}`),
+                    fetch(`/api/example-files/extract-sctp-port/${encodeURIComponent(filename)}?region=${encodeURIComponent(region)}`),
+                    fetch(`/api/example-files/extract-2g-params/${encodeURIComponent(filename)}?region=${encodeURIComponent(region)}`)
                 ]);
                 
                 const btsNameData = await btsNameResponse.json();
@@ -1483,6 +1514,9 @@ const form = document.getElementById('modernizationForm');
                 const modeSwitch = document.getElementById('modeSwitch');
                 const isRollout = !!(modeSwitch && modeSwitch.checked);
                 formData.append('mode', isRollout ? 'rollout' : 'modernization');
+                // Append region so backend can resolve example_files path
+                const region = document.getElementById('regionSwitch')?.checked ? 'West' : 'East';
+                formData.append('region', region);
                 if (isRollout) {
                     const rid = document.getElementById('rolloutId')?.value || '';
                     const rname = document.getElementById('rolloutName')?.value || '';
@@ -1522,11 +1556,31 @@ const form = document.getElementById('modernizationForm');
                 if (data.success) {
                     addGenerationLog(`✓ XML ფაილი წარმატებით გენერირდა!`, 'success');
                     addGenerationLog(`ფაილის სახელი: ${data.filename}`, 'success');
+                    if (data.warnings && data.warnings.ip_plan) {
+                        addGenerationLog(`⚠ ${data.warnings.ip_plan}`, 'warning');
+                        showAlert('warning', data.warnings.ip_plan);
+                        // Ask user whether to continue without IP Plan replacements
+                        const proceed = confirm(`${data.warnings.ip_plan}\n\nგსურთ გენერაცია გაგრძელდეს IP Plan-ის გარეშე?`);
+                        if (!proceed) {
+                            addGenerationLog('მომხმარებელმა გააუქმა გენერაცია IP Plan-ის არქონის გამო', 'warning');
+                            return;
+                        }
+                    }
                     
                     // Log replacement details
                     if (data.details) {
-                        addGenerationLog(`--- Template Replacement Details ---`, 'info');
+                        addGenerationLog(`--- Template Replacement Details (${data.details.mode === 'rollout' ? 'Rollout' : '5G Modernization'}) ---`, 'info');
                         
+                        // Mode and Rollout overrides (if any)
+                        if (data.details.mode === 'rollout' && data.details.rollout_overrides) {
+                            addGenerationLog(`Mode: Rollout`, 'info');
+                            addGenerationLog(`Override Name: ${data.details.rollout_overrides.name || '-'}`, 'info');
+                            addGenerationLog(`Override ID: ${data.details.rollout_overrides.id || '-'}`, 'info');
+                            addGenerationLog(`Override TAC: ${data.details.rollout_overrides.tac || '-'}`, 'info');
+                        } else {
+                            addGenerationLog(`Mode: 5G Modernization`, 'info');
+                        }
+
                         // BTS Name replacement
                         addGenerationLog(`Reference Template Name: "${data.details.reference_bts_name}"`, 'info');
                         addGenerationLog(`Target Station Name: "${data.details.existing_bts_name}"`, 'info');
@@ -1543,6 +1597,12 @@ const form = document.getElementById('modernizationForm');
                         
                         if (data.details.bts_id_replacement_performed) {
                             addGenerationLog(`Template-ში BTS ID "${data.details.reference_bts_id}" ჩანაცვლდა "${data.details.existing_bts_id}"-ით`, 'success');
+                        }
+                        
+                        // IP Plan lookup & sctpPortMin replacement
+                        if (typeof data.details.ip_plan_found !== 'undefined') {
+                            const planTxt = data.details.ip_plan_found ? 'FOUND' : 'NOT FOUND';
+                            addGenerationLog(`IP Plan lookup (${data.details.ip_plan_lookup_station || '-' }): ${planTxt}`, data.details.ip_plan_found ? 'success' : 'warning');
                         }
                         
                         // sctpPortMin replacement
@@ -1682,39 +1742,6 @@ const form = document.getElementById('modernizationForm');
                     alert.close();
                 }
             }, 30000);
-        }
-
-        // Handle file upload
-        async function handleFileUpload(file, type) {
-            if (!file) return;
-
-            addSystemLog(`ფაილის ატვირთვა დაიწყო: ${file.name} (${type})`, 'info');
-            
-            const formData = new FormData();
-            formData.append('file', file);
-
-            try {
-                addSystemLog('ფაილი იგზავნება სერვერზე...', 'info');
-                
-                const response = await fetch('/api/example-files/upload', {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await response.json();
-
-    if (data.success) {
-                    addSystemLog(`✓ ფაილი წარმატებით აიტვირთა: ${data.filename}`, 'success');
-                    showAlert('success', `ფაილი ${data.filename} წარმატებით აიტვირთა`);
-                    loadExampleFiles(); // Reload files
-    } else {
-                    addSystemLog(`✗ ფაილის ატვირთვისას შეცდომა: ${data.error}`, 'error');
-                    showAlert('danger', data.error || 'ფაილის ატვირთვისას მოხდა შეცდომა');
-                }
-            } catch (error) {
-                addSystemLog(`✗ ნეტვორკის შეცდომა: ${error.message}`, 'error');
-                showAlert('danger', 'ფაილის ატვირთვისას მოხდა შეცდომა');
-                console.error('File upload error:', error);
-            }
         }
 
         // Show alert

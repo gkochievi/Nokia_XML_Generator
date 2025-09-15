@@ -23,23 +23,21 @@ class ModernizationGenerator:
             logger.info(f"Station name: {station_name}")
             logger.info(f"Existing btsName: {existing_bts_name}")
             logger.info(f"Reference btsName: {reference_bts_name}")
+
+            # Resolve mode and overrides early (used for IP Plan lookup too)
+            mode = (mode or 'modernization').lower()
+            overrides = rollout_overrides or {}
             
             # Parse IP Plan data if provided
             ip_plan_data = None
+            ip_plan_lookup_station = station_name
             if ip_plan_excel_path:
                 try:
-                    # In Rollout mode, use the override MRBTS name to look up IP Plan
+                    # In Rollout mode, use the override MRBTS name to look up IP Plan; otherwise use station_name
                     lookup_station = station_name
-                    # rollout_overrides may not be defined yet here; safe access via locals()
-                    # We'll compute overrides a bit later, but for IP plan lookup we can reuse request intent:
-                    # if mode is 'rollout' and rollout_overrides provided in call, prefer its 'name'
-                    try:
-                        if (locals().get('mode') or 'modernization').lower() == 'rollout':
-                            ro = locals().get('rollout_overrides') or {}
-                            if isinstance(ro, dict) and ro.get('name'):
-                                lookup_station = str(ro.get('name')).strip()
-                    except Exception:
-                        pass
+                    if mode == 'rollout' and isinstance(overrides, dict) and overrides.get('name'):
+                        lookup_station = str(overrides.get('name')).strip()
+                    ip_plan_lookup_station = lookup_station
                     ip_plan_data = self.excel_parser.parse_ip_plan_excel(ip_plan_excel_path, lookup_station)
                     if ip_plan_data:
                         logger.info(f"IP Plan data loaded successfully for station: {lookup_station}")
@@ -131,10 +129,6 @@ class ModernizationGenerator:
             updated_content = template_content
             debug_log = []
             
-            # Determine mode
-            mode = (mode or 'modernization').lower()
-            overrides = rollout_overrides or {}
-            
             # Replace station names (Modernization: use existing; Rollout: use override when provided)
             target_name = None
             if mode == 'rollout' and overrides.get('name'):
@@ -164,7 +158,7 @@ class ModernizationGenerator:
             else:
                 logger.warning("BTS ID replacement skipped (missing target or reference ID)")
             
-            # Replace VLAN IDs from IP Plan if available
+            # Replace VLAN IDs from IP Plan if available (works even when site lacks 5G)
             if ip_plan_data:
                 logger.info("Performing template-based VLAN ID replacement from IP Plan...")
                 updated_content = self._replace_vlan_ids(
@@ -173,7 +167,7 @@ class ModernizationGenerator:
             else:
                 logger.info("IP Plan or reference VLAN data not available for VLAN replacement")
             
-            # Replace IP addresses from IP Plan if available
+            # Replace IP addresses from IP Plan if available (partial updates allowed per tech)
             if ip_plan_data:
                 logger.info("Performing template-based IP address replacement from IP Plan...")
                 updated_content = self._replace_ip_addresses(
@@ -185,10 +179,13 @@ class ModernizationGenerator:
                     updated_content, ip_plan_data['technologies'], debug_log
                 )
                 # Replace specific network parameters structurally (NRX2LINK_TRUST-1, LNADJGNB-0)
-                logger.info("Performing structural network parameter replacement (NRX2LINK_TRUST-1, LNADJGNB-0)...")
-                updated_content = self._replace_network_parameters_structural(
-                    updated_content, ip_plan_data['technologies'], debug_log
-                )
+                logger.info("Performing structural network parameter replacement (NRX2LINK_TRUST-1, LNADJGNB-0) where applicable...")
+                try:
+                    updated_content = self._replace_network_parameters_structural(
+                        updated_content, ip_plan_data['technologies'], debug_log
+                    )
+                except Exception as e:
+                    logger.info(f"Structural network parameter replacement skipped: {str(e)}")
             else:
                 logger.info("IP Plan or reference IP data not available for IP replacement")
             
@@ -236,11 +233,6 @@ class ModernizationGenerator:
                 )
             else:
                 logger.info("4G cell parameters not available for replacement - station may not have 4G cells")
-
-            # Rollout mode: override TAC across all LNCEL if provided
-            if mode == 'rollout' and overrides.get('tac'):
-                logger.info("Rollout mode: overriding TAC across all LNCEL objects")
-                updated_content = self._override_tac_all(updated_content, str(overrides.get('tac')).strip())
             
             # Replace 4G rootSeqIndex parameters if available
             if existing_4g_rootseq and reference_4g_rootseq:
@@ -270,9 +262,15 @@ class ModernizationGenerator:
                 logger.warning(f"Could not parse transmission Excel: {str(e)}")
                 station_data = {}
             
+            # Rollout mode: override TAC across all LNCEL if provided (do this last to avoid interfering with other regex replacements)
+            if mode == 'rollout' and overrides.get('tac'):
+                logger.info("Rollout mode: overriding TAC across all LNCEL objects (post-processing)")
+                updated_content = self._override_tac_all(updated_content, str(overrides.get('tac')).strip())
+
             # Generate output filename
             output_base_name = target_name if (mode == 'rollout' and target_name) else station_name
-            output_filename = f"{output_base_name}_5G_modernization.xml"
+            suffix = 'rollout' if mode == 'rollout' else '5G_modernization'
+            output_filename = f"{output_base_name}_{suffix}.xml"
             output_path = os.path.join(output_folder, output_filename)
             
             # Write result
@@ -281,7 +279,10 @@ class ModernizationGenerator:
             
             logger.info(f"Successfully generated: {output_filename}")
             # OPTIONAL: return debug_log for frontend if needed
-            return output_filename, debug_log
+            return output_filename, debug_log, {
+                'ip_plan_lookup': ip_plan_lookup_station,
+                'ip_plan_found': bool(ip_plan_data and ip_plan_data.get('success', True))
+            }
             
         except Exception as e:
             logger.error(f"Error generating 5G modernization: {str(e)}")
@@ -729,15 +730,32 @@ class ModernizationGenerator:
         def normalize_tech(label):
             if not label:
                 return None
-            name = str(label).strip().upper()
+            raw = str(label).strip()
+            name = raw.upper()
+            # Flexible key: strip non-alnum to match variants like O&M, M-GT, etc.
+            import re as _re
+            key = _re.sub(r'[^A-Z0-9]+', '', name)
             mapping = {
-                'OAM': 'OAM', 'MGT': 'OAM',
-                '2G': '2G', 'GSM': '2G',
-                '3G': '3G', 'WCDMA': '3G',
+                'OAM': 'OAM', 'OM': 'OAM', 'OMU': 'OAM', 'MGMT': 'OAM', 'MGT': 'OAM', 'MANAGEMENT': 'OAM',
+                '2G': '2G', 'GSM': '2G', 'GERAN': '2G',
+                '3G': '3G', 'WCDMA': '3G', 'UMTS': '3G',
                 '4G': '4G', 'LTE': '4G',
                 '5G': '5G', 'NR': '5G'
             }
-            return mapping.get(name, name)
+            return mapping.get(key, mapping.get(name, None))
+
+        def derive_tech_from_text(text: str | None):
+            if not text:
+                return None
+            upper = str(text).upper()
+            for token, norm in [('OAM','OAM'),('OM','OAM'),('MGMT','OAM'),('MGT','OAM'),
+                                ('GERAN','2G'),('GSM','2G'),('2G','2G'),
+                                ('WCDMA','3G'),('UMTS','3G'),('3G','3G'),
+                                ('LTE','4G'),('4G','4G'),
+                                ('NR','5G'),('5G','5G')]:
+                if token in upper:
+                    return norm
+            return None
 
         def coerce_vlan(value):
             if value is None:
@@ -785,19 +803,25 @@ class ModernizationGenerator:
         replacements = 0
         for mo in root.findall('.//managedObject'):
             class_attr = mo.get('class', '')
-            if 'VLANIF' not in class_attr:
+            # Support both VLANIF and QOSIF style classes; prioritize VLANIF
+            if not ('VLANIF' in class_attr or 'VLAN' in class_attr):
                 continue
                 
             user_label = None
             vlan_elem = None
             for p in mo.findall('p'):
-                if p.get('name') == 'userLabel':
+                name_attr = p.get('name')
+                if name_attr == 'userLabel':
                     user_label = p.text.strip() if p.text else None
-                if p.get('name') == 'vlanId':
+                if name_attr == 'vlanId' or name_attr == 'vlanID':
                     vlan_elem = p
 
             if not user_label or vlan_elem is None:
-                continue
+                # Try to derive tech from DN/class if label missing
+                if vlan_elem is None:
+                    continue
+                derived = derive_tech_from_text(mo.get('distName') or '') or derive_tech_from_text(class_attr)
+                user_label = derived
 
             tech_norm = normalize_tech(user_label)
             if not tech_norm:
@@ -848,6 +872,19 @@ class ModernizationGenerator:
             }
             return mapping.get(name, name)
 
+        def derive_tech_from_text(text: str | None):
+            if not text:
+                return None
+            upper = str(text).upper()
+            for token, norm in [('OAM','OAM'),('OM','OAM'),('MGMT','OAM'),('MGT','OAM'),
+                                ('GERAN','2G'),('GSM','2G'),('2G','2G'),
+                                ('WCDMA','3G'),('UMTS','3G'),('3G','3G'),
+                                ('LTE','4G'),('4G','4G'),
+                                ('NR','5G'),('5G','5G')]:
+                if token in upper:
+                    return norm
+            return None
+
         def coerce_prefix(value):
             if value is None:
                 return None
@@ -864,24 +901,50 @@ class ModernizationGenerator:
         xml_content = re.sub(r'xmlns="[^"]+"', '', xml_content, count=1)
         root = ET.fromstring(xml_content)
 
-        # Build IPIF map: distName -> userLabel
+        # Build helper map: VLANIF DN -> tech (from userLabel or derived)
+        vlan_tech_by_dn = {}
+        for mo in root.findall('.//managedObject'):
+            cls = mo.get('class', '')
+            if not ('VLANIF' in cls or 'VLAN' in cls):
+                continue
+            # Determine tech for this VLANIF
+            label = None
+            for p in mo.findall('p'):
+                if p.get('name') == 'userLabel' and p.text:
+                    label = p.text.strip()
+                    break
+            tech = normalize_tech(label) or derive_tech_from_text(mo.get('distName') or '') or derive_tech_from_text(cls)
+            if not tech:
+                continue
+            dn = mo.get('distName', '')
+            if not dn:
+                continue
+            vlan_tech_by_dn[dn] = tech
+
+        # Build IPIF map: distName -> userLabel (robust to different class naming)
         ipif_label_by_dn = {}
+        # Build IPIF map: distName -> interfaceDN (to crosswalk to VLANIF when label missing)
+        ipif_interface_dn_by_dn = {}
         for mo in root.findall('.//managedObject'):
             class_attr = mo.get('class', '')
-            if 'IPIF' in class_attr and 'IPADDRESSV4' not in class_attr:
+            if ('IPIF' in class_attr or 'IPIF_' in class_attr or class_attr.endswith(':IPIF')) and 'IPADDRESSV4' not in class_attr:
                 dn = mo.get('distName', '')
                 user_label = None
+                interface_dn = None
                 for p in mo.findall('p'):
                     if p.get('name') == 'userLabel':
                         user_label = p.text.strip() if p.text else None
-                        break
+                    elif p.get('name') == 'interfaceDN':
+                        interface_dn = p.text.strip() if p.text else None
                 if dn and user_label:
                     ipif_label_by_dn[dn] = user_label
+                if dn and interface_dn:
+                    ipif_interface_dn_by_dn[dn] = interface_dn
 
         # Iterate IPADDRESSV4 and set IP/mask by matching parent IPIF label
         for mo in root.findall('.//managedObject'):
             class_attr = mo.get('class', '')
-            if 'IPADDRESSV4' not in class_attr:
+            if 'IPADDRESSV4' not in class_attr and 'IPADDRV4' not in class_attr:
                 continue
             ipaddr_dn = mo.get('distName', '')
             if not ipaddr_dn:
@@ -889,7 +952,15 @@ class ModernizationGenerator:
             parent_ipif_dn = '/'.join(ipaddr_dn.split('/')[:-1])
             user_label = ipif_label_by_dn.get(parent_ipif_dn)
             if not user_label:
-                continue
+                # Fallback: infer tech from DN when label missing
+                inferred = None
+                # Try via interfaceDN -> VLANIF DN
+                iface_dn = ipif_interface_dn_by_dn.get(parent_ipif_dn)
+                if iface_dn:
+                    inferred = vlan_tech_by_dn.get(iface_dn)
+                if not inferred:
+                    inferred = derive_tech_from_text(parent_ipif_dn) or derive_tech_from_text(ipaddr_dn)
+                user_label = inferred
             tech = normalize_tech(user_label)
             tech_info = ip_plan_technologies.get(tech) if ip_plan_technologies else None
             if not tech_info:
@@ -1113,10 +1184,15 @@ class ModernizationGenerator:
             # 3G / WCDMA
             '10.0.0.192': '3G',
             '10.0.1.192': '3G',
+            '10.0.2.192': '3G',
+            '10.0.3.192': '3G',
             # 2G / GSM
             '10.0.7.112': '2G',
             '10.0.7.144': '2G',
             '10.0.7.96': '2G',
+            '10.0.8.112': '2G',
+            '10.0.8.144': '2G',
+            '10.0.8.96': '2G',
             # 4G / LTE
             '10.111.0.0': '4G',
             '10.121.0.0': '4G',
@@ -1131,7 +1207,7 @@ class ModernizationGenerator:
             '172.29.37.32': '4G',
             '172.30.157.240': '4G',
             '172.30.160.32': '4G',
-            '10.112.0.0': '4G'
+            '10.112.0.0': '4G',
         }
 
         replacements = 0

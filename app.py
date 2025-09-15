@@ -37,6 +37,26 @@ os.makedirs(app.config['EXAMPLE_FILES_FOLDER'], exist_ok=True)
 # Load environment variables (for SFTP, etc.)
 load_dotenv()
 
+# --- Helpers ---
+def resolve_example_xml_path(filename: str, region: str | None = None) -> str:
+    """Resolve a reference XML path from example_files, trying region and fallbacks.
+    Returns a path even if it may not exist (first candidate), so caller can handle errors.
+    """
+    base_dir = app.config['EXAMPLE_FILES_FOLDER']
+    safe_name = secure_filename(filename)
+    candidates = []
+    if region in ['East', 'West']:
+        candidates.append(os.path.join(base_dir, region, safe_name))
+    candidates.append(os.path.join(base_dir, safe_name))
+    # Fallbacks if region not provided or file not found at root
+    candidates.append(os.path.join(base_dir, 'East', safe_name))
+    candidates.append(os.path.join(base_dir, 'West', safe_name))
+    # Return first existing, otherwise the first candidate
+    for p in candidates:
+        if os.path.exists(p):
+            return p
+    return candidates[0]
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
@@ -142,6 +162,8 @@ def modernization():
         rollout_id_override = request.form.get('rolloutId')
         rollout_name_override = request.form.get('rolloutName')
         rollout_tac_override = request.form.get('rolloutTac')
+        # Region for example_files (East/West) and Excel categories
+        region = (request.form.get('region') or '').strip()
 
         # Get file paths - either from uploads or example_files selections
         file_paths = {}
@@ -162,8 +184,8 @@ def modernization():
         # Handle Reference 5G XML (dropdown selection or upload)
         reference_5g_selection = request.form.get('reference5gXmlSelection')
         if reference_5g_selection and reference_5g_selection != 'upload':
-            # Use selected file from example_files
-            file_paths['reference5gXml'] = os.path.join(app.config['EXAMPLE_FILES_FOLDER'], reference_5g_selection)
+            # Use selected file from example_files; resolve with region and fallbacks
+            file_paths['reference5gXml'] = resolve_example_xml_path(reference_5g_selection, region)
         else:
             # Handle upload
             if 'reference5gXmlUpload' not in request.files or request.files['reference5gXmlUpload'].filename == '':
@@ -180,8 +202,8 @@ def modernization():
         # Handle IP Plan Excel (dropdown selection or upload)
         ip_plan_selection = request.form.get('ipPlanSelection')
         if ip_plan_selection and ip_plan_selection != 'upload':
-            # Use selected file from example_files
-            file_paths['transmissionExcel'] = os.path.join(app.config['EXAMPLE_FILES_FOLDER'], ip_plan_selection)
+            # Use selected file from example_files/IP directory
+            file_paths['transmissionExcel'] = os.path.join(app.config['EXAMPLE_FILES_FOLDER'], 'IP', ip_plan_selection)
         else:
             # Handle upload
             if 'ipPlanUpload' not in request.files or request.files['ipPlanUpload'].filename == '':
@@ -246,7 +268,7 @@ def modernization():
             logger.error(f"Error extracting station parameters: {str(e)}")
             return jsonify({'error': f'სადგურის პარამეტრების ამოღების შეცდომა: {str(e)}'}), 500
         
-        output_filename, debug_log = generator.generate(
+        output_filename, debug_log, extra = generator.generate(
             station_name=station_name,
             existing_xml_path=file_paths['existingXml'],
             reference_5g_xml_path=file_paths['reference5gXml'],
@@ -274,11 +296,12 @@ def modernization():
             if os.path.exists(file_paths['transmissionExcel']):
                 os.unlink(file_paths['transmissionExcel'])
         
-        return jsonify({
+        resp = {
             'success': True,
             'filename': output_filename,
             'message': '5G modernization configuration generated successfully',
             'details': {
+                'mode': mode,
                 'existing_bts_name': existing_bts_name,
                 'reference_bts_name': reference_bts_name,
                 'existing_bts_id': existing_bts_id,
@@ -299,10 +322,28 @@ def modernization():
                 'params_2g_replacement_performed': bool(existing_2g_params and reference_2g_params),
                 'cells_4g_replacement_performed': bool(existing_4g_cells and reference_4g_cells),
                 'rootseq_4g_replacement_performed': bool(existing_4g_rootseq and reference_4g_rootseq),
-                'nrcells_5g_replacement_performed': bool(existing_4g_cells and reference_5g_nrcells)
+                'nrcells_5g_replacement_performed': bool(existing_4g_cells and reference_5g_nrcells),
+                'ip_plan_lookup_station': (extra.get('ip_plan_lookup') if 'extra' in locals() else None),
+                'ip_plan_found': (extra.get('ip_plan_found') if 'extra' in locals() else None),
+                'rollout_overrides': {
+                    'id': rollout_id_override,
+                    'name': rollout_name_override,
+                    'tac': rollout_tac_override
+                } if mode == 'rollout' else None
             },
             'debug_log': debug_log
-        })
+        }
+
+        # Add IP Plan not found warning for visibility on frontend
+        try:
+            if extra and not extra.get('ip_plan_found', True):
+                resp['warnings'] = {
+                    'ip_plan': f"IP Plan not found for station '{extra.get('ip_plan_lookup','')}'. VLAN/IP/GW replacements were skipped."
+                }
+        except Exception:
+            pass
+
+        return jsonify(resp)
         
     except Exception as e:
         logger.error(f"Error in modernization: {str(e)}")
@@ -1064,8 +1105,15 @@ def extract_5g_nrcells():
 def list_example_xml_files():
     """List all XML files in example_files directory"""
     try:
-        files = [f for f in os.listdir(app.config['EXAMPLE_FILES_FOLDER']) 
-                if f.lower().endswith('.xml')]
+        region = (request.args.get('region') or '').strip()
+        base_dir = app.config['EXAMPLE_FILES_FOLDER']
+        target_dir = base_dir
+        if region and region in ['East', 'West']:
+            target_dir = os.path.join(base_dir, region)
+        try:
+            files = [f for f in os.listdir(target_dir) if f.lower().endswith('.xml')]
+        except Exception:
+            files = []
         return jsonify({'success': True, 'files': files})
     except Exception as e:
         logger.error(f"Error listing example XML files: {str(e)}")
@@ -1075,8 +1123,18 @@ def list_example_xml_files():
 def list_example_excel_files():
     """List all Excel files in example_files directory"""
     try:
-        files = [f for f in os.listdir(app.config['EXAMPLE_FILES_FOLDER']) 
-                if f.lower().endswith(('.xlsx', '.xls'))]
+        category = (request.args.get('category') or '').strip().lower()
+        base_dir = app.config['EXAMPLE_FILES_FOLDER']
+        if category == 'ip':
+            target_dir = os.path.join(base_dir, 'IP')
+        elif category == 'data':
+            target_dir = os.path.join(base_dir, 'Data')
+        else:
+            target_dir = base_dir
+        try:
+            files = [f for f in os.listdir(target_dir) if f.lower().endswith(('.xlsx', '.xls'))]
+        except Exception:
+            files = []
         return jsonify({'success': True, 'files': files})
     except Exception as e:
         logger.error(f"Error listing example Excel files: {str(e)}")
@@ -1097,9 +1155,39 @@ def upload_example_file():
     
     try:
         filename = secure_filename(file.filename)
-        save_path = os.path.join(app.config['EXAMPLE_FILES_FOLDER'], filename)
-        file.save(save_path)
-        return jsonify({'success': True, 'filename': filename, 'message': 'File uploaded successfully'})
+        base_dir = app.config['EXAMPLE_FILES_FOLDER']
+
+        # Optional targeting: region for XML; category for Excel
+        region = (request.form.get('region') or '').strip()
+        category = (request.form.get('category') or '').strip().lower()
+
+        ext = filename.lower().rsplit('.', 1)[-1]
+        target_dir = base_dir
+        if ext == 'xml' and region in ['East', 'West']:
+            target_dir = os.path.join(base_dir, region)
+        elif ext in ['xlsx', 'xls']:
+            if category == 'ip':
+                target_dir = os.path.join(base_dir, 'IP')
+            elif category == 'data':
+                target_dir = os.path.join(base_dir, 'Data')
+
+        os.makedirs(target_dir, exist_ok=True)
+        save_path = os.path.join(target_dir, filename)
+        # Ensure we can write the file and return error if not
+        try:
+            file.save(save_path)
+        except Exception as write_err:
+            logger.error(f"Upload write failed: {str(write_err)}")
+            return jsonify({'success': False, 'error': f'Unable to save file to {save_path}'}), 500
+        saved_rel = os.path.relpath(save_path, base_dir).replace('\\', '/')
+        return jsonify({
+            'success': True,
+            'filename': filename,
+            'message': 'File uploaded successfully',
+            'region': region if ext == 'xml' else None,
+            'category': category if ext in ['xlsx','xls'] else None,
+            'saved_to': saved_rel
+        })
     except Exception as e:
         logger.error(f"Error uploading file: {str(e)}")
         return jsonify({'error': str(e)}), 500
@@ -1125,7 +1213,9 @@ def extract_bts_name_from_example_file(filename):
     """Extract btsName from a file in example_files directory"""
     try:
         filename = secure_filename(filename)
-        file_path = os.path.join(app.config['EXAMPLE_FILES_FOLDER'], filename)
+        region = (request.args.get('region') or '').strip()
+        base_dir = app.config['EXAMPLE_FILES_FOLDER']
+        file_path = os.path.join(base_dir, region, filename) if region in ['East','West'] else os.path.join(base_dir, filename)
         
         if not os.path.exists(file_path):
             return jsonify({'error': 'File not found'}), 404
@@ -1152,7 +1242,9 @@ def extract_bts_id_from_example_file(filename):
     """Extract BTS ID from a file in example_files directory"""
     try:
         filename = secure_filename(filename)
-        file_path = os.path.join(app.config['EXAMPLE_FILES_FOLDER'], filename)
+        region = (request.args.get('region') or '').strip()
+        base_dir = app.config['EXAMPLE_FILES_FOLDER']
+        file_path = os.path.join(base_dir, region, filename) if region in ['East','West'] else os.path.join(base_dir, filename)
         
         if not os.path.exists(file_path):
             return jsonify({'error': 'File not found'}), 404
@@ -1179,7 +1271,9 @@ def extract_sctp_port_from_example_file(filename):
     """Extract sctpPortMin from a file in example_files directory"""
     try:
         filename = secure_filename(filename)
-        file_path = os.path.join(app.config['EXAMPLE_FILES_FOLDER'], filename)
+        region = (request.args.get('region') or '').strip()
+        base_dir = app.config['EXAMPLE_FILES_FOLDER']
+        file_path = os.path.join(base_dir, region, filename) if region in ['East','West'] else os.path.join(base_dir, filename)
         
         if not os.path.exists(file_path):
             return jsonify({'error': 'File not found'}), 404
@@ -1206,7 +1300,9 @@ def extract_2g_params_from_example_file(filename):
     """Extract 2G parameters from a file in example_files directory"""
     try:
         filename = secure_filename(filename)
-        file_path = os.path.join(app.config['EXAMPLE_FILES_FOLDER'], filename)
+        region = (request.args.get('region') or '').strip()
+        base_dir = app.config['EXAMPLE_FILES_FOLDER']
+        file_path = os.path.join(base_dir, region, filename) if region in ['East','West'] else os.path.join(base_dir, filename)
         
         if not os.path.exists(file_path):
             return jsonify({'error': 'File not found'}), 404
@@ -1233,7 +1329,9 @@ def extract_4g_cells_from_example_file(filename):
     """Extract 4G cell parameters from a file in example_files directory"""
     try:
         filename = secure_filename(filename)
-        file_path = os.path.join(app.config['EXAMPLE_FILES_FOLDER'], filename)
+        region = (request.args.get('region') or '').strip()
+        base_dir = app.config['EXAMPLE_FILES_FOLDER']
+        file_path = os.path.join(base_dir, region, filename) if region in ['East','West'] else os.path.join(base_dir, filename)
         
         if not os.path.exists(file_path):
             return jsonify({'error': 'File not found'}), 404
@@ -1260,7 +1358,9 @@ def extract_4g_rootseq_from_example_file(filename):
     """Extract 4G rootSeqIndex parameters from a file in example_files directory"""
     try:
         filename = secure_filename(filename)
-        file_path = os.path.join(app.config['EXAMPLE_FILES_FOLDER'], filename)
+        region = (request.args.get('region') or '').strip()
+        base_dir = app.config['EXAMPLE_FILES_FOLDER']
+        file_path = os.path.join(base_dir, region, filename) if region in ['East','West'] else os.path.join(base_dir, filename)
         
         if not os.path.exists(file_path):
             return jsonify({'error': 'File not found'}), 404
@@ -1287,7 +1387,9 @@ def extract_5g_nrcells_from_example_file(filename):
     """Extract 5G NRCELL physCellId parameters from a file in example_files directory"""
     try:
         filename = secure_filename(filename)
-        file_path = os.path.join(app.config['EXAMPLE_FILES_FOLDER'], filename)
+        region = (request.args.get('region') or '').strip()
+        base_dir = app.config['EXAMPLE_FILES_FOLDER']
+        file_path = os.path.join(base_dir, region, filename) if region in ['East','West'] else os.path.join(base_dir, filename)
         
         if not os.path.exists(file_path):
             return jsonify({'error': 'File not found'}), 404

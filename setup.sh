@@ -48,6 +48,19 @@ touch generated/.gitkeep
 
 echo "Setup completed successfully!"
 echo ""
+echo "Create a .env file based on .env.example to configure SFTP access."
+echo "If .env does not exist, you can create it now with default values:"
+if [ ! -f .env ]; then
+  cat > .env << 'EOF'
+SFTP_HOST=
+SFTP_PORT=22
+SFTP_USERNAME=
+SFTP_PASSWORD=
+SFTP_REMOTE_DIR=
+EOF
+  echo ".env file created with placeholder credentials. Please edit it."
+fi
+
 echo "To run the application:"
 echo "  source venv/bin/activate"
 echo "  python app.py"
