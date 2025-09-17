@@ -83,6 +83,20 @@
             transform: translateY(-1px);
         }
 
+        /* Fix Manage Files modal tab hover visibility */
+        #manageFilesModal .nav-tabs .nav-link {
+            color: #667eea;
+        }
+        #manageFilesModal .nav-tabs .nav-link:hover {
+            background-color: rgba(102, 126, 234, 0.1) !important;
+            color: #667eea !important;
+        }
+        #manageFilesModal .nav-tabs .nav-link.active {
+            background: var(--primary-gradient);
+            color: #ffffff !important;
+            border: none;
+        }
+
         /* Ensure navbar is visible on all desktop sizes */
         @media (min-width: 992px) {
             .navbar-nav {
@@ -216,6 +230,17 @@
             transform: rotate(180deg);
         }
 
+        /* Ensure modal appears above high z-index navbar */
+        .modal { z-index: 12000 !important; }
+        .modal-backdrop { z-index: 11990 !important; }
+
+        /* Reference filter row: keep in one line on wide screens */
+        .ref-filters { display:flex; align-items:center; gap:12px; flex-wrap: wrap; }
+        @media (min-width: 1200px) { /* xl and up */
+            .ref-filters { flex-wrap: nowrap; gap: 10px; }
+            .ref-filters .form-check { margin-right: 6px; }
+        }
+
         /* Adjustments for medium laptop screens (e.g., 14") */
         @media (max-width: 1440px) and (min-width: 992px) {
             .form-select, .form-control { font-size: 0.95rem; }
@@ -284,6 +309,11 @@
                         </div>
                         <h1 class="h1 fw-bold mb-2" style="background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">5G Modernization</h1>
                         <p class="text-muted fs-5 mb-0">არსებულ საბაზო სადგურზე 5G-ის დამატება</p>
+                        <div class="mt-3">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#manageFilesModal">
+                                <i class="bi bi-folder2-open me-1"></i>Manage Files
+                            </button>
+                        </div>
                         <hr class="my-4 mx-auto" style="width: 100px; height: 3px; background: var(--primary-gradient); border: none; border-radius: 2px;">
                     </div>
 
@@ -371,8 +401,8 @@
                                     <i class="bi bi-file-earmark-code me-2 text-primary"></i>Reference 5G XML
                                 </label>
                                 
-                                <!-- Filters -->
-                                <div class="mb-2" style="min-height:36px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                                <!-- Filters (single row on wide screens) -->
+                                <div class="mb-2 ref-filters" style="min-height:36px;">
                                     <div class="form-check form-switch align-middle">
                                         <input class="form-check-input" type="checkbox" id="regionSwitch">
                                         <label class="form-check-label" for="regionSwitch">East</label>
@@ -402,11 +432,16 @@
                                         <label class="form-check-label" for="filterModelAHEGB">AHEGB</label>
                                     </div>
                                 </div>
-                                 <!-- Dropdown for existing files -->
+                                 <!-- Dropdown for existing files with delete button -->
                                  <div class="mb-3">
-                                     <select class="form-select" id="reference5gXmlSelection" name="reference5gXmlSelection">
-                                         <option value="">მონაცემები იტვირთება...</option>
-                                     </select>
+                                     <div class="input-group">
+                                         <select class="form-select" id="reference5gXmlSelection" name="reference5gXmlSelection">
+                                             <option value="">მონაცემები იტვირთება...</option>
+                                         </select>
+                                         <button class="btn btn-outline-danger" type="button" id="deleteSelectedReferenceBtn" title="Delete selected reference">
+                                             <i class="bi bi-trash"></i>
+                                         </button>
+                                     </div>
                                  </div>
 
                                 <!-- Upload area -->
@@ -428,11 +463,16 @@
                                 <!-- Spacer to align with Reference filters row -->
                                 <div class="mb-2" style="min-height:36px"></div>
                                 
-                                <!-- Dropdown for existing files -->
-            <div class="mb-3">
-                                    <select class="form-select" id="ipPlanSelection" name="ipPlanSelection">
-                                        <option value="">მონაცემები იტვირთება...</option>
-                                    </select>
+                                <!-- Dropdown for existing files with delete button -->
+                                <div class="mb-3">
+                                    <div class="input-group">
+                                        <select class="form-select" id="ipPlanSelection" name="ipPlanSelection">
+                                            <option value="">მონაცემები იტვირთება...</option>
+                                        </select>
+                                        <button class="btn btn-outline-danger" type="button" id="deleteSelectedIpPlanBtn" title="Delete selected IP Plan">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <!-- Upload area -->
@@ -549,6 +589,58 @@
             </div>
             </div>
             </div>
+    </div>
+
+    <!-- Manage Files Modal -->
+    <div class="modal fade" id="manageFilesModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="bi bi-folder2-open me-2"></i>Manage Files</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <ul class="nav nav-tabs" id="manageFilesTabs" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="tab-ref" data-bs-toggle="tab" data-bs-target="#pane-ref" type="button" role="tab">Reference XMLs</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tab-ip" data-bs-toggle="tab" data-bs-target="#pane-ip" type="button" role="tab">IP Plan</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tab-gen" data-bs-toggle="tab" data-bs-target="#pane-gen" type="button" role="tab">Generated</button>
+              </li>
+            </ul>
+            <div class="tab-content p-3 border border-top-0 rounded-bottom">
+              <div class="tab-pane fade show active" id="pane-ref" role="tabpanel">
+                <div class="d-flex align-items-center mb-2 gap-2">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="manageRegionSwitch">
+                    <label class="form-check-label" for="manageRegionSwitch">East</label>
+                  </div>
+                  <button class="btn btn-sm btn-outline-primary" id="refreshRefList">Refresh</button>
+                </div>
+                <ul class="list-group" id="refList"></ul>
+              </div>
+              <div class="tab-pane fade" id="pane-ip" role="tabpanel">
+                <div class="d-flex align-items-center mb-2 gap-2">
+                  <button class="btn btn-sm btn-outline-primary" id="refreshIpList">Refresh</button>
+                </div>
+                <ul class="list-group" id="ipList"></ul>
+              </div>
+              <div class="tab-pane fade" id="pane-gen" role="tabpanel">
+                <div class="d-flex align-items-center mb-2 gap-2">
+                  <button class="btn btn-sm btn-outline-primary" id="refreshGenList">Refresh</button>
+                </div>
+                <ul class="list-group" id="genList"></ul>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Bootstrap JS -->
@@ -920,6 +1012,169 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
+        // Manage Files: load Reference XML list (region-aware)
+        async function loadRefList() {
+            const list = document.getElementById('refList');
+            if (!list) return;
+            list.innerHTML = '<li class="list-group-item text-muted">იტვირთება...</li>';
+            const manageRegionSwitch = document.getElementById('manageRegionSwitch');
+            const region = manageRegionSwitch && manageRegionSwitch.checked ? 'West' : 'East';
+            try {
+                const resp = await fetch(`/api/example-files/xml?region=${encodeURIComponent(region)}&_ts=${Date.now()}`);
+                const data = await resp.json();
+                const files = (data && data.success && Array.isArray(data.files)) ? data.files : [];
+                list.innerHTML = '';
+                if (!files.length) {
+                    list.innerHTML = '<li class="list-group-item text-muted">ფაილები არ მოიძებნა</li>';
+                    return;
+                }
+                files.forEach(filename => {
+                    const li = document.createElement('li');
+                    li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                    const nameEl = document.createElement('span');
+                    nameEl.textContent = filename;
+                    const delBtn = document.createElement('button');
+                    delBtn.className = 'btn btn-sm btn-outline-danger';
+                    delBtn.innerHTML = '<i class="bi bi-trash"></i>';
+                    delBtn.addEventListener('click', async () => {
+                        if (!confirm(`Უნდა წაიშალოს '${filename}' (${region})?`)) return;
+                        try {
+                            const res = await fetch('/api/example-files/delete', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ filename, region })
+                            });
+                            const out = await res.json();
+                            if (out && out.success) {
+                                showAlert('success', `ფაილი წაიშალა: ${filename}`);
+                                await loadRefList();
+                                await loadExampleFiles();
+                            } else {
+                                showAlert('danger', (out && out.error) || 'ვერ წაიშალა ფაილი');
+                            }
+                        } catch (e) {
+                            showAlert('danger', e.message);
+                        }
+                    });
+                    li.appendChild(nameEl);
+                    li.appendChild(delBtn);
+                    list.appendChild(li);
+                });
+            } catch (e) {
+                list.innerHTML = `<li class="list-group-item text-danger">შეცდომა: ${e.message}</li>`;
+            }
+        }
+
+        // Manage Files: load IP Plan Excel list (category=ip)
+        async function loadIpList() {
+            const list = document.getElementById('ipList');
+            if (!list) return;
+            list.innerHTML = '<li class="list-group-item text-muted">იტვირთება...</li>';
+            try {
+                const resp = await fetch(`/api/example-files/excel?category=ip&_ts=${Date.now()}`);
+                const data = await resp.json();
+                const files = (data && data.success && Array.isArray(data.files)) ? data.files : [];
+                list.innerHTML = '';
+                if (!files.length) {
+                    list.innerHTML = '<li class="list-group-item text-muted">ფაილები არ მოიძებნა</li>';
+                    return;
+                }
+                files.forEach(filename => {
+                    const li = document.createElement('li');
+                    li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                    const nameEl = document.createElement('span');
+                    nameEl.textContent = filename;
+                    const delBtn = document.createElement('button');
+                    delBtn.className = 'btn btn-sm btn-outline-danger';
+                    delBtn.innerHTML = '<i class="bi bi-trash"></i>';
+                    delBtn.addEventListener('click', async () => {
+                        if (!confirm(`Უნდა წაიშალოს IP Plan '${filename}'?`)) return;
+                        try {
+                            const res = await fetch('/api/example-files/delete', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ filename, category: 'ip' })
+                            });
+                            const out = await res.json();
+                            if (out && out.success) {
+                                showAlert('success', `IP Plan ფაილი წაიშალა: ${filename}`);
+                                await loadIpList();
+                                await loadExampleFiles();
+                            } else {
+                                showAlert('danger', (out && out.error) || 'ვერ წაიშალა IP Plan ფაილი');
+                            }
+                        } catch (e) {
+                            showAlert('danger', e.message);
+                        }
+                    });
+                    li.appendChild(nameEl);
+                    li.appendChild(delBtn);
+                    list.appendChild(li);
+                });
+            } catch (e) {
+                list.innerHTML = `<li class="list-group-item text-danger">შეცდომა: ${e.message}</li>`;
+            }
+        }
+
+        // Manage Files: load Generated XML list
+        async function loadGenList() {
+            const list = document.getElementById('genList');
+            if (!list) return;
+            list.innerHTML = '<li class="list-group-item text-muted">იტვირთება...</li>';
+            try {
+                const resp = await fetch(`/api/generated-files?_ts=${Date.now()}`);
+                const data = await resp.json();
+                const files = (data && data.success && Array.isArray(data.files)) ? data.files : [];
+                list.innerHTML = '';
+                if (!files.length) {
+                    list.innerHTML = '<li class="list-group-item text-muted">ფაილები არ მოიძებნა</li>';
+                    return;
+                }
+                files.forEach(filename => {
+                    const li = document.createElement('li');
+                    li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                    const nameEl = document.createElement('span');
+                    nameEl.textContent = filename;
+                    const actions = document.createElement('div');
+                    actions.className = 'd-flex gap-2';
+                    const downloadBtn = document.createElement('a');
+                    downloadBtn.className = 'btn btn-sm btn-outline-secondary';
+                    downloadBtn.href = `/download/${encodeURIComponent(filename)}`;
+                    downloadBtn.innerHTML = '<i class="bi bi-download"></i>';
+                    downloadBtn.setAttribute('download', filename);
+                    const delBtn = document.createElement('button');
+                    delBtn.className = 'btn btn-sm btn-outline-danger';
+                    delBtn.innerHTML = '<i class="bi bi-trash"></i>';
+                    delBtn.addEventListener('click', async () => {
+                        if (!confirm(`Უნდა წაიშალოს გენერირებული ფაილი '${filename}'?`)) return;
+                        try {
+                            const res = await fetch('/api/generated-files/delete', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ filename })
+                            });
+                            const out = await res.json();
+                            if (out && out.success) {
+                                showAlert('success', `გენერირებული ფაილი წაიშალა: ${filename}`);
+                                await loadGenList();
+                            } else {
+                                showAlert('danger', (out && out.error) || 'ვერ წაიშალა გენერირებული ფაილი');
+                            }
+                        } catch (e) {
+                            showAlert('danger', e.message);
+                        }
+                    });
+                    actions.appendChild(downloadBtn);
+                    actions.appendChild(delBtn);
+                    li.appendChild(nameEl);
+                    li.appendChild(actions);
+                    list.appendChild(li);
+                });
+            } catch (e) {
+                list.innerHTML = `<li class="list-group-item text-danger">შეცდომა: ${e.message}</li>`;
+            }
+        }
+
         // Setup event listeners
         function setupEventListeners() {
             // File upload handlers
@@ -948,6 +1203,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 // initialize label on load
                 applyRegionUI();
+            }
+
+            // Manage Files modal events
+            const manageRegionSwitch = document.getElementById('manageRegionSwitch');
+            const manageRegionLabel = document.querySelector('label[for="manageRegionSwitch"]');
+            const applyManageRegionUI = () => {
+                if (!manageRegionSwitch || !manageRegionLabel) return;
+                manageRegionLabel.textContent = manageRegionSwitch.checked ? 'West' : 'East';
+            };
+            if (manageRegionSwitch) {
+                manageRegionSwitch.addEventListener('change', () => { applyManageRegionUI(); loadRefList(); });
+                applyManageRegionUI();
+            }
+            document.getElementById('refreshRefList')?.addEventListener('click', loadRefList);
+            document.getElementById('refreshIpList')?.addEventListener('click', loadIpList);
+            document.getElementById('refreshGenList')?.addEventListener('click', loadGenList);
+            const manageModal = document.getElementById('manageFilesModal');
+            if (manageModal) {
+                manageModal.addEventListener('shown.bs.modal', () => { loadRefList(); loadIpList(); loadGenList(); });
             }
          
             // Drag and drop handlers
@@ -985,6 +1259,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
 
+            // Delete selected reference XML
+            const delRefBtn = document.getElementById('deleteSelectedReferenceBtn');
+            if (delRefBtn) {
+                delRefBtn.addEventListener('click', async () => {
+                    const select = document.getElementById('reference5gXmlSelection');
+                    const filename = select.value;
+                    if (!filename) { showAlert('warning', 'გთხოვთ აირჩიოთ reference XML ფაილი სამაშლოდ'); return; }
+                    const region = document.getElementById('regionSwitch')?.checked ? 'West' : 'East';
+                    if (!confirm(`Უნდა წაიშალოს '${filename}' (${region})?`)) return;
+                    try {
+                        const res = await fetch(`/api/example-files/delete`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename, region })});
+                        const data = await res.json();
+                        if (data.success) { showAlert('success', `ფაილი წაიშალა: ${filename}`); await loadExampleFiles(); }
+                        else { showAlert('danger', data.error || 'ვერ წაიშალა ფაილი'); }
+                    } catch (e) { showAlert('danger', e.message); }
+                });
+            }
+
             // IP Plan dropdown handler - parse IP Plan
             document.getElementById('ipPlanSelection').addEventListener('change', function(e) {
                 const stationName = document.getElementById('stationName').value;
@@ -998,6 +1290,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     setTimeout(() => parseIpPlanExcel(), 100);
                 }
             });
+
+            // Delete selected IP Plan Excel (from IP/ folder)
+            const delIpBtn = document.getElementById('deleteSelectedIpPlanBtn');
+            if (delIpBtn) {
+                delIpBtn.addEventListener('click', async () => {
+                    const select = document.getElementById('ipPlanSelection');
+                    const filename = select.value;
+                    if (!filename) { showAlert('warning', 'გთხოვთ აირჩიოთ IP Plan ფაილი სამაშლოდ'); return; }
+                    if (!confirm(`Უნდა წაიშალოს IP Plan '${filename}'?`)) return;
+                    try {
+                        const res = await fetch(`/api/example-files/delete`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename, category: 'ip' })});
+                        const data = await res.json();
+                        if (data.success) { showAlert('success', `IP Plan ფაილი წაიშალა: ${filename}`); await loadExampleFiles(); }
+                        else { showAlert('danger', data.error || 'ვერ წაიშალა IP Plan ფაილი'); }
+                    } catch (e) { showAlert('danger', e.message); }
+                });
+            }
 
             // Form submission
             document.getElementById('modernizationForm').addEventListener('submit', handleFormSubmit);
@@ -1043,6 +1352,16 @@ const form = document.getElementById('modernizationForm');
                     addSystemLog(`✓ ფაილი წარმატებით აიტვირთა: ${data.filename}${savedTo}`, 'success');
                     showAlert('success', `ფაილი ${data.filename} წარმატებით აიტვირთა${savedTo ? '<br><small>ჩაითავსა: '+savedTo+'</small>' : ''}`);
                     await loadExampleFiles(); // Reload files (with region)
+                    // Auto-select uploaded Reference XML in dropdown
+                    if (type === 'xml') {
+                        const select = document.getElementById('reference5gXmlSelection');
+                        if (select) {
+                            select.value = data.filename;
+                            // Trigger change to extract parameters for selected reference
+                            select.dispatchEvent(new Event('change'));
+                            addSystemLog(`Reference XML ავტომატურად აირჩა: ${data.filename}`, 'info');
+                        }
+                    }
                 } else {
                     addSystemLog(`✗ ფაილის ატვირთვისას შეცდომა: ${data.error}`, 'error');
                     showAlert('danger', data.error || 'ფაილის ატვირთვისას მოხდა შეცდომა');

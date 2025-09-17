@@ -1197,7 +1197,17 @@ def delete_example_file(filename):
     """Delete a file from example_files directory"""
     try:
         filename = secure_filename(filename)
-        file_path = os.path.join(app.config['EXAMPLE_FILES_FOLDER'], filename)
+        region = (request.args.get('region') or '').strip()
+        category = (request.args.get('category') or '').strip().lower()
+        base_dir = app.config['EXAMPLE_FILES_FOLDER']
+        # Choose directory by region for XML or by category for Excel
+        if category in ['ip', 'data']:
+            target_dir = os.path.join(base_dir, 'IP' if category == 'ip' else 'Data')
+        elif region in ['East', 'West']:
+            target_dir = os.path.join(base_dir, region)
+        else:
+            target_dir = base_dir
+        file_path = os.path.join(target_dir, filename)
         
         if not os.path.exists(file_path):
             return jsonify({'error': 'File not found'}), 404
@@ -1206,6 +1216,73 @@ def delete_example_file(filename):
         return jsonify({'success': True, 'deleted': filename, 'message': 'File deleted successfully'})
     except Exception as e:
         logger.error(f"Error deleting file: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+# Alternate POST deletion for environments that block HTTP DELETE from browser
+@app.route('/api/example-files/delete', methods=['POST'])
+def delete_example_file_post():
+    try:
+        data = request.get_json(silent=True) or request.form
+        filename = secure_filename((data.get('filename') or '').strip())
+        region = (data.get('region') or '').strip()
+        category = (data.get('category') or '').strip().lower()
+        if not filename:
+            return jsonify({'error': 'filename required'}), 400
+        base_dir = app.config['EXAMPLE_FILES_FOLDER']
+        if category in ['ip', 'data']:
+            target_dir = os.path.join(base_dir, 'IP' if category == 'ip' else 'Data')
+        elif region in ['East', 'West']:
+            target_dir = os.path.join(base_dir, region)
+        else:
+            target_dir = base_dir
+        file_path = os.path.join(target_dir, filename)
+        if not os.path.exists(file_path):
+            return jsonify({'error': 'File not found'}), 404
+        os.remove(file_path)
+        return jsonify({'success': True, 'deleted': filename})
+    except Exception as e:
+        logger.error(f"Error deleting example file (POST): {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/generated-files', methods=['GET'])
+def list_generated_files():
+    try:
+        gen_dir = app.config['GENERATED_FOLDER']
+        files = [f for f in os.listdir(gen_dir) if f.lower().endswith('.xml')]
+        return jsonify({'success': True, 'files': files})
+    except Exception as e:
+        logger.error(f"Error listing generated files: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/generated-files/<filename>', methods=['DELETE'])
+def delete_generated_file(filename):
+    try:
+        filename = secure_filename(filename)
+        gen_dir = app.config['GENERATED_FOLDER']
+        file_path = os.path.join(gen_dir, filename)
+        if not os.path.exists(file_path):
+            return jsonify({'error': 'File not found'}), 404
+        os.remove(file_path)
+        return jsonify({'success': True, 'deleted': filename})
+    except Exception as e:
+        logger.error(f"Error deleting generated file: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/generated-files/delete', methods=['POST'])
+def delete_generated_file_post():
+    try:
+        data = request.get_json(silent=True) or request.form
+        filename = secure_filename((data.get('filename') or '').strip())
+        if not filename:
+            return jsonify({'error': 'filename required'}), 400
+        gen_dir = app.config['GENERATED_FOLDER']
+        path = os.path.join(gen_dir, filename)
+        if not os.path.exists(path):
+            return jsonify({'error': 'File not found'}), 404
+        os.remove(path)
+        return jsonify({'success': True, 'deleted': filename})
+    except Exception as e:
+        logger.error(f"Error deleting generated file (POST): {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/example-files/extract-bts-name/<filename>', methods=['GET'])

@@ -1208,6 +1208,7 @@ class ModernizationGenerator:
             '172.30.157.240': '4G',
             '172.30.160.32': '4G',
             '10.112.0.0': '4G',
+            '10.122.0.0': '4G'
         }
 
         replacements = 0
