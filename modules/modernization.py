@@ -1,5 +1,5 @@
 import os
-from lxml import etree
+from lxml import etree  # pyright: ignore[reportMissingImports]
 import logging
 from .xml_parser import XMLParser
 from .excel_parser import ExcelParser

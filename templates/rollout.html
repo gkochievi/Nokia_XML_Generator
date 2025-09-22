@@ -256,48 +256,45 @@
                         <!-- File Upload Sections -->
                         <div class="row mb-4">
                             <!-- Reference XML Section -->
-                            <div class="col-md-6 mb-4">
+                            <div class="col-md-4 mb-4">
                                 <label class="form-label fw-semibold">
                                     <i class="bi bi-file-earmark-xml me-2 text-success"></i>Reference XML
                                 </label>
-                                
-                                <!-- Dropdown for existing files -->
-            <div class="mb-3">
-                                    <select class="form-select" id="referenceXmlSelection" name="referenceXmlSelection">
-                                        <option value="">მონაცემები იტვირთება...</option>
-                                    </select>
-                                </div>
-
-                                <!-- Upload area -->
                                 <div class="upload-area rounded-3 p-4 text-center" id="referenceXmlUploadArea">
                                     <i class="bi bi-cloud-upload text-muted mb-2" style="font-size: 2rem;"></i>
                                     <p class="mb-2">ახალი ფაილის ატვირთვა</p>
-                                    <input type="file" class="d-none" id="referenceXmlUpload" name="referenceXmlUpload" accept=".xml">
-                                    <button type="button" class="btn btn-outline-success btn-sm" onclick="document.getElementById('referenceXmlUpload').click()">
+                                    <input type="file" class="d-none" id="referenceXml" name="referenceXml" accept=".xml" required>
+                                    <button type="button" class="btn btn-outline-success btn-sm" onclick="document.getElementById('referenceXml').click()">
                                         <i class="bi bi-plus-circle me-1"></i>არჩევა
                                     </button>
                                 </div>
-            </div>
+                            </div>
 
-                            <!-- IP Plan Excel Section -->
-                            <div class="col-md-6 mb-4">
+                            <!-- Radio Excel Section -->
+                            <div class="col-md-4 mb-4">
                                 <label class="form-label fw-semibold">
-                                    <i class="bi bi-file-earmark-excel me-2 text-warning"></i>IP Plan Excel
+                                    <i class="bi bi-broadcast-pin me-2 text-primary"></i>Radio Excel
                                 </label>
-                                
-                                <!-- Dropdown for existing files -->
-            <div class="mb-3">
-                                    <select class="form-select" id="ipPlanSelection" name="ipPlanSelection">
-                                        <option value="">მონაცემები იტვირთება...</option>
-                                    </select>
-                                </div>
-
-                                <!-- Upload area -->
-                                <div class="upload-area rounded-3 p-4 text-center" id="ipPlanUploadArea">
+                                <div class="upload-area rounded-3 p-4 text-center" id="radioExcelUploadArea">
                                     <i class="bi bi-cloud-upload text-muted mb-2" style="font-size: 2rem;"></i>
                                     <p class="mb-2">ახალი ფაილის ატვირთვა</p>
-                                    <input type="file" class="d-none" id="ipPlanUpload" name="ipPlanUpload" accept=".xlsx,.xls">
-                                    <button type="button" class="btn btn-outline-warning btn-sm" onclick="document.getElementById('ipPlanUpload').click()">
+                                    <input type="file" class="d-none" id="radioExcel" name="radioExcel" accept=".xlsx,.xls" required>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="document.getElementById('radioExcel').click()">
+                                        <i class="bi bi-plus-circle me-1"></i>არჩევა
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Transmission Excel Section -->
+                            <div class="col-md-4 mb-4">
+                                <label class="form-label fw-semibold">
+                                    <i class="bi bi-file-earmark-excel me-2 text-warning"></i>Transmission Excel
+                                </label>
+                                <div class="upload-area rounded-3 p-4 text-center" id="transmissionExcelUploadArea">
+                                    <i class="bi bi-cloud-upload text-muted mb-2" style="font-size: 2rem;"></i>
+                                    <p class="mb-2">ახალი ფაილის ატვირთვა</p>
+                                    <input type="file" class="d-none" id="transmissionExcel" name="transmissionExcel" accept=".xlsx,.xls" required>
+                                    <button type="button" class="btn btn-outline-warning btn-sm" onclick="document.getElementById('transmissionExcel').click()">
                                         <i class="bi bi-plus-circle me-1"></i>არჩევა
                                     </button>
                                 </div>
@@ -328,9 +325,6 @@
 document.addEventListener('DOMContentLoaded', function() {
 const form = document.getElementById('rolloutForm');
 const alertBox = document.getElementById('rollout-alert');
-
-    // Load existing files for dropdowns
-    loadExistingFiles();
 
     // Bootstrap validation
 form.addEventListener('submit', async function(e) {
@@ -396,54 +390,6 @@ form.addEventListener('submit', async function(e) {
         form.classList.add('was-validated');
     });
 
-    // Load existing files function
-    async function loadExistingFiles() {
-        try {
-            // Load Reference XML files
-            const xmlResponse = await fetch('/api/example-files?type=xml');
-            const xmlData = await xmlResponse.json();
-            
-            const xmlSelect = document.getElementById('referenceXmlSelection');
-            xmlSelect.innerHTML = '<option value="">მონაცემები იტვირთება...</option>';
-            
-            if (xmlData.success && xmlData.files && xmlData.files.length > 0) {
-                xmlSelect.innerHTML = '<option value="">აირჩიეთ არსებული XML ფაილი</option>';
-                xmlData.files.forEach(file => {
-                    const option = document.createElement('option');
-                    option.value = file;
-                    option.textContent = file;
-                    xmlSelect.appendChild(option);
-                });
-            } else {
-                xmlSelect.innerHTML = '<option value="">არ მოიძებნა XML ფაილები</option>';
-            }
-
-            // Load IP Plan files  
-            const excelResponse = await fetch('/api/example-files?type=excel');
-            const excelData = await excelResponse.json();
-            
-            const ipSelect = document.getElementById('ipPlanSelection');
-            ipSelect.innerHTML = '<option value="">მონაცემები იტვირთება...</option>';
-            
-            if (excelData.success && excelData.files && excelData.files.length > 0) {
-                ipSelect.innerHTML = '<option value="">აირჩიეთ არსებული Excel ფაილი</option>';
-                excelData.files.forEach(file => {
-                    const option = document.createElement('option');
-                    option.value = file;
-                    option.textContent = file;
-                    ipSelect.appendChild(option);
-                });
-    } else {
-                ipSelect.innerHTML = '<option value="">არ მოიძებნა Excel ფაილები</option>';
-            }
-            
-        } catch (error) {
-            console.error('Error loading files:', error);
-            document.getElementById('referenceXmlSelection').innerHTML = '<option value="">შეცდომა ფაილების ჩატვირთვაში</option>';
-            document.getElementById('ipPlanSelection').innerHTML = '<option value="">შეცდომა ფაილების ჩატვირთვაში</option>';
-        }
-    }
-
     // Drag and drop functionality for upload areas
     const uploadAreas = document.querySelectorAll('.upload-area');
     
@@ -478,11 +424,6 @@ form.addEventListener('submit', async function(e) {
             if (files.length > 0) {
                 input.files = files;
                 updateFileLabel(uploadArea, files[0].name);
-                
-                // Clear dropdown selection
-                const container = uploadArea.closest('.col-md-6');
-                const select = container.querySelector('select');
-                if (select) select.value = '';
             }
         });
         
@@ -490,33 +431,6 @@ form.addEventListener('submit', async function(e) {
         input.addEventListener('change', function() {
             if (this.files.length > 0) {
                 updateFileLabel(uploadArea, this.files[0].name);
-                
-                // Clear dropdown selection
-                const container = uploadArea.closest('.col-md-6');
-                const select = container.querySelector('select');
-                if (select) select.value = '';
-            }
-        });
-    });
-
-    // Handle dropdown changes
-    const selects = document.querySelectorAll('select[id$="Selection"]');
-    selects.forEach(select => {
-        select.addEventListener('change', function() {
-            if (this.value) {
-                // Clear file input when dropdown is selected
-                const container = this.closest('.col-md-6');
-                const input = container.querySelector('input[type="file"]');
-                const uploadArea = container.querySelector('.upload-area');
-                
-                if (input) {
-                    input.value = '';
-                    // Reset upload area text
-                    const textElement = uploadArea.querySelector('p');
-                    if (textElement) {
-                        textElement.textContent = 'ახალი ფაილის ატვირთვა';
-                    }
-                }
             }
         });
     });
@@ -525,7 +439,7 @@ form.addEventListener('submit', async function(e) {
     function updateFileLabel(uploadArea, fileName) {
         const textElement = uploadArea.querySelector('p');
         if (textElement) {
-            textElement.innerHTML = `<i class="bi bi-check-circle-fill me-1 text-success"></i>არჩეულია: <strong>${fileName}</strong>`;
+            textElement.innerHTML = `<i class=\"bi bi-check-circle-fill me-1 text-success\"></i>არჩეულია: <strong>${fileName}</strong>`;
     }
     }
 });

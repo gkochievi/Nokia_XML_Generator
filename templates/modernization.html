@@ -97,6 +97,20 @@
             border: none;
         }
 
+        /* Fix Debug Console tab hover visibility */
+        #consoleTabs .nav-link {
+            color: #667eea;
+        }
+        #consoleTabs .nav-link:hover {
+            background-color: rgba(102, 126, 234, 0.1) !important;
+            color: #667eea !important;
+        }
+        #consoleTabs .nav-link.active {
+            background: var(--primary-gradient);
+            color: #ffffff !important;
+            border: none;
+        }
+
         /* Ensure navbar is visible on all desktop sizes */
         @media (min-width: 992px) {
             .navbar-nav {
@@ -265,7 +279,7 @@
         <div class="container-fluid" style="display: flex !important; visibility: visible !important;">
             <a class="navbar-brand fw-bold d-flex align-items-center" href="/" style="color: white;">
                 <i class="bi bi-cpu me-2" style="font-size: 1.5rem;"></i>
-                Nokia WebEM
+                <span id="brandText">Nokia WebEM</span>
             </a>
             <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
                     style="box-shadow: none; outline: none;">
@@ -275,23 +289,29 @@
                 <ul class="navbar-nav ms-auto" style="display: flex !important; visibility: visible !important; flex-direction: row !important; align-items: center !important;">
                     <li class="nav-item" style="display: block !important; visibility: visible !important;">
                         <a class="nav-link px-3 py-2" href="/" style="color: rgba(255, 255, 255, 0.8) !important; font-weight: 500; display: block !important; visibility: visible !important; transition: all 0.3s ease;">
-                            <i class="bi bi-house me-1"></i>მთავარი
+                            <i class="bi bi-house me-1"></i><span id="navHomeText">მთავარი</span>
                         </a>
                     </li>
                     <li class="nav-item" style="display: block !important; visibility: visible !important;">
                         <a class="nav-link px-3 py-2 rounded-2 mx-1" href="/modernization" style="background: rgba(255, 255, 255, 0.2) !important; color: white !important; font-weight: 600; display: block !important; visibility: visible !important; border: 1px solid rgba(255, 255, 255, 0.3); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);">
-                            <i class="bi bi-arrow-repeat me-1"></i>5G Modernization
+                            <i class="bi bi-arrow-repeat me-1"></i><span id="navModernizationText">5G Modernization</span>
                         </a>
                     </li>
                     <li class="nav-item" style="display: block !important; visibility: visible !important;">
                         <a class="nav-link px-3 py-2" href="/rollout" style="color: rgba(255, 255, 255, 0.8) !important; font-weight: 500; display: block !important; visibility: visible !important; transition: all 0.3s ease;">
-                            <i class="bi bi-plus-circle me-1"></i>ახალი სადგური
+                            <i class="bi bi-plus-circle me-1"></i><span id="navRolloutText">ახალი სადგური</span>
                         </a>
                     </li>
                     <li class="nav-item" style="display: block !important; visibility: visible !important;">
                         <a class="nav-link px-3 py-2" href="/xml-viewer" style="color: rgba(255, 255, 255, 0.8) !important; font-weight: 500; display: block !important; visibility: visible !important; transition: all 0.3s ease;">
-                            <i class="bi bi-file-earmark-code me-1"></i>XML Viewer
+                            <i class="bi bi-file-earmark-code me-1"></i><span id="navXmlViewerText">XML Viewer</span>
                         </a>
+                    </li>
+                    <li class="nav-item ms-2" style="display: block !important; visibility: visible !important;">
+                        <div class="btn-group btn-group-sm" role="group" id="langSwitcher">
+                            <button type="button" class="btn btn-light" data-lang="ka">ქართული</button>
+                            <button type="button" class="btn btn-outline-light" data-lang="en">English</button>
+                        </div>
                     </li>
                 </ul>
             </div>
@@ -307,11 +327,11 @@
                         <div class="mb-4">
                             <i class="bi bi-arrow-repeat display-3 text-primary mb-3" style="background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"></i>
                         </div>
-                        <h1 class="h1 fw-bold mb-2" style="background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">5G Modernization</h1>
-                        <p class="text-muted fs-5 mb-0">არსებულ საბაზო სადგურზე 5G-ის დამატება</p>
+                        <h1 id="headerTitle" class="h1 fw-bold mb-2" style="background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">5G Modernization</h1>
+                        <p id="headerSubtitle" class="text-muted fs-5 mb-0">არსებულ საბაზო სადგურზე 5G-ის დამატება</p>
                         <div class="mt-3">
-                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#manageFilesModal">
-                                <i class="bi bi-folder2-open me-1"></i>Manage Files
+                            <button type="button" id="manageFilesBtn" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#manageFilesModal">
+                                <i class="bi bi-folder2-open me-1"></i><span id="manageFilesBtnText">Manage Files</span>
                             </button>
                         </div>
                         <hr class="my-4 mx-auto" style="width: 100px; height: 3px; background: var(--primary-gradient); border: none; border-radius: 2px;">
@@ -321,40 +341,40 @@
                     <div class="mb-4 p-3 border rounded-3 bg-light">
                         <div class="row g-2 align-items-end">
                             <div class="col-md-8">
-                                <label class="form-label fw-semibold"><i class="bi bi-cloud-download me-2"></i>ჩამოტვირთე სარეზერვო XML SFTP-დან (ID ან სადგურის სახელი)</label>
+                                <label id="sftpLabel" class="form-label fw-semibold"><i class="bi bi-cloud-download me-2"></i>ჩამოტვირთე სარეზერვო XML SFTP-დან (ID ან სადგურის სახელი)</label>
                                 <input type="text" id="sftpQuery" class="form-control" placeholder="მაგ: 11532 ან ADJR-Beshumi">
                             </div>
                             <div class="col-md-4 d-grid">
-                                <button type="button" id="sftpDownloadBtn" class="btn btn-outline-primary"><i class="bi bi-download me-1"></i>ჩამოტვირთვა SFTP-დან</button>
+                                <button type="button" id="sftpDownloadBtn" class="btn btn-outline-primary"><i class="bi bi-download me-1"></i><span id="sftpBtnText">ჩამოტვირთვა SFTP-დან</span></button>
                             </div>
                         </div>
-                        <div class="form-text">სერვერი მოძებნის Excel `example_files/data.xlsx` ფაილში ველს `Backup_Name` და მოახდენს ჩამოტვირთვას.</div>
+                        
                     </div>
 
                     <!-- Mode Switch: 5G Modernization / Rollout -->
                     <div class="mb-4">
                         <div class="d-flex align-items-center gap-3">
-                            <span class="fw-semibold"> რეჟიმი: </span>
+                            <span id="modeTitle" class="fw-semibold">რეჟიმი:</span>
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" id="modeSwitch">
-                                <label class="form-check-label" for="modeSwitch">5G Modernization</label>
+                                <label class="form-check-label" for="modeSwitch" id="modeLabel">5G Modernization</label>
                             </div>
-                            <span class="text-muted small" id="modeHint">Toggle to Rollout to input ID/Name/TAC</span>
+                            <span class="text-muted small" id="modeHint">ID/Name/TAC შეყვანისთვის გადართეთ Rollout რეჟიმზე</span>
                         </div>
                     </div>
 
                     <!-- Rollout Inputs (hidden by default) -->
                     <div class="row mb-4" id="rolloutInputs" style="display: none;">
                         <div class="col-md-4 mb-3">
-                            <label class="form-label fw-semibold">MRBTS ID</label>
+                            <label id="rolloutIdLabel" class="form-label fw-semibold">MRBTS ID</label>
                             <input type="text" class="form-control" id="rolloutId" placeholder="e.g. 11532">
                         </div>
                         <div class="col-md-4 mb-3">
-                            <label class="form-label fw-semibold">MRBTS Name</label>
+                            <label id="rolloutNameLabel" class="form-label fw-semibold">MRBTS Name</label>
                             <input type="text" class="form-control" id="rolloutName" placeholder="e.g. ADJR-Beshumi">
                         </div>
                         <div class="col-md-4 mb-3">
-                            <label class="form-label fw-semibold">TAC</label>
+                            <label id="rolloutTacLabel" class="form-label fw-semibold">TAC</label>
                             <input type="text" class="form-control" id="rolloutTac" placeholder="e.g. 12345">
                         </div>
                     </div>
@@ -364,13 +384,16 @@
                         <!-- Existing Station XML - Primary Upload -->
                         <div class="row mb-4">
                             <div class="col-12">
-                                <label for="existingXml" class="form-label fw-semibold">
+                                <label for="existingXml" id="existingXmlLabel" class="form-label fw-semibold">
                                     <i class="bi bi-file-earmark-xml me-2 text-danger"></i>არსებული სადგურის XML
                                 </label>
-                                <input type="file" class="form-control form-control-lg" 
-                                       id="existingXml" name="existingXml" accept=".xml" required>
-                                <div class="form-text">ატვირთეთ არსებული სადგურის XML კონფიგურაცია</div>
-                                <div class="invalid-feedback">გთხოვთ ატვირთოთ არსებული სადგურის XML ფაილი</div>
+                                <input type="file" class="d-none" id="existingXml" name="existingXml" accept=".xml" required>
+                                <div class="input-group mb-2">
+                                    <input type="text" id="existingXmlFilename" class="form-control form-control-lg" placeholder="No file selected" readonly>
+                                    <button class="btn btn-outline-secondary" type="button" id="existingXmlChooseBtn">Browse...</button>
+                                </div>
+                                <div id="existingXmlHelp" class="form-text">ატვირთეთ არსებული სადგურის XML კონფიგურაცია</div>
+                                <div id="existingXmlInvalid" class="invalid-feedback">გთხოვთ ატვირთოთ არსებული სადგურის XML ფაილი</div>
                             </div>
                         </div>
 
@@ -398,14 +421,14 @@
                             <!-- Reference 5G XML Section -->
                             <div class="col-12 col-xxl-6 mb-4">
                                 <label class="form-label fw-semibold">
-                                    <i class="bi bi-file-earmark-code me-2 text-primary"></i>Reference 5G XML
+                                    <i class="bi bi-file-earmark-code me-2 text-primary"></i><span id="referenceLabelText">Reference 5G XML</span>
                                 </label>
                                 
                                 <!-- Filters (single row on wide screens) -->
                                 <div class="mb-2 ref-filters" style="min-height:36px;">
                                     <div class="form-check form-switch align-middle">
                                         <input class="form-check-input" type="checkbox" id="regionSwitch">
-                                        <label class="form-check-label" for="regionSwitch">East</label>
+                                        <label class="form-check-label" for="regionSwitch"><span id="regionSwitchText">East</span></label>
                                     </div>
                                     <div class="form-check form-check-inline align-middle">
                                         <input class="form-check-input" type="checkbox" id="filterNo2g" value="no2G">
@@ -447,10 +470,10 @@
                                 <!-- Upload area -->
                                 <div class="upload-area rounded-3 p-4 text-center" id="reference5gUploadArea">
                                     <i class="bi bi-cloud-upload text-muted mb-2" style="font-size: 2rem;"></i>
-                                    <p class="mb-2">ახალი ფაილის ატვირთვა</p>
+                                    <p class="mb-2"><span id="uploadNewFileTextRef">ახალი ფაილის არჩევა</span></p>
                                     <input type="file" class="d-none" id="reference5gXmlUpload" name="reference5gXmlUpload" accept=".xml">
                                     <button type="button" class="btn btn-outline-primary btn-sm" onclick="document.getElementById('reference5gXmlUpload').click()">
-                                        <i class="bi bi-plus-circle me-1"></i>არჩევა
+                                        <i class="bi bi-plus-circle me-1"></i><span id="refUploadSelectText">არჩევა</span>
                                     </button>
                                 </div>
                             </div>
@@ -458,7 +481,7 @@
                             <!-- IP Plan Excel Section -->
                             <div class="col-12 col-xxl-6 mb-4">
                                 <label class="form-label fw-semibold">
-                                    <i class="bi bi-file-earmark-excel me-2 text-warning"></i>IP Plan Excel
+                                    <i class="bi bi-file-earmark-excel me-2 text-warning"></i><span id="ipPlanLabelText">IP Plan Excel</span>
                                 </label>
                                 <!-- Spacer to align with Reference filters row -->
                                 <div class="mb-2" style="min-height:36px"></div>
@@ -478,10 +501,10 @@
                                 <!-- Upload area -->
                                 <div class="upload-area rounded-3 p-4 text-center" id="ipPlanUploadArea">
                                     <i class="bi bi-cloud-upload text-muted mb-2" style="font-size: 2rem;"></i>
-                                    <p class="mb-2">ახალი ფაილის ატვირთვა</p>
+                                    <p class="mb-2"><span id="uploadNewFileTextIp">ახალი ფაილის არჩევა</span></p>
                                     <input type="file" class="d-none" id="ipPlanUpload" name="ipPlanUpload" accept=".xlsx,.xls">
                                     <button type="button" class="btn btn-outline-warning btn-sm" onclick="document.getElementById('ipPlanUpload').click()">
-                                        <i class="bi bi-plus-circle me-1"></i>არჩევა
+                                        <i class="bi bi-plus-circle me-1"></i><span id="ipUploadSelectText">არჩევა</span>
                                     </button>
                                 </div>
                             </div>
@@ -494,11 +517,11 @@
                             <button type="submit" class="btn btn-lg btn-gradient text-white py-3">
                                 <span class="btn-content">
                                     <i class="bi bi-gear-wide-connected me-2"></i>
-                                    დაგენერირე ახალი XML
+                                    <span id="submitBtnText">დაგენერირე ახალი XML</span>
                                 </span>
                                 <span class="loading-spinner">
                                     <div class="spinner-border spinner-border-sm me-2" role="status"></div>
-                                    მუშავდება...
+                                    <span id="loadingText">მუშავდება...</span>
                                 </span>
                             </button>
                         </div>
@@ -513,7 +536,7 @@
                             <div class="card-header bg-light border-0 p-3">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <h6 class="mb-0 fw-semibold text-muted">
-                                        <i class="bi bi-terminal me-2"></i>Debug Console
+                                        <i class="bi bi-terminal me-2"></i><span id="debugConsoleTitleText">Debug Console</span>
                                     </h6>
                                     <button class="btn btn-sm btn-outline-secondary" type="button" id="manualToggleBtn">
                                         <i class="bi bi-chevron-down console-toggle" id="consoleToggleIcon"></i>
@@ -526,25 +549,25 @@
                                     <ul class="nav nav-tabs nav-fill border-0" id="consoleTabs" role="tablist">
                                         <li class="nav-item" role="presentation">
                                             <button class="nav-link active small d-flex align-items-center justify-content-center" id="extraction-tab" data-bs-toggle="tab" data-bs-target="#extraction-log" type="button" role="tab">
-                                                <i class="bi bi-file-text me-1"></i>ამოღება
+                                                <i class="bi bi-file-text me-1"></i><span id="extractionTabText">ამოღება</span>
                                                 <button class="btn btn-sm ms-2 p-0 clear-console-btn" data-console="extractionConsole" title="გასუფთავება">
-                                                    <i class="bi bi-x-circle text-muted" style="font-size: 0.8rem;"></i>
+                                                    <i class="bi bi-trash3 text-muted" style="font-size: 0.8rem;"></i>
                                                 </button>
                                             </button>
                                         </li>
                                         <li class="nav-item" role="presentation">
                                             <button class="nav-link small d-flex align-items-center justify-content-center" id="generation-tab" data-bs-toggle="tab" data-bs-target="#generation-log" type="button" role="tab">
-                                                <i class="bi bi-gear me-1"></i>გენერაცია
+                                                <i class="bi bi-gear me-1"></i><span id="generationTabText">გენერაცია</span>
                                                 <button class="btn btn-sm ms-2 p-0 clear-console-btn" data-console="generationConsole" title="გასუფთავება">
-                                                    <i class="bi bi-x-circle text-muted" style="font-size: 0.8rem;"></i>
+                                                    <i class="bi bi-trash3 text-muted" style="font-size: 0.8rem;"></i>
                                                 </button>
                                             </button>
                                         </li>
                                         <li class="nav-item" role="presentation">
                                             <button class="nav-link small d-flex align-items-center justify-content-center" id="system-tab" data-bs-toggle="tab" data-bs-target="#system-log" type="button" role="tab">
-                                                <i class="bi bi-cpu me-1"></i>სისტემა
+                                                <i class="bi bi-cpu me-1"></i><span id="systemTabText">სისტემა</span>
                                                 <button class="btn btn-sm ms-2 p-0 clear-console-btn" data-console="systemConsole" title="გასუფთავება">
-                                                    <i class="bi bi-x-circle text-muted" style="font-size: 0.8rem;"></i>
+                                                    <i class="bi bi-trash3 text-muted" style="font-size: 0.8rem;"></i>
                                                 </button>
                                             </button>
                                         </li>
@@ -596,19 +619,19 @@
       <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title"><i class="bi bi-folder2-open me-2"></i>Manage Files</h5>
+            <h5 class="modal-title"><i class="bi bi-folder2-open me-2"></i><span id="manageFilesTitleText">Manage Files</span></h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
             <ul class="nav nav-tabs" id="manageFilesTabs" role="tablist">
               <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="tab-ref" data-bs-toggle="tab" data-bs-target="#pane-ref" type="button" role="tab">Reference XMLs</button>
+                <button class="nav-link active" id="tab-ref" data-bs-toggle="tab" data-bs-target="#pane-ref" type="button" role="tab"><span id="tabRefText">Reference XMLs</span></button>
               </li>
               <li class="nav-item" role="presentation">
-                <button class="nav-link" id="tab-ip" data-bs-toggle="tab" data-bs-target="#pane-ip" type="button" role="tab">IP Plan</button>
+                <button class="nav-link" id="tab-ip" data-bs-toggle="tab" data-bs-target="#pane-ip" type="button" role="tab"><span id="tabIpText">IP Plan</span></button>
               </li>
               <li class="nav-item" role="presentation">
-                <button class="nav-link" id="tab-gen" data-bs-toggle="tab" data-bs-target="#pane-gen" type="button" role="tab">Generated</button>
+                <button class="nav-link" id="tab-gen" data-bs-toggle="tab" data-bs-target="#pane-gen" type="button" role="tab"><span id="tabGenText">Generated</span></button>
               </li>
             </ul>
             <div class="tab-content p-3 border border-top-0 rounded-bottom">
@@ -616,28 +639,34 @@
                 <div class="d-flex align-items-center mb-2 gap-2">
                   <div class="form-check form-switch">
                     <input class="form-check-input" type="checkbox" id="manageRegionSwitch">
-                    <label class="form-check-label" for="manageRegionSwitch">East</label>
+                    <label class="form-check-label" for="manageRegionSwitch"><span id="manageRegionSwitchText">East</span></label>
                   </div>
-                  <button class="btn btn-sm btn-outline-primary" id="refreshRefList">Refresh</button>
+                  <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" id="refreshRefList" title="Refresh">
+                    <i class="bi bi-arrow-clockwise"></i>
+                  </button>
                 </div>
                 <ul class="list-group" id="refList"></ul>
               </div>
               <div class="tab-pane fade" id="pane-ip" role="tabpanel">
                 <div class="d-flex align-items-center mb-2 gap-2">
-                  <button class="btn btn-sm btn-outline-primary" id="refreshIpList">Refresh</button>
+                  <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" id="refreshIpList" title="Refresh">
+                    <i class="bi bi-arrow-clockwise"></i>
+                  </button>
                 </div>
                 <ul class="list-group" id="ipList"></ul>
               </div>
               <div class="tab-pane fade" id="pane-gen" role="tabpanel">
                 <div class="d-flex align-items-center mb-2 gap-2">
-                  <button class="btn btn-sm btn-outline-primary" id="refreshGenList">Refresh</button>
+                  <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" id="refreshGenList" title="Refresh">
+                    <i class="bi bi-arrow-clockwise"></i>
+                  </button>
                 </div>
                 <ul class="list-group" id="genList"></ul>
               </div>
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><span id="manageCloseText">Close</span></button>
           </div>
         </div>
       </div>
@@ -664,6 +693,213 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    // Existing XML choose button wiring
+    const existingXmlInput = document.getElementById('existingXml');
+    const existingXmlChooseBtn = document.getElementById('existingXmlChooseBtn');
+    const existingXmlFilename = document.getElementById('existingXmlFilename');
+    if (existingXmlChooseBtn && existingXmlInput) {
+        existingXmlChooseBtn.addEventListener('click', () => existingXmlInput.click());
+    }
+    if (existingXmlInput && existingXmlFilename) {
+        existingXmlInput.addEventListener('change', () => {
+            const file = existingXmlInput.files && existingXmlInput.files[0];
+            existingXmlFilename.value = file ? file.name : (existingXmlFilename.placeholder || existingXmlFilename.value);
+        });
+    }
+    // Language switcher setup
+    const langButtons = document.querySelectorAll('#langSwitcher button[data-lang]');
+    const i18n = {
+        ka: {
+            manageCloseText: 'დახურვა',
+            modeTitle: 'რეჟიმი:',
+            regionEast: 'აღმოსავლეთი',
+            regionWest: 'დასავლეთი',
+            existingXmlChooseBtn: 'აირჩიე...',
+            existingXmlFilenamePlaceholder: 'ფაილი არჩეული არ არის',
+            brandText: 'Nokia WebEM',
+            navHomeText: 'მთავარი',
+            navModernizationText: '5G მოდერნიზაცია',
+            navRolloutText: 'ახალი სადგური',
+            navXmlViewerText: 'XML დამთვალიერებელი',
+            headerTitle: '5G მოდერნიზაცია',
+            headerSubtitle: 'არსებულ საბაზო სადგურზე 5G-ის დამატება',
+            manageFilesBtnText: 'ფაილების მართვა',
+            sftpLabel: 'ჩამოტვირთე სარეზერვო XML SFTP-დან (ID ან სადგურის სახელი)',
+            sftpBtnText: 'ჩამოტვირთვა SFTP-დან',
+            modeModernization: '5G მოდერნიზაცია',
+            modeRollout: 'Rollout',
+            modeHint: 'ID/Name/TAC შეყვანისთვის გადართეთ Rollout რეჟიმზე',
+            rolloutIdLabel: 'MRBTS ID',
+            rolloutNameLabel: 'MRBTS სახელი',
+            rolloutTacLabel: 'TAC',
+            existingXmlLabel: 'არსებული სადგურის XML',
+            existingXmlHelp: 'ატვირთეთ არსებული სადგურის XML კონფიგურაცია',
+            existingXmlInvalid: 'გთხოვთ ატვირთოთ არსებული სადგურის XML ფაილი',
+            referenceLabelText: 'სამაგალითო 5G კონფიგი [ XML ]',
+            refUploadSelectText: 'არჩევა',
+            ipPlanLabelText: 'IP გეგმა [ Excel ]',
+            ipUploadSelectText: 'არჩევა',
+            submitBtnText: 'დაგენერირე ახალი XML',
+            loadingText: 'მუშავდება...',
+            
+            uploadNewFileTextRef: 'ახალი ფაილის არჩევა',
+            uploadNewFileTextIp: 'ახალი ფაილის არჩევა',
+            debugConsoleTitleText: 'დისპეჩერი (Debug Console)',
+            extractionTabText: 'ამოღება',
+            generationTabText: 'გენერაცია',
+            systemTabText: 'სისტემა',
+            manageFilesTitleText: 'ფაილების მართვა',
+            tabRefText: 'Reference XML ფაილები',
+            tabIpText: 'IP Plan',
+            tabGenText: 'გენერირებული'
+        },
+        en: {
+            manageCloseText: 'Close',
+            modeTitle: 'Mode:',
+            regionEast: 'East',
+            regionWest: 'West',
+            existingXmlChooseBtn: 'Browse...',
+            existingXmlFilenamePlaceholder: 'No file selected',
+            brandText: 'Nokia WebEM',
+            navHomeText: 'Home',
+            navModernizationText: '5G Modernization',
+            navRolloutText: 'New Site',
+            navXmlViewerText: 'XML Viewer',
+            headerTitle: '5G Modernization',
+            headerSubtitle: 'Add 5G to an existing base station',
+            manageFilesBtnText: 'Manage Files',
+            sftpLabel: 'Download backup XML from SFTP (ID or Station Name)',
+            sftpBtnText: 'Download from SFTP',
+            modeModernization: '5G Modernization',
+            modeRollout: 'Rollout',
+            modeHint: 'Toggle to Rollout to input ID/Name/TAC',
+            rolloutIdLabel: 'MRBTS ID',
+            rolloutNameLabel: 'MRBTS Name',
+            rolloutTacLabel: 'TAC',
+            existingXmlLabel: 'Existing Station XML',
+            existingXmlHelp: 'Upload existing station XML configuration',
+            existingXmlInvalid: 'Please upload existing station XML file',
+            referenceLabelText: 'Reference 5G XML',
+            refUploadSelectText: 'Select',
+            ipPlanLabelText: 'IP Plan Excel',
+            ipUploadSelectText: 'Select',
+            submitBtnText: 'Generate XML',
+            loadingText: 'Processing...',
+            
+            uploadNewFileTextRef: 'Upload new file',
+            uploadNewFileTextIp: 'Upload new file',
+            debugConsoleTitleText: 'Debug Console',
+            extractionTabText: 'Extraction',
+            generationTabText: 'Generation',
+            systemTabText: 'System',
+            manageFilesTitleText: 'Manage Files',
+            tabRefText: 'Reference XMLs',
+            tabIpText: 'IP Plan',
+            tabGenText: 'Generated'
+        }
+    };
+    function applyLang(lang) {
+        const t = i18n[lang] || i18n.ka;
+        // Update document language attribute
+        try { document.documentElement.setAttribute('lang', lang); } catch (e) {}
+            const map = {
+            brandText: '#brandText',
+            navHomeText: '#navHomeText',
+            navModernizationText: '#navModernizationText',
+            navRolloutText: '#navRolloutText',
+            navXmlViewerText: '#navXmlViewerText',
+            headerTitle: '#headerTitle',
+            headerSubtitle: '#headerSubtitle',
+            manageFilesBtnText: '#manageFilesBtnText',
+                modeTitle: '#modeTitle',
+            sftpLabel: '#sftpLabel',
+            sftpBtnText: '#sftpBtnText',
+            
+            modeHint: '#modeHint',
+            rolloutIdLabel: '#rolloutIdLabel',
+            rolloutNameLabel: '#rolloutNameLabel',
+            rolloutTacLabel: '#rolloutTacLabel',
+            existingXmlLabel: '#existingXmlLabel',
+            existingXmlHelp: '#existingXmlHelp',
+            existingXmlInvalid: '#existingXmlInvalid',
+                existingXmlChooseBtn: '#existingXmlChooseBtn',
+                existingXmlFilenamePlaceholder: '#existingXmlFilename',
+                manageCloseText: '#manageCloseText',
+            referenceLabelText: '#referenceLabelText',
+            refUploadSelectText: '#refUploadSelectText',
+                uploadNewFileTextRef: '#uploadNewFileTextRef',
+            ipPlanLabelText: '#ipPlanLabelText',
+            ipUploadSelectText: '#ipUploadSelectText',
+                uploadNewFileTextIp: '#uploadNewFileTextIp',
+            submitBtnText: '#submitBtnText',
+            loadingText: '#loadingText',
+            debugConsoleTitleText: '#debugConsoleTitleText',
+            extractionTabText: '#extractionTabText',
+            generationTabText: '#generationTabText',
+            systemTabText: '#systemTabText',
+            manageFilesTitleText: '#manageFilesTitleText',
+            tabRefText: '#tabRefText',
+            tabIpText: '#tabIpText',
+            tabGenText: '#tabGenText',
+            refreshRefText: '#refreshRefText',
+            refreshIpText: '#refreshIpText'
+        };
+        Object.entries(map).forEach(([key, selector]) => {
+            const el = document.querySelector(selector);
+            if (!el) return;
+            if (key === 'existingXmlFilenamePlaceholder') {
+                el.placeholder = t[key];
+            } else if (t[key] !== undefined) {
+                el.textContent = t[key];
+            }
+        });
+        // Re-render dropdown default options with current language
+        try { if (typeof updateXmlDropdown === 'function') updateXmlDropdown(); } catch(e) {}
+        try { if (typeof updateExcelDropdown === 'function') updateExcelDropdown(); } catch(e) {}
+        // Also directly update currently rendered 'upload' options without needing reload
+        const uploadTextNow = (lang === 'en') ? 'Upload new file' : 'ახალი ფაილის არჩევა';
+        const refSelect = document.getElementById('reference5gXmlSelection');
+        const ipSelect = document.getElementById('ipPlanSelection');
+        if (refSelect) {
+            const opt = Array.from(refSelect.options).find(o => o.value === 'upload');
+            if (opt) opt.textContent = `🔄 ${uploadTextNow}`;
+        }
+        if (ipSelect) {
+            const opt2 = Array.from(ipSelect.options).find(o => o.value === 'upload');
+            if (opt2) opt2.textContent = `🔄 ${uploadTextNow}`;
+        }
+        // Region labels (dynamic based on switch state)
+        const regionSwitch = document.getElementById('regionSwitch');
+        const regionSwitchText = document.getElementById('regionSwitchText');
+        if (regionSwitch && regionSwitchText) {
+            regionSwitchText.textContent = regionSwitch.checked ? t.regionWest : t.regionEast;
+        }
+        const manageRegionSwitch = document.getElementById('manageRegionSwitch');
+        const manageRegionSwitchText = document.getElementById('manageRegionSwitchText');
+        if (manageRegionSwitch && manageRegionSwitchText) {
+            manageRegionSwitchText.textContent = manageRegionSwitch.checked ? t.regionWest : t.regionEast;
+        }
+        // Mode label depends on switch state
+        const modeSwitchEl = document.getElementById('modeSwitch');
+        const modeLabelEl = document.getElementById('modeLabel') || document.querySelector('label[for="modeSwitch"]');
+        if (modeSwitchEl && modeLabelEl) {
+            modeLabelEl.textContent = modeSwitchEl.checked ? t.modeRollout : t.modeModernization;
+        }
+        // Toggle active button styling
+        langButtons.forEach(btn => {
+            if (btn.dataset.lang === lang) {
+                btn.classList.remove('btn-outline-light');
+                btn.classList.add('btn-light');
+            } else {
+                btn.classList.remove('btn-light');
+                btn.classList.add('btn-outline-light');
+            }
+        });
+        localStorage.setItem('lang', lang);
+    }
+    langButtons.forEach(btn => btn.addEventListener('click', () => applyLang(btn.dataset.lang)));
+    applyLang(localStorage.getItem('lang') || 'ka');
 });
 </script>
     
@@ -781,6 +1017,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         debugConsole.style.overflow = 'hidden';
                         
                         toggleIcon.classList.remove('rotated');
+                        // change icon to chevron-down when closed
+                        toggleIcon.classList.remove('bi-chevron-up');
+                        toggleIcon.classList.add('bi-chevron-down');
                         isOpen = false;
                         
                         setTimeout(() => {
@@ -801,6 +1040,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         debugConsole.style.height = debugConsole.scrollHeight + 'px';
                         
                         toggleIcon.classList.add('rotated');
+                        // change icon to chevron-up when open
+                        toggleIcon.classList.remove('bi-chevron-down');
+                        toggleIcon.classList.add('bi-chevron-up');
                         isOpen = true;
                         
                         setTimeout(() => {
@@ -927,18 +1169,26 @@ document.addEventListener('DOMContentLoaded', function() {
             // Initialize mode switch (Modernization vs Rollout)
             const modeSwitch = document.getElementById('modeSwitch');
             const rolloutInputs = document.getElementById('rolloutInputs');
-            const modeLabel = document.querySelector('label[for="modeSwitch"]');
+            const modeLabel = document.getElementById('modeLabel') || document.querySelector('label[for="modeSwitch"]');
             if (modeSwitch && rolloutInputs && modeLabel) {
                 const applyModeUI = () => {
+                    const lang = localStorage.getItem('lang') || 'ka';
+                    const modeHintEl = document.getElementById('modeHint');
                     if (modeSwitch.checked) {
                         // Rollout mode
                         rolloutInputs.style.display = '';
-                        modeLabel.textContent = 'Rollout';
+                        modeLabel.textContent = (lang === 'en') ? 'Rollout' : 'Rollout';
+                        if (modeHintEl) {
+                            modeHintEl.textContent = (lang === 'en') ? 'Toggle to Rollout to input ID/Name/TAC' : 'ID/Name/TAC შეყვანისთვის გადართეთ Rollout რეჟიმზე';
+                        }
                         addSystemLog('Mode switched to Rollout. Manual inputs enabled (ID/Name/TAC).', 'info');
                     } else {
                         // 5G Modernization mode
                         rolloutInputs.style.display = 'none';
-                        modeLabel.textContent = '5G Modernization';
+                        modeLabel.textContent = (lang === 'en') ? '5G Modernization' : '5G მოდერნიზაცია';
+                        if (modeHintEl) {
+                            modeHintEl.textContent = (lang === 'en') ? 'Toggle to Rollout to input ID/Name/TAC' : 'ID/Name/TAC შეყვანისთვის გადართეთ Rollout რეჟიმზე';
+                        }
                         addSystemLog('Mode switched to 5G Modernization. Inputs hidden.', 'info');
                     }
                 };
@@ -979,7 +1229,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // Update XML dropdown
         function updateXmlDropdown() {
             const select = document.getElementById('reference5gXmlSelection');
-            select.innerHTML = '<option value="upload">🔄 ახალი ფაილის ატვირთვა</option>';
+            const previous = select ? select.value : '';
+            const lang = localStorage.getItem('lang') || 'ka';
+            const uploadText = (lang === 'en') ? 'Upload new file' : 'ახალი ფაილის არჩევა';
+            select.innerHTML = `<option value="upload">🔄 ${uploadText}</option>`;
             
             xmlFiles.forEach(file => {
                 const option = document.createElement('option');
@@ -987,12 +1240,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 option.textContent = file;
                 select.appendChild(option);
             });
+            if (previous && previous !== 'upload' && xmlFiles.includes(previous)) {
+                select.value = previous;
+            } else if (previous === 'upload') {
+                select.value = 'upload';
+            }
         }
 
         // Update Excel dropdown
         function updateExcelDropdown() {
             const select = document.getElementById('ipPlanSelection');
-            select.innerHTML = '<option value="upload">🔄 ახალი ფაილის ატვირთვა</option>';
+            const previous = select ? select.value : '';
+            const lang2 = localStorage.getItem('lang') || 'ka';
+            const uploadText2 = (lang2 === 'en') ? 'Upload new file' : 'ახალი ფაილის არჩევა';
+            select.innerHTML = `<option value="upload">🔄 ${uploadText2}</option>`;
             
             excelFiles.forEach(file => {
                 const option = document.createElement('option');
@@ -1000,15 +1261,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 option.textContent = file;
                 select.appendChild(option);
             });
-            // Auto-select latest (assumes server returns sorted by time asc/desc; pick last)
-            if (excelFiles && excelFiles.length > 0) {
+            if (previous && previous !== 'upload' && excelFiles.includes(previous)) {
+                select.value = previous;
+            } else if (previous === 'upload') {
+                select.value = 'upload';
+            } else if (excelFiles && excelFiles.length > 0) {
                 const latest = excelFiles[excelFiles.length - 1];
                 select.value = latest;
-                // If station name already extracted, auto-parse
-                const stationNameVal = document.getElementById('stationName')?.value || '';
-                if (stationNameVal.trim() !== '') {
-                    setTimeout(() => parseIpPlanExcel(), 50);
-                }
+            }
+            // If station name already extracted, auto-parse
+            const stationNameVal = document.getElementById('stationName')?.value || '';
+            if (stationNameVal.trim() !== '') {
+                setTimeout(() => parseIpPlanExcel(), 50);
             }
         }
 
@@ -1191,9 +1455,17 @@ document.addEventListener('DOMContentLoaded', function() {
             // Region switch: label + reload XML list
             const regionSwitch = document.getElementById('regionSwitch');
             const regionLabel = document.querySelector('label[for="regionSwitch"]');
+            const regionLabelSpan = document.getElementById('regionSwitchText');
             const applyRegionUI = () => {
                 if (!regionSwitch || !regionLabel) return;
-                regionLabel.textContent = regionSwitch.checked ? 'West' : 'East';
+                const lang = localStorage.getItem('lang') || 'ka';
+                const east = (lang === 'en') ? 'East' : 'აღმოსავლეთი';
+                const west = (lang === 'en') ? 'West' : 'დასავლეთი';
+                if (regionLabelSpan) {
+                    regionLabelSpan.textContent = regionSwitch.checked ? west : east;
+                } else {
+                    regionLabel.textContent = regionSwitch.checked ? west : east;
+                }
                 addSystemLog(`Region set to ${regionSwitch.checked ? 'West' : 'East'}`, 'info');
             };
             if (regionSwitch) {
@@ -1208,9 +1480,17 @@ document.addEventListener('DOMContentLoaded', function() {
             // Manage Files modal events
             const manageRegionSwitch = document.getElementById('manageRegionSwitch');
             const manageRegionLabel = document.querySelector('label[for="manageRegionSwitch"]');
+            const manageRegionLabelSpan = document.getElementById('manageRegionSwitchText');
             const applyManageRegionUI = () => {
                 if (!manageRegionSwitch || !manageRegionLabel) return;
-                manageRegionLabel.textContent = manageRegionSwitch.checked ? 'West' : 'East';
+                const lang = localStorage.getItem('lang') || 'ka';
+                const east = (lang === 'en') ? 'East' : 'აღმოსავლეთი';
+                const west = (lang === 'en') ? 'West' : 'დასავლეთი';
+                if (manageRegionLabelSpan) {
+                    manageRegionLabelSpan.textContent = manageRegionSwitch.checked ? west : east;
+                } else {
+                    manageRegionLabel.textContent = manageRegionSwitch.checked ? west : east;
+                }
             };
             if (manageRegionSwitch) {
                 manageRegionSwitch.addEventListener('change', () => { applyManageRegionUI(); loadRefList(); });
