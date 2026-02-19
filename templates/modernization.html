@@ -383,10 +383,10 @@
                         <!-- Station Name Display (appears after XML upload) -->
                         <div class="row mb-4" id="stationNameDisplay" style="display: none;">
                             <div class="col-12">
-                                <div class="alert alert-info d-flex align-items-center" role="alert">
-                                    <i class="bi bi-broadcast me-3 text-primary" style="font-size: 1.5rem;"></i>
-                                    <div>
-                                        <strong>სადგურის სახელი:</strong>
+                                        <div class="alert alert-info d-flex align-items-center" role="alert">
+                                        <i class="bi bi-broadcast me-3 text-primary" style="font-size: 1.5rem;"></i>
+                                        <div>
+                                        <strong><span id="stationNameLabelText">სადგურის სახელი:</span></strong>
                                         <span id="extractedStationName" class="ms-2 fw-bold text-primary"></span>
                                         <input type="hidden" id="stationName" name="stationName">
                                         <!-- Auto-suggest summary (compact, no extra panel) -->
@@ -710,6 +710,7 @@ document.addEventListener('DOMContentLoaded', function() {
             manageFilesBtnText: 'ფაილების მართვა',
             sftpLabel: 'ჩამოტვირთე სარეზერვო XML SFTP-დან (ID ან სადგურის სახელი)',
             sftpBtnText: 'ჩამოტვირთვა SFTP-დან',
+            stationNameLabelText: 'სადგურის სახელი:',
             modeModernization: 'მოდერნიზაცია',
             modeRollout: 'Rollout',
             modeHint: 'ID/Name/TAC შეყვანისთვის გადართეთ Rollout რეჟიმზე',
@@ -754,6 +755,7 @@ document.addEventListener('DOMContentLoaded', function() {
             manageFilesBtnText: 'Manage Files',
             sftpLabel: 'Download backup XML from SFTP (ID or Station Name)',
             sftpBtnText: 'Download from SFTP',
+            stationNameLabelText: 'Station Name:',
             modeModernization: 'Modernization',
             modeRollout: 'Rollout',
             modeHint: 'Toggle to Rollout to input ID/Name/TAC',
@@ -798,6 +800,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 modeTitle: '#modeTitle',
             sftpLabel: '#sftpLabel',
             sftpBtnText: '#sftpBtnText',
+            stationNameLabelText: '#stationNameLabelText',
             
             modeHint: '#modeHint',
             rolloutIdLabel: '#rolloutIdLabel',
@@ -1648,8 +1651,12 @@ const form = document.getElementById('modernizationForm');
             formData.append('xmlFile', file);
 
             try {
-                // Show loading indicator
-                extractedStationNameSpan.innerHTML = '<i class="spinner-border spinner-border-sm me-2" role="status"></i>XML ფაილი იკითხება...';
+                // Show loading indicator (localized)
+                const currentLang = localStorage.getItem('lang') || 'ka';
+                const readingText = currentLang === 'en'
+                    ? 'Reading XML file...'
+                    : 'XML ფაილი იკითხება...';
+                extractedStationNameSpan.innerHTML = `<i class="spinner-border spinner-border-sm me-2" role="status"></i>${readingText}`;
                 stationNameDisplay.style.display = 'block';
                 
                 addExtractionLog('XML ფაილი იგზავნება სერვერზე ანალიზისთვის...', 'info');

@@ -262,17 +262,23 @@
         <div class="container-fluid">
             <a class="navbar-brand fw-bold d-flex align-items-center" href="/">
                 <i class="bi bi-cpu me-2" style="font-size: 1.5rem;"></i>
-                Nokia WebEM
+                <span id="brandText">Nokia WebEM</span>
             </a>
             <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <i class="bi bi-list" style="font-size: 1.6rem; color: var(--purple-light);"></i>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto align-items-center">
-                    <li class="nav-item"><a class="nav-link px-3 py-2" href="/"><i class="bi bi-house me-1"></i>მთავარი</a></li>
-                    <li class="nav-item"><a class="nav-link px-3 py-2" href="/modernization"><i class="bi bi-arrow-repeat me-1"></i>Modernization</a></li>
-                    <li class="nav-item"><a class="nav-link px-3 py-2" href="/rollout"><i class="bi bi-plus-circle me-1"></i>ახალი სადგური</a></li>
-                    <li class="nav-item"><a class="nav-link px-3 py-2 ht-nav-active" href="/xml-viewer"><i class="bi bi-file-earmark-code me-1"></i>XML Viewer</a></li>
+                    <li class="nav-item"><a class="nav-link px-3 py-2" href="/"><i class="bi bi-house me-1"></i><span id="navHomeText">მთავარი</span></a></li>
+                    <li class="nav-item"><a class="nav-link px-3 py-2" href="/modernization"><i class="bi bi-arrow-repeat me-1"></i><span id="navModernizationText">Modernization</span></a></li>
+                    <li class="nav-item"><a class="nav-link px-3 py-2" href="/rollout"><i class="bi bi-plus-circle me-1"></i><span id="navRolloutText">ახალი სადგური</span></a></li>
+                    <li class="nav-item"><a class="nav-link px-3 py-2 ht-nav-active" href="/xml-viewer"><i class="bi bi-file-earmark-code me-1"></i><span id="navXmlViewerText">XML Viewer</span></a></li>
+                    <li class="nav-item ms-2">
+                        <div class="btn-group btn-group-sm" role="group" id="langSwitcher">
+                            <button type="button" class="btn btn-light" data-lang="ka">ქართული</button>
+                            <button type="button" class="btn btn-outline-light" data-lang="en">English</button>
+                        </div>
+                    </li>
                 </ul>
             </div>
         </div>
