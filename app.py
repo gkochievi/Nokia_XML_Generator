@@ -151,7 +151,7 @@ def view_xml():
 
 @app.route('/api/modernization', methods=['POST'])
 def modernization():
-    """Handle 5G modernization request"""
+    """Handle modernization request"""
     try:
         station_name = request.form.get('stationName')
         if not station_name:
@@ -299,7 +299,7 @@ def modernization():
         resp = {
             'success': True,
             'filename': output_filename,
-            'message': '5G modernization configuration generated successfully',
+            'message': 'Modernization configuration generated successfully',
             'details': {
                 'mode': mode,
                 'existing_bts_name': existing_bts_name,
@@ -472,7 +472,7 @@ def modernization_inspect():
 
 @app.route('/api/rollout', methods=['POST'])
 def rollout():
-    """Handle new rollout request"""
+    """Handle new rollout request — delegates to ModernizationGenerator in rollout mode"""
     try:
         required_files = ['referenceXml', 'radioExcel', 'transmissionExcel']
         data, error_resp, status = validate_and_save_files(request, required_files, app.config['UPLOAD_FOLDER'])
@@ -480,21 +480,39 @@ def rollout():
             return error_resp, status
         if data is not None:
             station_name = data['station_name']
+            bts_id = request.form.get('btsId', '')
             temp_files = data['temp_files']
             try:
-                # Process rollout
-                generator = RolloutGenerator()
-                output_filename = generator.generate(
+                ref_xml_path = temp_files['referenceXml']
+                trans_excel_path = temp_files['transmissionExcel']
+
+                parser = XMLParser()
+                ref_tree = parser.parse_file(ref_xml_path)
+                ref_bts_name = parser.extract_bts_name(ref_tree)
+                ref_bts_id = parser.extract_bts_id(ref_tree)
+
+                generator = ModernizationGenerator()
+                output_filename, debug_log, extra = generator.generate(
                     station_name=station_name,
-                    reference_xml_path=temp_files['referenceXml'],
-                    radio_excel_path=temp_files['radioExcel'],
-                    transmission_excel_path=temp_files['transmissionExcel'],
-                    output_folder=app.config['GENERATED_FOLDER']
+                    existing_xml_path=ref_xml_path,
+                    reference_5g_xml_path=ref_xml_path,
+                    transmission_excel_path=trans_excel_path,
+                    output_folder=app.config['GENERATED_FOLDER'],
+                    existing_bts_name=ref_bts_name,
+                    reference_bts_name=ref_bts_name,
+                    ip_plan_excel_path=trans_excel_path,
+                    mode='rollout',
+                    rollout_overrides={
+                        'id': bts_id or None,
+                        'name': station_name or None,
+                        'tac': None
+                    }
                 )
                 return jsonify({
                     'success': True,
                     'filename': output_filename,
-                    'message': 'New rollout configuration generated successfully'
+                    'message': 'New rollout configuration generated successfully',
+                    'debug_log': debug_log
                 })
             finally:
                 for path in temp_files.values():

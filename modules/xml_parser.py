@@ -693,6 +693,209 @@ class XMLParser:
             logger.error(f"Traceback: {traceback.format_exc()}")
             return None
 
+    def _find_managed_objects(self, tree, class_contains):
+        """Helper: find managedObject elements with class containing given string, namespace-agnostic"""
+        for xp in [
+            f"//managedObject[contains(@class, '{class_contains}')]",
+            f"//*[local-name()='managedObject'][contains(@class, '{class_contains}')]",
+        ]:
+            try:
+                found = tree.xpath(xp)
+                if found:
+                    return found
+            except Exception:
+                continue
+        root = tree.getroot()
+        ns = root.nsmap.get(None)
+        if ns:
+            try:
+                found = tree.xpath(f"//ns:managedObject[contains(@class, '{class_contains}')]", namespaces={'ns': ns})
+                if found:
+                    return found
+            except Exception:
+                pass
+        return []
+
+    def _find_param(self, element, param_name):
+        """Helper: find a <p name='X'> child, namespace-agnostic"""
+        root = element.getroottree().getroot() if hasattr(element, 'getroottree') else None
+        ns = root.nsmap.get(None) if root is not None and hasattr(root, 'nsmap') else None
+        if ns:
+            elem = element.find(f".//{{{ns}}}p[@name='{param_name}']")
+            if elem is not None:
+                return elem
+        for xp in [f".//p[@name='{param_name}']", f".//*[local-name()='p'][@name='{param_name}']"]:
+            try:
+                found = element.xpath(xp)
+                if found:
+                    return found[0]
+            except Exception:
+                continue
+        return None
+
+    def extract_4g_tdd_cells(self, tree):
+        """Extract 4G TDD cell info: LNCEL objects with cellTechnology=TDD"""
+        try:
+            logger.info("Starting 4G TDD cell extraction...")
+            import re
+
+            lncel_objects = self._find_managed_objects(tree, 'LNCEL')
+
+            tdd_cells = {}
+            for lncel in lncel_objects:
+                cls = lncel.get('class', '')
+                dn = lncel.get('distName', '')
+                if 'LNCEL_TDD' in cls or 'LNCEL_FDD' in cls:
+                    continue
+                m = re.search(r'LNCEL-(\d+)', dn)
+                if not m:
+                    continue
+                cell_id = f"LNCEL-{m.group(1)}"
+
+                tech_elem = self._find_param(lncel, 'cellTechnology')
+                tech = tech_elem.text.strip() if tech_elem is not None and tech_elem.text else None
+                if tech != 'TDD':
+                    continue
+
+                params = {}
+                for pname in ['tac', 'earfcnDl', 'dlChannelBandwidth', 'cellName', 'lcrId']:
+                    elem = self._find_param(lncel, pname)
+                    if elem is not None and elem.text:
+                        params[pname] = elem.text.strip()
+
+                params['cellTechnology'] = 'TDD'
+                tdd_cells[cell_id] = params
+                logger.info(f"TDD cell {cell_id}: {params}")
+
+            if tdd_cells:
+                logger.info(f"Found {len(tdd_cells)} 4G TDD cells: {list(tdd_cells.keys())}")
+                return tdd_cells
+            logger.info("No 4G TDD cells found")
+            return None
+        except Exception as e:
+            logger.error(f"Error extracting 4G TDD cells: {e}")
+            return None
+
+    def extract_5g_nrcell_details(self, tree):
+        """Extract detailed 5G NRCELL info including FDD/TDD type and frequency parameters"""
+        try:
+            logger.info("Starting 5G NRCELL detailed extraction...")
+            import re
+
+            nrcell_objects = self._find_managed_objects(tree, 'NRCELL')
+
+            nrcell_details = {}
+            fdd_info = {}
+            tdd_info = {}
+
+            for obj in nrcell_objects:
+                cls = obj.get('class', '')
+                dn = obj.get('distName', '')
+
+                if 'NRCELL_FDD' in cls:
+                    m = re.search(r'NRCELL-(\d+)', dn)
+                    if not m:
+                        continue
+                    cell_id = f"NRCELL-{m.group(1)}"
+                    params = {}
+                    for pname in ['nrarfcnDl', 'nrarfcnUl', 'chBwDl', 'chBwUl']:
+                        elem = self._find_param(obj, pname)
+                        if elem is not None and elem.text:
+                            params[pname] = elem.text.strip()
+                    fdd_info[cell_id] = params
+                    continue
+
+                if 'NRCELL_TDD' in cls:
+                    m = re.search(r'NRCELL-(\d+)', dn)
+                    if not m:
+                        continue
+                    cell_id = f"NRCELL-{m.group(1)}"
+                    params = {}
+                    for pname in ['nrarfcnDl', 'chBwDl', 'subCarrierSpacing']:
+                        elem = self._find_param(obj, pname)
+                        if elem is not None and elem.text:
+                            params[pname] = elem.text.strip()
+                    tdd_info[cell_id] = params
+                    continue
+
+                if 'NRCELL' in cls and 'NRCELL_FDD' not in cls and 'NRCELL_TDD' not in cls:
+                    m = re.search(r'NRCELL-(\d+)', dn)
+                    if not m:
+                        continue
+                    cell_id = f"NRCELL-{m.group(1)}"
+                    cell_num = m.group(1)
+                    params = {}
+                    for pname in ['physCellId', 'tac', 'cellName']:
+                        elem = self._find_param(obj, pname)
+                        if elem is not None and elem.text:
+                            params[pname] = elem.text.strip()
+
+                    if len(cell_num) >= 2:
+                        lncel_num = cell_num[-2:]
+                        params['mapped_lncel'] = f"LNCEL-{lncel_num}"
+
+                    nrcell_details[cell_id] = params
+
+            for cell_id, fparams in fdd_info.items():
+                if cell_id in nrcell_details:
+                    nrcell_details[cell_id]['duplex'] = 'FDD'
+                    nrcell_details[cell_id].update(fparams)
+
+            for cell_id, tparams in tdd_info.items():
+                if cell_id in nrcell_details:
+                    nrcell_details[cell_id]['duplex'] = 'TDD'
+                    nrcell_details[cell_id].update(tparams)
+                else:
+                    nrcell_details[cell_id] = {'duplex': 'TDD', **tparams}
+
+            for cell_id, info in nrcell_details.items():
+                if 'duplex' not in info:
+                    info['duplex'] = 'FDD' if cell_id in fdd_info else 'TDD' if cell_id in tdd_info else 'unknown'
+
+            if nrcell_details:
+                fdd_count = sum(1 for v in nrcell_details.values() if v.get('duplex') == 'FDD')
+                tdd_count = sum(1 for v in nrcell_details.values() if v.get('duplex') == 'TDD')
+                logger.info(f"Found {len(nrcell_details)} NRCELLs ({fdd_count} FDD, {tdd_count} TDD): {list(nrcell_details.keys())}")
+                return nrcell_details
+            logger.info("No detailed 5G NRCELL data found")
+            return None
+        except Exception as e:
+            logger.error(f"Error extracting 5G NRCELL details: {e}")
+            return None
+
+    def extract_rmod_info(self, tree):
+        """Extract RMOD radio module information (product codes, sector mapping)"""
+        try:
+            logger.info("Starting RMOD extraction...")
+            import re
+
+            rmod_objects = self._find_managed_objects(tree, 'RMOD')
+
+            rmod_info = {}
+            for obj in rmod_objects:
+                dn = obj.get('distName', '')
+                m = re.search(r'RMOD-(\d+)', dn)
+                if not m:
+                    continue
+                rmod_id = f"RMOD-{m.group(1)}"
+
+                params = {}
+                for pname in ['prodCodePlanned', 'userLabel', 'positionInformation']:
+                    elem = self._find_param(obj, pname)
+                    if elem is not None and elem.text:
+                        params[pname] = elem.text.strip()
+
+                rmod_info[rmod_id] = params
+
+            if rmod_info:
+                logger.info(f"Found {len(rmod_info)} RMODs: {list(rmod_info.keys())}")
+                return rmod_info
+            logger.info("No RMOD data found")
+            return None
+        except Exception as e:
+            logger.error(f"Error extracting RMOD info: {e}")
+            return None
+
     def extract_network_parameters(self, tree):
         """Extract network parameters like NRX2LINK_TRUST and LNADJGNB"""
         network_params = {}

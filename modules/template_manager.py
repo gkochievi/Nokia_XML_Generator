@@ -7,7 +7,7 @@ from .xml_parser import XMLParser
 logger = logging.getLogger(__name__)
 
 class TemplateManager:
-    """Manager for 5G modernization templates and parameter replacement"""
+    """Manager for modernization templates and parameter replacement"""
     
     def __init__(self):
         self.xml_parser = XMLParser()

@@ -8,7 +8,7 @@ from copy import deepcopy
 logger = logging.getLogger(__name__)
 
 class ModernizationGenerator:
-    """Generator for 5G modernization configurations"""
+    """Generator for modernization configurations"""
     
     def __init__(self):
         self.xml_parser = XMLParser()
@@ -17,9 +17,9 @@ class ModernizationGenerator:
     def generate(self, station_name, existing_xml_path, reference_5g_xml_path, 
                  transmission_excel_path, output_folder, existing_bts_name=None, reference_bts_name=None,
                  ip_plan_excel_path=None, mode: str = 'modernization', rollout_overrides: dict | None = None):
-        """Generate 5G modernization configuration using template replacement approach"""
+        """Generate modernization configuration using template replacement approach"""
         try:
-            logger.info("Starting 5G modernization generation...")
+            logger.info("Starting modernization generation...")
             logger.info(f"Station name: {station_name}")
             logger.info(f"Existing btsName: {existing_bts_name}")
             logger.info(f"Reference btsName: {reference_bts_name}")
@@ -71,6 +71,13 @@ class ModernizationGenerator:
             reference_network_params = None
             
             try:
+                existing_4g_tdd_cells = None
+                reference_4g_tdd_cells = None
+                existing_5g_nrcell_details = None
+                reference_5g_nrcell_details = None
+                existing_rmod_info = None
+                reference_rmod_info = None
+
                 if existing_xml_path:
                     existing_tree = self.xml_parser.parse_file(existing_xml_path)
                     existing_bts_id = self.xml_parser.extract_bts_id(existing_tree)
@@ -79,11 +86,13 @@ class ModernizationGenerator:
                     existing_4g_cells = self.xml_parser.extract_4g_cells(existing_tree)
                     existing_4g_rootseq = self.xml_parser.extract_4g_rootseq(existing_tree)
                     existing_5g_nrcells = self.xml_parser.extract_5g_nrcells(existing_tree)
-                    # Extract network-related parameters
                     existing_vlan_data = self.xml_parser.extract_vlan_parameters(existing_tree)
                     existing_ip_data = self.xml_parser.extract_ip_parameters(existing_tree)
                     existing_routing_data = self.xml_parser.extract_routing_parameters(existing_tree)
                     existing_network_params = self.xml_parser.extract_network_parameters(existing_tree)
+                    existing_4g_tdd_cells = self.xml_parser.extract_4g_tdd_cells(existing_tree)
+                    existing_5g_nrcell_details = self.xml_parser.extract_5g_nrcell_details(existing_tree)
+                    existing_rmod_info = self.xml_parser.extract_rmod_info(existing_tree)
                     logger.info(f"Existing BTS ID: {existing_bts_id}")
                     logger.info(f"Existing sctpPortMin: {existing_sctp_port}")
                     logger.info(f"Existing 2G params: {existing_2g_params}")
@@ -94,6 +103,9 @@ class ModernizationGenerator:
                     logger.info(f"Existing IP data: {existing_ip_data}")
                     logger.info(f"Existing routing data: {existing_routing_data}")
                     logger.info(f"Existing network params: {existing_network_params}")
+                    logger.info(f"Existing 4G TDD cells: {existing_4g_tdd_cells}")
+                    logger.info(f"Existing 5G NRCELL details: {existing_5g_nrcell_details}")
+                    logger.info(f"Existing RMOD info: {existing_rmod_info}")
                 
                 if reference_5g_xml_path:
                     reference_tree = self.xml_parser.parse_file(reference_5g_xml_path)
@@ -108,6 +120,9 @@ class ModernizationGenerator:
                     reference_ip_data = self.xml_parser.extract_ip_parameters(reference_tree)
                     reference_routing_data = self.xml_parser.extract_routing_parameters(reference_tree)
                     reference_network_params = self.xml_parser.extract_network_parameters(reference_tree)
+                    reference_4g_tdd_cells = self.xml_parser.extract_4g_tdd_cells(reference_tree)
+                    reference_5g_nrcell_details = self.xml_parser.extract_5g_nrcell_details(reference_tree)
+                    reference_rmod_info = self.xml_parser.extract_rmod_info(reference_tree)
                     logger.info(f"Reference BTS ID: {reference_bts_id}")
                     logger.info(f"Reference sctpPortMin: {reference_sctp_port}")
                     logger.info(f"Reference 2G params: {reference_2g_params}")
@@ -118,6 +133,9 @@ class ModernizationGenerator:
                     logger.info(f"Reference IP data: {reference_ip_data}")
                     logger.info(f"Reference routing data: {reference_routing_data}")
                     logger.info(f"Reference network params: {reference_network_params}")
+                    logger.info(f"Reference 4G TDD cells: {reference_4g_tdd_cells}")
+                    logger.info(f"Reference 5G NRCELL details: {reference_5g_nrcell_details}")
+                    logger.info(f"Reference RMOD info: {reference_rmod_info}")
             except Exception as e:
                 logger.warning(f"Error extracting parameters: {str(e)}")
             
@@ -253,6 +271,31 @@ class ModernizationGenerator:
             else:
                 logger.info("5G NRCELL physCellId parameters not available for replacement - station may not have 5G cells or 4G cells")
             
+            # Replace 4G TDD cell tac if existing has TDD cells
+            if existing_4g_tdd_cells and reference_4g_tdd_cells:
+                logger.info("Performing template-based 4G TDD cell parameter replacement...")
+                updated_content = self._replace_4g_tdd_cells(
+                    updated_content, reference_4g_tdd_cells, existing_4g_tdd_cells
+                )
+            else:
+                logger.info("4G TDD cell parameters not available for replacement")
+
+            # Copy PCI from existing FDD cells to reference TDD cells (sector-based mapping)
+            if existing_4g_cells and reference_4g_cells:
+                logger.info("Performing TDD PCI copy from existing FDD cells...")
+                updated_content = self._replace_tdd_pci_from_fdd(
+                    updated_content, reference_4g_cells, existing_4g_cells
+                )
+
+            # Replace 5G NRCELL detailed parameters (FDD+TDD physCellId) using detailed extraction
+            if existing_5g_nrcell_details and reference_5g_nrcell_details:
+                logger.info("Performing template-based 5G NRCELL detailed (FDD+TDD) replacement...")
+                updated_content = self._replace_5g_nrcell_details(
+                    updated_content, reference_5g_nrcell_details, existing_5g_nrcell_details
+                )
+            else:
+                logger.info("5G NRCELL detailed data not available for replacement")
+
             # Parse transmission data for potential future use
             try:
                 transmission_data = self.excel_parser.parse_transmission_excel(transmission_excel_path)
@@ -267,9 +310,12 @@ class ModernizationGenerator:
                 logger.info("Rollout mode: overriding TAC across all LNCEL objects (post-processing)")
                 updated_content = self._override_tac_all(updated_content, str(overrides.get('tac')).strip())
 
+            # Ensure IoT cells (LNCEL-211..214) always keep TAC=5000
+            updated_content = self._fix_iot_tac(updated_content)
+
             # Generate output filename
             output_base_name = target_name if (mode == 'rollout' and target_name) else station_name
-            suffix = 'rollout' if mode == 'rollout' else '5G_modernization'
+            suffix = 'rollout' if mode == 'rollout' else 'modernization'
             output_filename = f"{output_base_name}_{suffix}.xml"
             output_path = os.path.join(output_folder, output_filename)
             
@@ -285,7 +331,7 @@ class ModernizationGenerator:
             }
             
         except Exception as e:
-            logger.error(f"Error generating 5G modernization: {str(e)}")
+            logger.error(f"Error generating modernization: {str(e)}")
             raise
     
     def _update_element_with_station_data(self, element, station_name, station_data):
@@ -456,17 +502,38 @@ class ModernizationGenerator:
         logger.info(f"Total BTS ID replacements made: {total_replacements}")
         return xml_content
 
+    IOT_CELLS = {'LNCEL-211', 'LNCEL-212', 'LNCEL-213', 'LNCEL-214'}
+    IOT_TAC = '5000'
+
     def _override_tac_all(self, xml_content: str, new_tac: str) -> str:
-        """Force set <p name="tac"> to new_tac in all LNCEL managedObjects.
-        Works regardless of old value; uses structural regex within LNCEL blocks.
+        """Force set <p name="tac"> to new_tac in all LNCEL managedObjects,
+        except IoT cells (LNCEL-211..214) which keep TAC=5000.
         """
         import re
-        # Pattern finds LNCEL managedObject blocks and replaces tac value within
-        pattern = r'(<managedObject[^>]*class="[^"]*:LNCEL"[^>]*>.*?<p\s+name="tac"[^>]*>)\s*[^<]*\s*(</p>.*?</managedObject>)'
+        pattern = r'(<managedObject[^>]*class="[^"]*:LNCEL"[^>]*distName="[^"]*"[^>]*>.*?<p\s+name="tac"[^>]*>)\s*[^<]*\s*(</p>.*?</managedObject>)'
         def repl(match):
+            block = match.group(0)
+            for iot_id in self.IOT_CELLS:
+                if iot_id in block:
+                    logger.info(f"Preserving IoT TAC={self.IOT_TAC} for {iot_id}")
+                    return f"{match.group(1)}{self.IOT_TAC}{match.group(2)}"
             return f"{match.group(1)}{new_tac}{match.group(2)}"
         updated = re.sub(pattern, repl, xml_content, flags=re.DOTALL | re.IGNORECASE)
         return updated
+
+    def _fix_iot_tac(self, xml_content: str) -> str:
+        """Post-processing safety net: ensure IoT cells (LNCEL-211..214) always have TAC=5000."""
+        import re
+        total = 0
+        for iot_id in self.IOT_CELLS:
+            pattern = rf'(<managedObject[^>]*class="[^"]*:LNCEL"[^>]*distName="[^"]*{re.escape(iot_id)}[^"]*"[^>]*>.*?<p\s+name="tac"[^>]*>)\s*[^<]*\s*(</p>.*?</managedObject>)'
+            matches = re.findall(pattern, xml_content, re.DOTALL | re.IGNORECASE)
+            if matches:
+                xml_content = re.sub(pattern, lambda m: f"{m.group(1)}{self.IOT_TAC}{m.group(2)}", xml_content, flags=re.DOTALL | re.IGNORECASE)
+                total += len(matches)
+        if total:
+            logger.info(f"Fixed IoT TAC to {self.IOT_TAC} on {total} cells")
+        return xml_content
     
     def _replace_sctp_port_min(self, xml_content, old_port, new_port):
         """Replace sctpPortMin values in XML content"""
@@ -1327,3 +1394,117 @@ class ModernizationGenerator:
 
         debug_log.append(f"[NET] Total network param replacements: {total}")
         return ET.tostring(root, encoding='unicode')
+
+    def _replace_4g_tdd_cells(self, xml_content, reference_tdd_cells, existing_tdd_cells):
+        """Replace 4G TDD cell parameters (tac) in the template using existing station's TDD cell data"""
+        logger.info("Replacing 4G TDD cell parameters")
+        total = 0
+        import re
+
+        for ref_cell_id, ref_params in reference_tdd_cells.items():
+            if ref_cell_id in existing_tdd_cells:
+                exist_params = existing_tdd_cells[ref_cell_id]
+                old_tac = ref_params.get('tac')
+                new_tac = exist_params.get('tac')
+                if old_tac and new_tac and old_tac != new_tac:
+                    pattern = rf'(<managedObject[^>]*distName="[^"]*{re.escape(ref_cell_id)}[^"]*"[^>]*>.*?<p\s+name="tac"[^>]*>)\s*{re.escape(old_tac)}\s*(</p>.*?</managedObject>)'
+                    matches = re.findall(pattern, xml_content, re.DOTALL | re.IGNORECASE)
+                    if matches:
+                        xml_content = re.sub(pattern, lambda m: f"{m.group(1)}{new_tac}{m.group(2)}", xml_content, flags=re.DOTALL | re.IGNORECASE)
+                        total += len(matches)
+                        logger.info(f"TDD {ref_cell_id} tac {old_tac} -> {new_tac} ({len(matches)} replacements)")
+
+        logger.info(f"Total 4G TDD cell replacements: {total}")
+        return xml_content
+
+    def _replace_tdd_pci_from_fdd(self, xml_content, reference_4g_cells, existing_4g_cells):
+        """Copy phyCellId from existing FDD cells to TDD cells in the reference template.
+        TDD cells (5x, 6x) that don't exist in the existing station get PCI from same-sector FDD cells (1x, 2x, 3x).
+        Sector is determined by last digit: x1→sector1, x2→sector2, x3→sector3.
+        """
+        logger.info("Copying PCI from existing FDD cells to reference TDD cells")
+        total = 0
+        import re
+
+        existing_cell_ids = set(existing_4g_cells.keys())
+        fdd_by_sector = {}
+        for cell_id, params in existing_4g_cells.items():
+            m = re.search(r'LNCEL-(\d+)', cell_id)
+            if not m:
+                continue
+            num = m.group(1)
+            sector = num[-1]
+            pci = params.get('phyCellId')
+            if pci and int(num) < 50:
+                if sector not in fdd_by_sector:
+                    fdd_by_sector[sector] = pci
+
+        logger.info(f"FDD PCI by sector: {fdd_by_sector}")
+
+        for ref_cell_id, ref_params in reference_4g_cells.items():
+            if ref_cell_id in existing_cell_ids:
+                continue
+
+            m = re.search(r'LNCEL-(\d+)', ref_cell_id)
+            if not m:
+                continue
+            num = int(m.group(1))
+            if num < 50:
+                continue
+
+            sector = str(num)[-1]
+            new_pci = fdd_by_sector.get(sector)
+            old_pci = ref_params.get('phyCellId')
+
+            if not new_pci or not old_pci or old_pci == new_pci:
+                continue
+
+            pattern = rf'(<managedObject[^>]*class="[^"]*:LNCEL"[^>]*distName="[^"]*{re.escape(ref_cell_id)}[^"]*"[^>]*>.*?<p\s+name="phyCellId"[^>]*>)\s*{re.escape(old_pci)}\s*(</p>.*?</managedObject>)'
+            matches = re.findall(pattern, xml_content, re.DOTALL | re.IGNORECASE)
+            if matches:
+                xml_content = re.sub(
+                    pattern,
+                    lambda m: f"{m.group(1)}{new_pci}{m.group(2)}",
+                    xml_content,
+                    flags=re.DOTALL | re.IGNORECASE
+                )
+                total += len(matches)
+                logger.info(f"TDD {ref_cell_id} phyCellId {old_pci} -> {new_pci} (from FDD sector {sector})")
+
+        logger.info(f"Total TDD PCI replacements from FDD: {total}")
+        return xml_content
+
+    def _replace_5g_nrcell_details(self, xml_content, reference_details, existing_details):
+        """Replace 5G NRCELL physCellId for both FDD and TDD cells using detailed extraction data.
+        Maps reference NRCELLs to existing NRCELLs by their mapped LNCEL (sector mapping).
+        """
+        logger.info("Replacing 5G NRCELL detailed parameters (FDD+TDD)")
+        total = 0
+        import re
+
+        for ref_cell_id, ref_info in reference_details.items():
+            ref_phys = ref_info.get('physCellId')
+            ref_mapped = ref_info.get('mapped_lncel')
+            if not ref_phys or not ref_mapped:
+                continue
+
+            for exist_cell_id, exist_info in existing_details.items():
+                exist_mapped = exist_info.get('mapped_lncel')
+                exist_phys = exist_info.get('physCellId')
+                if not exist_phys or exist_mapped != ref_mapped:
+                    continue
+                if ref_info.get('duplex') != exist_info.get('duplex'):
+                    continue
+                if ref_phys == exist_phys:
+                    continue
+
+                pattern = rf'(<managedObject[^>]*class="[^"]*NRCELL[^"]*"[^>]*distName="[^"]*{re.escape(ref_cell_id)}[^"]*"[^>]*>.*?<p\s+name="physCellId"[^>]*>)\s*{re.escape(ref_phys)}\s*(</p>.*?</managedObject>)'
+                matches = re.findall(pattern, xml_content, re.DOTALL | re.IGNORECASE)
+                if matches:
+                    xml_content = re.sub(pattern, lambda m: f"{m.group(1)}{exist_phys}{m.group(2)}", xml_content, flags=re.DOTALL | re.IGNORECASE)
+                    total += len(matches)
+                    logger.info(f"{ref_cell_id} ({ref_info.get('duplex','?')}) physCellId {ref_phys} -> {exist_phys} (mapped via {ref_mapped})")
+                break
+
+        logger.info(f"Total 5G NRCELL detail replacements: {total}")
+        return xml_content
