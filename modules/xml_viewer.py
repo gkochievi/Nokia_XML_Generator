@@ -1,6 +1,7 @@
 import json
 from lxml import etree
 import logging
+from .xml_parser import XMLParser
 
 logger = logging.getLogger(__name__)
 
@@ -13,6 +14,10 @@ class XMLViewer:
         "474090A.101": "AHEGB"
     }
     
+    def __init__(self) -> None:
+        # Reuse the same robust parser helpers used by modernization logic
+        self._xml_parser = XMLParser()
+    
     def extract_configuration_data(self, tree):
         """Extract key configuration data from XML tree (namespace-აგნოსტიკურად)"""
         try:
@@ -24,6 +29,19 @@ class XMLViewer:
             info["neighborInfo"] = self._extract_neighbor_info(tree)
             # Only now pass info to cellRadioMapping
             info["cellRadioMapping"] = self._extract_cell_radio_mapping(tree, info)
+
+            # Advanced details reused from modernization backend for richer view
+            try:
+                info["advanced"] = {
+                    "lteTddCells": self._xml_parser.extract_4g_tdd_cells(tree),
+                    "nrCellDetails": self._xml_parser.extract_5g_nrcell_details(tree),
+                    "rmodInfo": self._xml_parser.extract_rmod_info(tree),
+                    "routing": self._xml_parser.extract_routing_parameters(tree),
+                    "networkParams": self._xml_parser.extract_network_parameters(tree),
+                }
+            except Exception as adv_err:
+                logger.warning(f"Advanced XML viewer extraction failed: {adv_err}")
+
             return info
         except Exception as e:
             logger.error(f"Error extracting configuration data: {str(e)}")

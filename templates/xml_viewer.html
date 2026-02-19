@@ -155,92 +155,59 @@
             box-shadow: 0 0 20px rgba(102, 126, 234, 0.3) !important;
         }
 
-        /* Info cards styling */
+        /* Info cards styling now comes from theme.css (.glass-card, .info-card overrides).
+           Here we only add layout helpers for the modern card-based view. */
         .info-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 4px 16px 0 rgba(31, 38, 135, 0.1);
-            transition: all 0.3s ease;
+            border-radius: 18px;
         }
 
-        .info-card:hover {
+        .ht-card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1rem;
+        }
+
+        .ht-cell-card,
+        .ht-map-card,
+        .ht-kv-card {
+            background: rgba(10, 15, 30, 0.9);
+            border-radius: 14px;
+            border: 1px solid rgba(139, 92, 246, 0.25);
+            padding: 0.85rem 1rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+        }
+
+        .ht-cell-card:hover,
+        .ht-map-card:hover,
+        .ht-kv-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px 0 rgba(31, 38, 135, 0.15);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+            border-color: rgba(139, 92, 246, 0.6);
         }
 
-        /* Table styling */
-        .table {
-            --bs-table-bg: rgba(255, 255, 255, 0.9);
-        }
-
-        .table thead th {
-            background: #667eea !important;
-            color: white;
-            border: none;
+        .ht-cell-title {
             font-weight: 600;
+            letter-spacing: 0.02em;
         }
 
-        .table tbody tr:hover {
-            background-color: rgba(102, 126, 234, 0.1);
+        .ht-chip {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 999px;
+            padding: 0.15rem 0.55rem;
+            font-size: 0.7rem;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            color: #e2e8f0;
+            background: rgba(15, 23, 42, 0.7);
+            margin: 0.1rem 0.1rem 0 0;
+            gap: 0.25rem;
         }
 
-        /* Filter controls */
-        .filter-controls {
-            background: rgba(248, 249, 255, 0.8);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(102, 126, 234, 0.15);
-            border-radius: 0.75rem;
-            padding: 1.25rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
-        }
-
-        /* Badge styling */
-        .badge {
-            font-size: 0.75rem;
-            font-weight: 500;
-        }
-
-        /* Tab styling */
-        .nav-tabs {
-            border-bottom: 2px solid rgba(102, 126, 234, 0.2);
-        }
-
-        .nav-tabs .nav-link {
-            border: none;
-            color: #667eea;
-            font-weight: 500;
-            padding: 0.75rem 1.25rem;
-            margin-right: 0.5rem;
-            border-radius: 0.5rem 0.5rem 0 0;
-            transition: all 0.3s ease;
-        }
-
-        .nav-tabs .nav-link:hover {
-            background-color: rgba(102, 126, 234, 0.1);
-            color: #667eea !important;
-        }
-
-        .nav-tabs .nav-link.active {
-            background: var(--primary-gradient);
-            color: white !important;
-            border: none;
-        }
-
-        /* Fix for nav-tabs hover conflicts */
-        .nav-tabs .nav-link:not(.active):hover {
-            background-color: rgba(102, 126, 234, 0.1) !important;
-            color: #667eea !important;
-            border: none !important;
-        }
-
-        /* Specific fix for XML viewer tabs */
-        #cellsTab .nav-link:not(.active):hover,
-        #cellRadioTab .nav-link:not(.active):hover {
-            background-color: rgba(102, 126, 234, 0.1) !important;
-            color: #667eea !important;
-            border: none !important;
+        .ht-chip-label {
+            text-transform: uppercase;
+            font-size: 0.65rem;
+            color: #94a3b8;
         }
 
         /* XML tree styling */
@@ -534,6 +501,13 @@
             }
         }
         // Render all info blocks
+        // Simple mapping helper for RMOD product codes (kept in sync with backend)
+        const XMLViewerModelMap = {
+            "474090A": "AHEGB",
+            "473995A": "AHEGA",
+            "474090A.101": "AHEGB"
+        };
+
         function renderInfoBlocks(config_data) {
             let infoHtml = '';
             if (!config_data) {
@@ -561,39 +535,263 @@
                 </div>
             </div>
             </div>`;
-            // 2. სექტორები და ქერიერები
-            infoHtml += `<div class="info-card mt-4 mb-4 p-4 rounded-4">
-            <h5 class="mb-3 fw-bold" style="color: #667eea;"><i class="bi bi-diagram-3-fill me-2"></i>სექტორები და ქერიერები</h5>
-            <b>ტექნოლოგიები:</b> ${(config_data.radioInfo?.technologies || []).join(', ')}<br>
-            <b>სექტორების რაოდენობა:</b> ${config_data.radioInfo?.sectorCount || '-'}<br>
-            ${(config_data.radioInfo?.sectorDetails && Object.keys(config_data.radioInfo.sectorDetails).length) ? renderSectorsTable(config_data.radioInfo.sectorDetails) : ''}
+            // Quick summary chips
+            const total2G = (config_data.radioInfo?.cells?.['2G'] || []).length;
+            const total3G = (config_data.radioInfo?.cells?.['3G'] || []).length;
+            const total4G = (config_data.radioInfo?.cells?.['4G'] || []).length;
+            const total5G = (config_data.radioInfo?.cells?.['5G'] || []).length;
+            const totalCells = total2G + total3G + total4G + total5G;
+            const totalVlans = (config_data.networkInfo?.vlan_ip_combined || []).length;
+            const totalModules = (config_data.hardwareInfo?.modules || []).length;
+            const nb = config_data.neighborInfo || {};
+
+            infoHtml += `<div class="info-card mt-3 mb-4 p-3 rounded-4">
+                <div class="d-flex flex-wrap gap-2">
+                    <span class="badge bg-secondary px-3 py-2">Cells: <strong>${totalCells}</strong></span>
+                    <span class="badge bg-secondary px-3 py-2">2G: <strong>${total2G}</strong></span>
+                    <span class="badge bg-secondary px-3 py-2">3G: <strong>${total3G}</strong></span>
+                    <span class="badge bg-secondary px-3 py-2">4G: <strong>${total4G}</strong></span>
+                    <span class="badge bg-secondary px-3 py-2">5G: <strong>${total5G}</strong></span>
+                    <span class="badge bg-secondary px-3 py-2">VLAN/IP: <strong>${totalVlans}</strong></span>
+                    <span class="badge bg-secondary px-3 py-2">RMOD: <strong>${totalModules}</strong></span>
+                    <span class="badge bg-secondary px-3 py-2">Neighbors LTE/NR/X2: <strong>${nb.lteNeighborCount || 0}/${nb.nrNeighborCount || 0}/${nb.x2LinkCount || 0}</strong></span>
+                </div>
             </div>`;
-            // 3. Cells (უჯრედები)
+
+            // 2. რადიო ქსელის შეჯამება (technologies + sectors) საკუთარ ბეჯებად
+            infoHtml += `<div class="info-card mt-4 mb-4 p-4 rounded-4">
+            <h5 class="mb-3 fw-bold" style="color: #667eea;"><i class="bi bi-diagram-3-fill me-2"></i>რადიო ქსელის შეჯამება</h5>
+            <div class="d-flex flex-wrap gap-2 mb-2">
+                ${(config_data.radioInfo?.technologies || []).map(t => `
+                    <span class="ht-chip"><span class="ht-chip-label">TECH</span> ${t}</span>
+                `).join('')}
+                <span class="ht-chip"><span class="ht-chip-label">SECTORS</span> ${config_data.radioInfo?.sectorCount || '-'}</span>
+            </div>
+            ${(config_data.radioInfo?.sectorDetails && Object.keys(config_data.radioInfo.sectorDetails).length) ? renderSectorsBadges(config_data.radioInfo.sectorDetails) : ''}
+            </div>`;
+
+            // 3. Cells (უჯრედები) – modern card-based view
             infoHtml += renderCellsSection(config_data.radioInfo?.cells || {});
-            // 3.1. Cell-Radio Mapping
+
+            // 4. Cell-Radio Mapping – modern card-based view
             infoHtml += renderCellRadioMappingSection(config_data.cellRadioMapping || []);
-            // 4. ქსელის ინფორმაცია
-            infoHtml += `<div class="info-card mt-4 mb-4 p-4 rounded-4">
-            <h5 class="mb-3 fw-bold" style="color: #667eea;"><i class="bi bi-diagram-2 me-2"></i>ქსელის ინფორმაცია (VLAN + IP)</h5>
-            <div class="table-responsive">
-            <table class="table table-bordered table-sm align-middle text-center mt-2">
-                <thead class="table-light">
-                    <tr>
-                        <th>Label</th><th>VLAN ID</th><th>IP</th><th>Prefix</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${(config_data.networkInfo?.vlan_ip_combined || []).map(row => `
-                        <tr>
-                            <td>${row.label ? `<span class='badge bg-primary'>${row.label}</span>` : '-'}</td>
-                            <td>${row.vlanId || '-'}</td>
-                            <td>${row.ip || '-'}</td>
-                            <td>${row.prefix || '-'}</td>
-                        </tr>`).join('')}
-                </tbody>
-            </table></div>
-            </div>`;
-            // 5. მეზობლები და კაბინეტები
+
+            // 5. Advanced radio details (LTE TDD, 5G NR, RMOD)
+            if (config_data.advanced) {
+                const lteTdd = config_data.advanced.lteTddCells || [];
+                const nrDetails = config_data.advanced.nrCellDetails || [];
+                const rmods = config_data.advanced.rmodInfo || [];
+                const routing = config_data.advanced.routing || {};
+                const netParams = config_data.advanced.networkParams || {};
+
+                if (lteTdd.length) {
+                    infoHtml += `<div class="info-card mt-4 mb-4 p-4 rounded-4">
+                        <h5 class="mb-3 fw-bold" style="color: #667eea;">
+                            <i class="bi bi-broadcast-pin me-2"></i>LTE TDD სელების დეტალები
+                        </h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm align-middle text-center mt-2">
+                                <thead>
+                                    <tr>
+                                        <th>Cell Name</th>
+                                        <th>Local Cell ID</th>
+                                        <th>Sector</th>
+                                        <th>TAC</th>
+                                        <th>EARFCN_DL</th>
+                                        <th>Bandwidth</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${lteTdd.map(c => `
+                                        <tr>
+                                            <td>${c.cellName || '-'}</td>
+                                            <td>${c.lcrId || '-'}</td>
+                                            <td>${c.sector || '-'}</td>
+                                            <td>${c.tac || '-'}</td>
+                                            <td>${c.earfcnDl || '-'}</td>
+                                            <td>${c.dlChannelBandwidth || '-'}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>`;
+                }
+
+                if (nrDetails.length) {
+                    infoHtml += `<div class="info-card mt-4 mb-4 p-4 rounded-4">
+                        <h5 class="mb-3 fw-bold" style="color: #667eea;">
+                            <i class="bi bi-5-circle me-2"></i>5G NR სელების დეტალები
+                        </h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm align-middle text-center mt-2">
+                                <thead>
+                                    <tr>
+                                        <th>Cell Name</th>
+                                        <th>Cell ID</th>
+                                        <th>Sector</th>
+                                        <th>Tech</th>
+                                        <th>Duplex</th>
+                                        <th>NRARFCN DL</th>
+                                        <th>NRARFCN UL</th>
+                                        <th>BW DL</th>
+                                        <th>BW UL</th>
+                                        <th>TAC</th>
+                                        <th>PCI</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${nrDetails.map(c => `
+                                        <tr>
+                                            <td>${c.cellName || '-'}</td>
+                                            <td>${c.cellId || '-'}</td>
+                                            <td>${c.sector || '-'}</td>
+                                            <td>${c.cellTechnology || '-'}</td>
+                                            <td>${c.duplex || '-'}</td>
+                                            <td>${c.nrarfcnDl || '-'}</td>
+                                            <td>${c.nrarfcnUl || '-'}</td>
+                                            <td>${c.chBwDl || '-'}</td>
+                                            <td>${c.chBwUl || '-'}</td>
+                                            <td>${c.tac || '-'}</td>
+                                            <td>${c.physCellId || '-'}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>`;
+                }
+
+                if (rmods.length) {
+                    infoHtml += `<div class="info-card mt-4 mb-4 p-4 rounded-4">
+                        <h5 class="mb-3 fw-bold" style="color: #667eea;">
+                            <i class="bi bi-hdd-rack me-2"></i>Radio Modules (RMOD)
+                        </h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm align-middle text-center mt-2">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Product Code</th>
+                                        <th>Model</th>
+                                        <th>State</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${rmods.map(m => {
+                                        const code = (m.prodCodePlanned || m.productCode || '').trim();
+                                        const model = (code && (XMLViewerModelMap[code] || XMLViewerModelMap[code.split('.')[0]])) || '-';
+                                        return `
+                                            <tr>
+                                                <td>${m.userLabel || m.id || '-'}</td>
+                                                <td>${code || '-'}</td>
+                                                <td>${model}</td>
+                                                <td>${m.state || '-'}</td>
+                                            </tr>`;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>`;
+                }
+
+                // IPv4 routing table (IPRT)
+                const routingRows = [];
+                Object.entries(routing).forEach(([iprtType, prefixes]) => {
+                    Object.entries(prefixes || {}).forEach(([key, row]) => {
+                        routingRows.push({
+                            type: iprtType,
+                            destIp: row.destIpAddr || '',
+                            prefixLen: row.destIpPrefixLength || '',
+                            gateway: row.gateway || ''
+                        });
+                    });
+                });
+                if (routingRows.length) {
+                    infoHtml += `<div class="info-card mt-4 mb-4 p-4 rounded-4">
+                        <h5 class="mb-3 fw-bold" style="color: #667eea;">
+                            <i class="bi bi-diagram-3 me-2"></i>IPv4 Routing (IPRT)
+                        </h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm align-middle text-center mt-2">
+                                <thead>
+                                    <tr>
+                                        <th>Type</th>
+                                        <th>Destination</th>
+                                        <th>Prefix</th>
+                                        <th>Gateway</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${routingRows.map(r => `
+                                        <tr>
+                                            <td>${r.type}</td>
+                                            <td>${r.destIp}</td>
+                                            <td>${r.prefixLen}</td>
+                                            <td>${r.gateway}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>`;
+                }
+
+                // Core network parameters (NRX2LINK_TRUST / LNADJGNB)
+                const coreRows = [];
+                if (netParams.NRX2LINK_TRUST_ipV4Addr) {
+                    coreRows.push({
+                        name: 'NRX2LINK_TRUST ipV4Addr',
+                        value: netParams.NRX2LINK_TRUST_ipV4Addr.value || '-'
+                    });
+                }
+                if (netParams.LNADJGNB_cPlaneIpAddr) {
+                    coreRows.push({
+                        name: 'LNADJGNB cPlaneIpAddr',
+                        value: netParams.LNADJGNB_cPlaneIpAddr.value || '-'
+                    });
+                }
+                if (coreRows.length) {
+                    infoHtml += `<div class="info-card mt-4 mb-4 p-4 rounded-4">
+                        <h5 class="mb-3 fw-bold" style="color: #667eea;">
+                            <i class="bi bi-cloud-network me-2"></i>Core Network Parameters
+                        </h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm align-middle text-start mt-2">
+                                <tbody>
+                                    ${coreRows.map(r => `
+                                        <tr>
+                                            <td style="width: 40%;"><b>${r.name}</b></td>
+                                            <td>${r.value}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>`;
+                }
+            }
+
+            // 6. ქსელის ინფორმაცია – modern cards instead of table
+            const vlanRows = config_data.networkInfo?.vlan_ip_combined || [];
+            if (vlanRows.length) {
+                infoHtml += `<div class="info-card mt-4 mb-4 p-4 rounded-4">
+                <h5 class="mb-3 fw-bold" style="color: #667eea;"><i class="bi bi-diagram-2 me-2"></i>ქსელის ინფორმაცია (VLAN + IP)</h5>
+                <div class="ht-card-grid">
+                    ${vlanRows.map(row => `
+                        <div class="ht-kv-card">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="ht-cell-title">${row.label || 'Interface'}</span>
+                                ${row.vlanId ? `<span class="ht-chip"><span class="ht-chip-label">VLAN</span> ${row.vlanId}</span>` : ''}
+                            </div>
+                            <div class="small text-muted">${row.ip || '-'} / ${row.prefix || '-'}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                </div>`;
+            }
+
+            // 7. მეზობლები და კაბინეტები
             infoHtml += `<div class="info-card mt-4 mb-4 p-4 rounded-4">
             <h5 class="mb-3 fw-bold" style="color: #667eea;"><i class="bi bi-diagram-2-fill me-2"></i>მეზობლები და კაბინეტები</h5>
             <b>კაბინეტების რაოდენობა:</b> ${config_data.hardwareInfo?.cabinetCount || '-'}<br>
@@ -602,26 +800,18 @@
             document.getElementById('info-blocks').innerHTML = infoHtml;
             bindCollapsibles();
         }
-        function renderSectorsTable(sectorDetails) {
-            // Collect all unique sectors
-            let all_sectors = [];
-            Object.values(sectorDetails).forEach(sectors => {
-                Object.keys(sectors).forEach(sector => {
-                    if (!all_sectors.includes(sector)) all_sectors.push(sector);
-                });
-            });
-            all_sectors = all_sectors.sort();
-            let html = `<b>სექტორები და ქერიერები:</b><div class="table-responsive"><table class="table table-bordered table-sm align-middle text-center mt-2"><thead class="table-light"><tr><th>ტექნოლოგია</th>`;
-            all_sectors.forEach(sector => { html += `<th>სექტორი ${sector}</th>`; });
-            html += `</tr></thead><tbody>`;
+        function renderSectorsBadges(sectorDetails) {
+            // Render per-technology sector/carrier counts as compact chips instead of table
+            let html = `<div class="d-flex flex-wrap gap-2 mt-2">`;
             Object.entries(sectorDetails).forEach(([tech, sectors]) => {
-                html += `<tr><td><b>${tech}</b></td>`;
-                all_sectors.forEach(sector => {
-                    html += `<td>${sectors[sector] !== undefined ? sectors[sector] : '-'}</td>`;
+                Object.entries(sectors).forEach(([sector, carriers]) => {
+                    html += `<span class="ht-chip">
+                        <span class="ht-chip-label">${tech}</span>
+                        S${sector} · C${carriers}
+                    </span>`;
                 });
-                html += `</tr>`;
             });
-            html += `</tbody></table></div>`;
+            html += `</div>`;
             return html;
         }
         function renderCellsSection(cells) {
@@ -696,16 +886,16 @@
                 </li>`;
             });
             html += `</ul><div class="tab-content" id="cellsTabContent">`;
-            // All tab: show all tables as before
+            // All tab: show all techs together as cards
             html += `<div class="tab-pane fade show active" id="cells-all" role="tabpanel">`;
             techs.forEach(t => {
-                html += renderSingleCellsTable(t.key, cells);
+                html += renderSingleCellsCards(t.key, cells);
             });
             html += `</div>`;
             // Per-tech tabs
             techs.forEach(t => {
                 html += `<div class="tab-pane fade" id="cells-${t.key}" role="tabpanel">`;
-                html += renderSingleCellsTable(t.key, cells);
+                html += renderSingleCellsCards(t.key, cells);
                 html += `</div>`;
             });
             html += `</div></div></div>`;
@@ -807,7 +997,7 @@
             const pciFilter = document.getElementById('cells-pci-filter').value;
             const tacFilter = document.getElementById('cells-tac-filter').value;
             const rootSeqFilter = document.getElementById('cells-rootseq-filter').value;
-            const rows = document.querySelectorAll('#cellsTabContent tbody tr');
+            const rows = document.querySelectorAll('#cellsTabContent .ht-cell-card');
             let visibleCount = 0;
             rows.forEach(row => {
                 const cellName = row.getAttribute('data-cellname') || '';
@@ -843,19 +1033,36 @@
         }
         // Update cells count
         function updateCellsCount() {
-            const visibleRows = document.querySelectorAll('#cellsTabContent tbody tr:not([style*="display: none"])');
-            document.getElementById('cells-count').textContent = `ნაჩვენები: ${visibleRows.length}`;
+            const visibleCards = document.querySelectorAll('#cellsTabContent .ht-cell-card:not([style*="display: none"])');
+            document.getElementById('cells-count').textContent = `ნაჩვენები: ${visibleCards.length}`;
         }
-        // Helper: render a single technology's cells table
-        function renderSingleCellsTable(tech, cells) {
+        // Helper: render a single technology's cells as modern cards (no tables)
+        function renderSingleCellsCards(tech, cells) {
             if (tech === '2G') {
                 if (cells['2G'] && cells['2G'].length > 0) {
-                    let html = `<div class="table-responsive mt-2"><table class="table table-bordered table-sm align-middle text-center"><thead class="table-light"><tr><th>Cell Name</th><th>Cell ID</th><th>სექტორი</th><th>ქერიერი</th><th>BCCH</th><th>NCC</th><th>BCC</th><th>LAC</th><th>CI</th></tr></thead><tbody>`;
+                    let html = `<div class="ht-card-grid mt-2">`;
                     cells['2G'].forEach(cell => {
-                        html += `<tr data-cellname="${cell.cellName || ''}" data-cellid="${cell.cellId || ''}" data-sector="${cell.sector || ''}" data-carrier="${cell.carrier || ''}" data-pci="" data-tac="" data-rootseq="">
-                            <td>${cell.cellName || '-'}</td><td>${cell.cellId || '-'}</td><td>${cell.sector || '-'}</td><td>${cell.carrier || '-'}</td><td>${cell.bcch || '-'}</td><td>${cell.ncc || '-'}</td><td>${cell.bcc || '-'}</td><td>${cell.lac || '-'}</td><td>${cell.ci || '-'}</td></tr>`;
+                        html += `<div class="ht-cell-card"
+                            data-cellname="${cell.cellName || ''}"
+                            data-cellid="${cell.cellId || ''}"
+                            data-sector="${cell.sector || ''}"
+                            data-carrier="${cell.carrier || ''}"
+                            data-pci=""
+                            data-tac=""
+                            data-rootseq="">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="ht-cell-title">${cell.cellName || '-'}</span>
+                                <span class="ht-chip"><span class="ht-chip-label">2G</span> ID ${cell.cellId || '-'}</span>
+                            </div>
+                            <div class="small text-muted mb-1">Sector ${cell.sector || '-'} · Carrier ${cell.carrier || '-'}</div>
+                            <div class="d-flex flex-wrap gap-1">
+                                <span class="ht-chip"><span class="ht-chip-label">BCCH</span> ${cell.bcch || '-'}</span>
+                                <span class="ht-chip"><span class="ht-chip-label">NCC/BCC</span> ${cell.ncc || '-'} / ${cell.bcc || '-'}</span>
+                                <span class="ht-chip"><span class="ht-chip-label">LAC/CI</span> ${cell.lac || '-'} / ${cell.ci || '-'}</span>
+                            </div>
+                        </div>`;
                     });
-                    html += `</tbody></table></div>`;
+                    html += `</div>`;
                     return html;
                 } else {
                     return `<div class="text-muted">No 2G cells found.</div>`;
@@ -863,12 +1070,27 @@
             }
             if (tech === '3G') {
                 if (cells['3G'] && cells['3G'].length > 0) {
-                    let html = `<div class="table-responsive mt-2"><table class="table table-bordered table-sm align-middle text-center"><thead class="table-light"><tr><th>Cell ID</th><th>სექტორი</th><th>ქერიერი</th><th>DL UARFCN</th><th>Cell Power</th></tr></thead><tbody>`;
+                    let html = `<div class="ht-card-grid mt-2">`;
                     cells['3G'].forEach(cell => {
-                        html += `<tr data-cellname="" data-cellid="${cell.cellId || ''}" data-sector="${cell.sector || ''}" data-carrier="${cell.carrier || ''}" data-pci="" data-tac="" data-rootseq="">
-                            <td>${cell.cellId || '-'}</td><td>${cell.sector || '-'}</td><td>${cell.carrier || '-'}</td><td>${cell.uarfcnDl || '-'}</td><td>${cell.maxTxPower || '-'}</td></tr>`;
+                        html += `<div class="ht-cell-card"
+                            data-cellname=""
+                            data-cellid="${cell.cellId || ''}"
+                            data-sector="${cell.sector || ''}"
+                            data-carrier="${cell.carrier || ''}"
+                            data-pci=""
+                            data-tac=""
+                            data-rootseq="">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="ht-cell-title">3G Cell ${cell.cellId || '-'}</span>
+                                <span class="ht-chip"><span class="ht-chip-label">3G</span> Sec ${cell.sector || '-'} · Car ${cell.carrier || '-'}</span>
+                            </div>
+                            <div class="d-flex flex-wrap gap-1">
+                                <span class="ht-chip"><span class="ht-chip-label">UARFCN DL</span> ${cell.uarfcnDl || '-'}</span>
+                                <span class="ht-chip"><span class="ht-chip-label">Power</span> ${cell.maxTxPower || '-'}</span>
+                            </div>
+                        </div>`;
                     });
-                    html += `</tbody></table></div>`;
+                    html += `</div>`;
                     return html;
                 } else {
                     return `<div class="text-muted">No 3G cells found.</div>`;
@@ -876,12 +1098,34 @@
             }
             if (tech === '4G') {
                 if (cells['4G'] && cells['4G'].length > 0) {
-                    let html = `<div class="table-responsive mt-2"><table class="table table-bordered table-sm align-middle text-center"><thead class="table-light"><tr><th>Cell Name</th><th>Cell ID</th><th>სექტორი</th><th>ქერიერი</th><th>Local Cell Resource ID</th><th>Physical layer Cell ID</th><th>Tracking area code</th><th>RACH root sequence</th><th>EARFCN_DL</th><th>EARFCN_UL</th><th>MIMO Mode</th><th>Bandwidth</th></tr></thead><tbody>`;
+                    let html = `<div class="ht-card-grid mt-2">`;
                     cells['4G'].forEach(cell => {
-                        html += `<tr data-cellname="${cell.cellName || ''}" data-cellid="${cell.cellId || ''}" data-sector="${cell.sector || ''}" data-carrier="${cell.carrier || ''}" data-pci="${cell.phyCellId || ''}" data-tac="${cell.trackingAreaCode || ''}" data-rootseq="${cell.rachRootSequence || ''}">
-                            <td>${cell.cellName || '-'}</td><td>${cell.cellId || '-'}</td><td>${cell.sector || '-'}</td><td>${cell.carrier || '-'}</td><td>${cell.localCellId || '-'}</td><td>${cell.phyCellId || '-'}</td><td>${cell.trackingAreaCode || '-'}</td><td>${cell.rachRootSequence || '-'}</td><td>${cell.earfcnDL || '-'}</td><td>${cell.earfcnUL || '-'}</td><td>${cell.mimoMode || '-'}</td><td>${cell.bandwidth || '-'}</td></tr>`;
+                        html += `<div class="ht-cell-card"
+                            data-cellname="${cell.cellName || ''}"
+                            data-cellid="${cell.cellId || ''}"
+                            data-sector="${cell.sector || ''}"
+                            data-carrier="${cell.carrier || ''}"
+                            data-pci="${cell.phyCellId || ''}"
+                            data-tac="${cell.trackingAreaCode || ''}"
+                            data-rootseq="${cell.rachRootSequence || ''}">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="ht-cell-title">${cell.cellName || '-'}</span>
+                                <span class="ht-chip"><span class="ht-chip-label">4G</span> ID ${cell.cellId || '-'}</span>
+                            </div>
+                            <div class="small text-muted mb-1">Sector ${cell.sector || '-'} · Carrier ${cell.carrier || '-'}</div>
+                            <div class="d-flex flex-wrap gap-1 mb-1">
+                                <span class="ht-chip"><span class="ht-chip-label">PCI</span> ${cell.phyCellId || '-'}</span>
+                                <span class="ht-chip"><span class="ht-chip-label">TAC</span> ${cell.trackingAreaCode || '-'}</span>
+                                <span class="ht-chip"><span class="ht-chip-label">RootSeq</span> ${cell.rachRootSequence || '-'}</span>
+                            </div>
+                            <div class="d-flex flex-wrap gap-1">
+                                <span class="ht-chip"><span class="ht-chip-label">EARFCN DL/UL</span> ${cell.earfcnDL || '-'}/${cell.earfcnUL || '-'}</span>
+                                <span class="ht-chip"><span class="ht-chip-label">MIMO</span> ${cell.mimoMode || '-'}</span>
+                                <span class="ht-chip"><span class="ht-chip-label">BW</span> ${cell.bandwidth || '-'}</span>
+                            </div>
+                        </div>`;
                     });
-                    html += `</tbody></table></div>`;
+                    html += `</div>`;
                     return html;
                 } else {
                     return `<div class="text-muted">No 4G cells found.</div>`;
@@ -889,7 +1133,7 @@
             }
             if (tech === '5G') {
                 if (cells['5G'] && cells['5G'].length > 0) {
-                    let html = `<div class="table-responsive mt-2"><table class="table table-bordered table-sm align-middle text-center"><thead class="table-light"><tr><th>Cell Name</th><th>Cell ID</th><th>სექტორი</th><th>ქერიერი</th><th>Local Cell Resource ID</th><th>Physical layer Cell ID</th><th>Cell Technology</th><th>Cell Working Type</th><th>Frequency Band</th><th>NRARFCN</th><th>Bandwidth</th><th>Cell Power</th></tr></thead><tbody>`;
+                    let html = `<div class="ht-card-grid mt-2">`;
                     cells['5G'].forEach(cell => {
                         // Handle FDD vs TDD display
                         let nrarfcn = '-';
@@ -903,10 +1147,32 @@
                             nrarfcn = `${cell.nrarfcnDL || '-'}/${cell.nrarfcnUL || '-'}`;
                             bandwidth = `${cell.bandwidthDL || '-'}/${cell.bandwidthUL || '-'}`;
                         }
-                        html += `<tr data-cellname="${cell.cellName || ''}" data-cellid="${cell.cellId || ''}" data-sector="${cell.sector || ''}" data-carrier="${cell.carrier || ''}" data-pci="${cell.phyCellId || ''}" data-tac="${cell.trackingAreaCode || ''}" data-rootseq="${cell.rachRootSequence || ''}">
-                            <td>${cell.cellName || '-'}</td><td>${cell.cellId || '-'}</td><td>${cell.sector || '-'}</td><td>${cell.carrier || '-'}</td><td>${cell.localCellId || '-'}</td><td>${cell.phyCellId || '-'}</td><td>${cell.cellTechnology || '-'}</td><td>${cell.cellWorkingType || '-'}</td><td>${cell.frequencyBand || '-'}</td><td>${nrarfcn}</td><td>${bandwidth}</td><td>${cell.cellPower || '-'}</td></tr>`;
+                        html += `<div class="ht-cell-card"
+                            data-cellname="${cell.cellName || ''}"
+                            data-cellid="${cell.cellId || ''}"
+                            data-sector="${cell.sector || ''}"
+                            data-carrier="${cell.carrier || ''}"
+                            data-pci="${cell.phyCellId || ''}"
+                            data-tac="${cell.trackingAreaCode || ''}"
+                            data-rootseq="${cell.rachRootSequence || ''}">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="ht-cell-title">${cell.cellName || '-'}</span>
+                                <span class="ht-chip"><span class="ht-chip-label">5G ${cell.cellTechnology || ''}</span> ID ${cell.cellId || '-'}</span>
+                            </div>
+                            <div class="small text-muted mb-1">Sector ${cell.sector || '-'} · Carrier ${cell.carrier || '-'}</div>
+                            <div class="d-flex flex-wrap gap-1 mb-1">
+                                <span class="ht-chip"><span class="ht-chip-label">PCI</span> ${cell.phyCellId || '-'}</span>
+                                <span class="ht-chip"><span class="ht-chip-label">TAC</span> ${cell.trackingAreaCode || '-'}</span>
+                                <span class="ht-chip"><span class="ht-chip-label">Band</span> ${cell.frequencyBand || '-'}</span>
+                            </div>
+                            <div class="d-flex flex-wrap gap-1">
+                                <span class="ht-chip"><span class="ht-chip-label">NRARFCN</span> ${nrarfcn}</span>
+                                <span class="ht-chip"><span class="ht-chip-label">BW</span> ${bandwidth}</span>
+                                <span class="ht-chip"><span class="ht-chip-label">Power</span> ${cell.cellPower || '-'}</span>
+                            </div>
+                        </div>`;
                     });
-                    html += `</tbody></table></div>`;
+                    html += `</div>`;
                     return html;
                 } else {
                     return `<div class="text-muted">No 5G cells found.</div>`;
@@ -989,12 +1255,12 @@
             html += `</ul><div class="tab-content" id="cellRadioTabContent">`;
             // ALL tab
             html += `<div class="tab-pane fade show active" id="cell-radio-ALL" role="tabpanel">`;
-            html += renderCellRadioMappingTable(mapping);
+            html += renderCellRadioMappingCards(mapping);
             html += `</div>`;
             // Per-tech tabs
             techs.forEach(t => {
                 html += `<div class="tab-pane fade" id="cell-radio-${t.key}" role="tabpanel">`;
-                html += renderCellRadioMappingTable(mapping.filter(row => row.tech === t.key));
+                html += renderCellRadioMappingCards(mapping.filter(row => row.tech === t.key));
                 html += `</div>`;
             });
             html += `</div></div>`;
@@ -1101,7 +1367,7 @@
             const portFilter = document.getElementById('radio-port-filter').value;
             const modeFilter = document.getElementById('radio-mode-filter').value;
             const modelFilter = document.getElementById('radio-model-filter').value;
-            const rows = document.querySelectorAll('#cellRadioTabContent tbody tr');
+            const rows = document.querySelectorAll('#cellRadioTabContent .ht-map-card');
             let visibleCount = 0;
             rows.forEach(row => {
                 const cellId = row.getAttribute('data-cellid');
@@ -1137,33 +1403,36 @@
         }
         // Update radio mapping count
         function updateRadioCount() {
-            const visibleRows = document.querySelectorAll('#cellRadioTabContent tbody tr:not([style*="display: none"])');
-            document.getElementById('radio-count').textContent = `ნაჩვენები: ${visibleRows.length}`;
+            const visibleCards = document.querySelectorAll('#cellRadioTabContent .ht-map-card:not([style*="display: none"])');
+            document.getElementById('radio-count').textContent = `ნაჩვენები: ${visibleCards.length}`;
         }
-        function renderCellRadioMappingTable(rows) {
+        function renderCellRadioMappingCards(rows) {
             if (!rows || rows.length === 0) {
                 return `<div class="text-muted">No data found.</div>`;
             }
-            let html = `<div class="table-responsive"><table class="table table-bordered table-sm align-middle text-center mt-2">
-                <thead class="table-light">
-                    <tr>
-                        <th>Cell</th><th>Tech</th><th>Carrier</th><th>Sector</th><th>Radio module</th><th>Port</th><th>Mode</th><th>Model</th>
-                    </tr>
-                </thead>
-                <tbody>`;
+            let html = `<div class="ht-card-grid mt-2">`;
             rows.forEach(row => {
-                html += `<tr data-cellid="${row.cell || ''}" data-carrier="${row.carrier || ''}" data-sector="${row.sector || ''}" data-module="${row.radio_module || ''}" data-port="${row.port || ''}" data-mode="${row.mode || ''}" data-model="${row.model || ''}">
-                    <td>${row.cell || '-'}</td>
-                    <td>${row.tech || '-'}</td>
-                    <td>${row.carrier || '-'}</td>
-                    <td>${row.sector || '-'}</td>
-                    <td>${row.radio_module || '-'}</td>
-                    <td>${row.port || '-'}</td>
-                    <td>${row.mode || '-'}</td>
-                    <td>${row.model || '-'}</td>
-                </tr>`;
+                html += `<div class="ht-map-card"
+                    data-cellid="${row.cell || ''}"
+                    data-carrier="${row.carrier || ''}"
+                    data-sector="${row.sector || ''}"
+                    data-module="${row.radio_module || ''}"
+                    data-port="${row.port || ''}"
+                    data-mode="${row.mode || ''}"
+                    data-model="${row.model || ''}">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="ht-cell-title">${row.cell || '-'}</span>
+                        <span class="ht-chip"><span class="ht-chip-label">${row.tech || '-'}</span> S${row.sector || '-'} · C${row.carrier || '-'}</span>
+                    </div>
+                    <div class="d-flex flex-wrap gap-1">
+                        <span class="ht-chip"><span class="ht-chip-label">RMOD</span> ${row.radio_module || '-'}</span>
+                        <span class="ht-chip"><span class="ht-chip-label">Port</span> ${row.port || '-'}</span>
+                        <span class="ht-chip"><span class="ht-chip-label">Mode</span> ${row.mode || '-'}</span>
+                        <span class="ht-chip"><span class="ht-chip-label">Model</span> ${row.model || '-'}</span>
+                    </div>
+                </div>`;
             });
-            html += `</tbody></table></div>`;
+            html += `</div>`;
             return html;
         }
         </script>

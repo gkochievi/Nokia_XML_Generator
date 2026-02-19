@@ -565,15 +565,27 @@ strong { color: var(--text-primary); }
 }
 
 /* ===== TABLES ===== */
-.table { --bs-table-bg: transparent; color: var(--text-secondary) !important; }
+.table {
+    --bs-table-bg: transparent;
+    color: var(--text-secondary) !important;
+}
 .table thead th {
     background: rgba(139, 92, 246, 0.1) !important;
     color: var(--purple-light) !important;
     border: none !important;
     font-weight: 600;
 }
-.table tbody tr { border-color: rgba(139, 92, 246, 0.06) !important; }
-.table tbody tr:hover { background: rgba(139, 92, 246, 0.04) !important; }
+.table tbody tr {
+    border-color: rgba(139, 92, 246, 0.06) !important;
+}
+.table tbody tr:hover {
+    background: rgba(139, 92, 246, 0.04) !important;
+}
+/* Ensure table text is always readable on dark background */
+.table th,
+.table td {
+    color: var(--text-primary) !important;
+}
 
 /* ===== XML VIEWER ===== */
 .info-card {
