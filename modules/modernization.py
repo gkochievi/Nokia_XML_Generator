@@ -391,16 +391,16 @@ class ModernizationGenerator:
                 config_data.append(ipno_elem) 
     
     def _replace_station_names(self, xml_content, old_name, new_name):
-        """Replace station names while matching reference formatting:
-        - If reference uses underscores, output target with underscores and TitleCase tokens.
-        - If reference uses dashes, output target with dashes and TitleCase tokens.
-        - Preserve all-uppercase for the first token if the reference's first token is all uppercase (e.g., TBLS).
-        - Perform replacements for underscore variant, dash variant, and the original string.
+        """Replace station names while matching reference formatting.
+
+        Handles full btsName (e.g. TBLS-Switch-5G) AND the base name without
+        technology suffix (e.g. TBLS-Switch) so that cell names like
+        L-TBLS-Switch-11 or T_TBLS_Switch_51 are also updated.
         """
+        import re as _re
         logger.info(f"Replacing '{old_name}' with '{new_name}' in template (format-aware)")
 
         def split_tokens(text: str):
-            import re as _re
             return [t for t in _re.split(r'[-_]', str(text)) if t != '']
 
         def style_like(reference: str, target_tokens: list[str]) -> str:
@@ -417,49 +417,67 @@ class ModernizationGenerator:
                     else:
                         styled_tokens.append(tok)
             if sep is None:
-                # Fallback: keep original separators from new_name by guessing underscores
                 sep = '_' if '_' in new_name else '-'
             return sep.join(styled_tokens)
 
-        # Prepare tokens from the provided target name
+        def strip_tech_suffix(name: str) -> str | None:
+            """Strip trailing technology token (2G/3G/4G/5G) to get the base station name."""
+            m = _re.match(r'^(.+?)[-_](?:2G|3G|4G|5G|NR|LTE|GSM|WCDMA)$', name, _re.IGNORECASE)
+            return m.group(1) if m else None
+
+        def do_replace(content: str, old: str, new: str) -> tuple[str, int]:
+            before = content.count(old)
+            if before == 0:
+                return content, 0
+            content = content.replace(old, new)
+            rep = before - content.count(old)
+            logger.info(f"Replaced {rep} '{old}' -> '{new}'")
+            return content, rep
+
         target_tokens = split_tokens(new_name)
-
-        # Build reference variants
-        old_underscore = old_name.replace('-', '_')
-        old_dash = old_name.replace('_', '-')
-
-        # Build styled new names matching each reference format
-        new_underscore = style_like(old_underscore, target_tokens)
-        new_dash = style_like(old_dash, target_tokens)
+        target_base_tokens = split_tokens(strip_tech_suffix(new_name) or new_name)
 
         total_replacements = 0
 
-        # Replace underscore variant
-        if old_underscore != old_name:
-            before = xml_content.count(old_underscore)
-            xml_content = xml_content.replace(old_underscore, new_underscore)
-            after = xml_content.count(old_underscore)
-            rep = before - after
-            total_replacements += rep
-            logger.info(f"Replaced {rep} '{old_underscore}' -> '{new_underscore}'")
+        # --- 1. Replace full btsName (underscore / dash / original variants) ---
+        old_underscore = old_name.replace('-', '_')
+        old_dash = old_name.replace('_', '-')
 
-        # Replace dash variant
-        if old_dash != old_name:
-            before = xml_content.count(old_dash)
-            xml_content = xml_content.replace(old_dash, new_dash)
-            after = xml_content.count(old_dash)
-            rep = before - after
-            total_replacements += rep
-            logger.info(f"Replaced {rep} '{old_dash}' -> '{new_dash}'")
-
-        # Replace original as well (choose format based on its separator)
+        new_underscore = style_like(old_underscore, target_tokens)
+        new_dash = style_like(old_dash, target_tokens)
         new_like_original = style_like(old_name, target_tokens)
-        before = xml_content.count(old_name)
-        xml_content = xml_content.replace(old_name, new_like_original)
-        after = xml_content.count(old_name)
-        rep = before - after
+
+        if old_underscore != old_name:
+            xml_content, rep = do_replace(xml_content, old_underscore, new_underscore)
+            total_replacements += rep
+
+        if old_dash != old_name:
+            xml_content, rep = do_replace(xml_content, old_dash, new_dash)
+            total_replacements += rep
+
+        xml_content, rep = do_replace(xml_content, old_name, new_like_original)
         total_replacements += rep
-        logger.info(f"Replaced {rep} '{old_name}' -> '{new_like_original}'")
+
+        # --- 2. Replace base name (without tech suffix) for cell name coverage ---
+        old_base = strip_tech_suffix(old_name)
+        if old_base:
+            old_base_underscore = old_base.replace('-', '_')
+            old_base_dash = old_base.replace('_', '-')
+
+            new_base_underscore = style_like(old_base_underscore, target_base_tokens)
+            new_base_dash = style_like(old_base_dash, target_base_tokens)
+            new_base_original = style_like(old_base, target_base_tokens)
+
+            if old_base_underscore != old_base:
+                xml_content, rep = do_replace(xml_content, old_base_underscore, new_base_underscore)
+                total_replacements += rep
+
+            if old_base_dash != old_base:
+                xml_content, rep = do_replace(xml_content, old_base_dash, new_base_dash)
+                total_replacements += rep
+
+            xml_content, rep = do_replace(xml_content, old_base, new_base_original)
+            total_replacements += rep
 
         logger.info(f"Total name replacements: {total_replacements}")
         return xml_content

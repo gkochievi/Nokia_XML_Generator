@@ -360,6 +360,10 @@ def modernization_inspect():
         if not allowed_file(xml_file.filename):
             return jsonify({'success': False, 'error': 'Invalid file type for existing XML'}), 400
 
+        region = (request.form.get('region') or '').strip()
+        if region not in ['East', 'West']:
+            region = 'East'
+
         temp_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(xml_file.filename))
         xml_file.save(temp_path)
 
@@ -378,6 +382,8 @@ def modernization_inspect():
         hardware = info.get('hardwareInfo', {})
         has2g = station.get('has2G', False)
         has3g = station.get('has3G', False)
+        has4g = station.get('has4G', False)
+        has5g = station.get('has5G', False)
         sector_count = radio.get('sectorCount', 0)
         model_codes = []
         models = []
@@ -392,73 +398,82 @@ def modernization_inspect():
                 base = code.split('.')[0]
                 mapped = code_map.get(base)
             if not mapped:
-                # fallback: prefix match
                 for base, name in code_map.items():
                     if code.startswith(base):
                         mapped = name
                         break
             if mapped and mapped not in models:
                 models.append(mapped)
-        # fallback: if no mapped models, keep unique raw codes as models
         if not models and model_codes:
             models = list(dict.fromkeys(model_codes))
 
-        # Suggest a Reference 5G XML based on naming convention in example_files
-        examples_dir = app.config['EXAMPLE_FILES_FOLDER']
+        # Collect reference XMLs from region folder (matches dropdown from /api/example-files/xml?region=)
+        base_dir = app.config['EXAMPLE_FILES_FOLDER']
+        target_dir = os.path.join(base_dir, region)
+        files = []
         try:
-            files = [f for f in os.listdir(examples_dir) if f.startswith('5G') and f.endswith('.xml')]
+            for f in os.listdir(target_dir):
+                if f.lower().endswith('.xml') and not f.startswith('.') and not f.startswith('~'):
+                    path = os.path.join(target_dir, f)
+                    if os.path.isfile(path):
+                        files.append(f)
         except Exception:
-            files = []
-
-        # Build desired tokens
-        tokens = []
-        tokens.append('no2G' if not has2g else '5G')
-        if sector_count in [2, 3, 4]:
-            tokens.append(f'S{sector_count}')
-        # Prefer model token present in filename (AHEGA/AHEGB/AZQL/etc.) if any known from XMLViewer map
-        model_candidates = set(models)
-        preferred = None
-        for fname in files:
-            ok = True
-            # Match sector tokens etc.
-            for t in tokens:
-                if t != '5G' and t not in fname:
-                    ok = False
-                    break
-            # If station has 2G, avoid suggestions that contain 'no2G'
-            if ok and has2g and 'no2G' in fname:
-                ok = False
-            # If station does NOT have 2G, prefer only no2G files
-            if ok and (not has2g) and 'no2G' not in fname:
-                ok = False
-            if ok:
-                if model_candidates:
-                    if any(mc in fname for mc in model_candidates):
-                        preferred = fname
+            pass
+        if not files:
+            # Fallback: try East or West
+            for fallback in ['East', 'West']:
+                if fallback == region:
+                    continue
+                try:
+                    for f in os.listdir(os.path.join(base_dir, fallback)):
+                        if f.lower().endswith('.xml') and not f.startswith('.') and not f.startswith('~'):
+                            path = os.path.join(base_dir, fallback, f)
+                            if os.path.isfile(path):
+                                files.append(f)
+                    if files:
                         break
-                if not preferred:
-                    preferred = fname
-        suggestion = preferred or (files[0] if files else None)
+                except Exception:
+                    pass
 
-        # Infer model from suggestion if none detected
+        # Match by sector (S2/S3/S4), model (AHEGA/AHEGB), and no2G
+        sector_token = f'S{sector_count}' if sector_count in [2, 3, 4] else None
+        model_candidates = {m.upper() for m in models}
+        model_tokens = {'AHEGA', 'AHEGB', 'AZQL', 'AKQJ'}
+        if model_candidates:
+            model_tokens = model_tokens | model_candidates
+
+        def score(fname):
+            upper = fname.upper()
+            s = 0
+            if sector_token and sector_token.upper() in upper:
+                s += 50
+            for m in model_tokens:
+                if m in upper and (not model_candidates or m in model_candidates):
+                    s += 20
+                    break
+            return s
+
+        scored = [(f, score(f)) for f in files]
+        scored.sort(key=lambda x: -x[1])
+        suggestion = scored[0][0] if scored and scored[0][1] >= 0 else (files[0] if files else None)
+
         if (not models) and suggestion:
             try:
-                model_tokens = set(XMLViewer.MODEL_CODE_MAP.values()) if hasattr(XMLViewer, 'MODEL_CODE_MAP') else set()
+                known = set(XMLViewer.MODEL_CODE_MAP.values()) if hasattr(XMLViewer, 'MODEL_CODE_MAP') else set()
             except Exception:
-                model_tokens = set()
-            inferred = None
-            for tok in model_tokens:
-                if tok and tok in suggestion:
-                    inferred = tok
+                known = set()
+            for tok in known:
+                if tok and tok.upper() in (suggestion or '').upper():
+                    models = [tok]
                     break
-            if inferred:
-                models = [inferred]
 
         return jsonify({
             'success': True,
             'data': {
                 'has2G': has2g,
                 'has3G': has3g,
+                'has4G': has4g,
+                'has5G': has5g,
                 'sectorCount': sector_count,
                 'models': models or model_codes,
                 'modelCodes': model_codes,
@@ -1734,9 +1749,19 @@ def parse_ip_plan_from_example():
         if not filename:
             return jsonify({'error': 'Filename is required'}), 400
         
-        # Find the file in example_files directory
-        file_path = os.path.join(app.config['EXAMPLE_FILES_FOLDER'], filename)
-        if not os.path.exists(file_path):
+        # Find the file in example_files directory (root or known subfolders)
+        base_dir = app.config['EXAMPLE_FILES_FOLDER']
+        candidates = [
+            os.path.join(base_dir, filename),
+            os.path.join(base_dir, 'IP', filename),
+            os.path.join(base_dir, 'Data', filename),
+        ]
+        file_path = None
+        for candidate in candidates:
+            if os.path.exists(candidate):
+                file_path = candidate
+                break
+        if not file_path:
             return jsonify({'error': f'File {filename} not found in example files'}), 404
         
         # Parse IP Plan Excel

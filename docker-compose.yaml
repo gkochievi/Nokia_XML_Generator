@@ -9,4 +9,4 @@ services:
       - ./generated:/app/generated
     env_file:
       - ./.env
-    restart: unless-stopped 
+    restart: unless-stopped

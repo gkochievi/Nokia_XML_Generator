@@ -1,0 +1,20 @@
+services:
+  web:
+    build:
+      context: .
+      args:
+        REPO_URL: https://github.com/gkochievi/Nokia_XML_Generator.git
+        BRANCH: main
+    container_name: nokia-webem-generator
+    ports:
+      - "5000:5000"
+    volumes:
+      - uploads:/app/uploads
+      - generated:/app/generated
+    env_file:
+      - ./.env
+    restart: unless-stopped
+
+volumes:
+  uploads:
+  generated:

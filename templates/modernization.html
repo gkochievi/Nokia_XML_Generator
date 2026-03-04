@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Georgian UI font -->
+    <link rel="stylesheet" href="//cdn.web-fonts.ge/fonts/bpg-glaho-web-caps/css/bpg-glaho-web-caps.min.css">
     <link href="/static/css/theme.css" rel="stylesheet">
     <style>
         :root {
@@ -391,9 +393,15 @@
                                         <input type="hidden" id="stationName" name="stationName">
                                         <!-- Auto-suggest summary (compact, no extra panel) -->
                                         <div id="autoSuggestSummary" class="d-none mt-2">
-                                            <div class="small">Detected: <span id="detect2g" class="badge bg-light text-dark">2G: ?</span> <span id="detect3g" class="badge bg-light text-dark ms-1">3G: ?</span> <span id="detectSectors" class="badge bg-light text-dark ms-1">Sectors: ?</span></div>
-                                            <div class="small mt-1">Modules: <span id="detectModules" class="badge bg-light text-dark">-</span></div>
-                                            <div class="small mt-1">Suggestion: <span id="detectSuggestion" class="badge bg-light text-dark">-</span></div>
+                                            <div class="small">
+                                                <span id="detectedLabel">Detected:</span>
+                                                <span id="detect3g" class="badge bg-light text-dark">3G: ?</span>
+                                                <span id="detect4g" class="badge bg-light text-dark ms-1">4G: ?</span>
+                                                <span id="detect5g" class="badge bg-light text-dark ms-1">5G: ?</span>
+                                                <span id="detectSectors" class="badge bg-light text-dark ms-1">Sectors: ?</span>
+                                            </div>
+                                            <div class="small mt-1"><span id="modulesLabel">Modules:</span> <span id="detectModules" class="badge bg-light text-dark">-</span></div>
+                                            <div class="small mt-1"><span id="suggestionLabel">Suggestion:</span> <span id="detectSuggestion" class="badge bg-light text-dark">-</span></div>
                                         </div>
                                     </div>
                                 </div>
@@ -413,10 +421,7 @@
                                         <input class="form-check-input" type="checkbox" id="regionSwitch">
                                         <label class="form-check-label" for="regionSwitch"><span id="regionSwitchText">East</span></label>
                                     </div>
-                                    <div class="form-check form-check-inline align-middle">
-                                        <input class="form-check-input" type="checkbox" id="filterNo2g" value="no2G">
-                                        <label class="form-check-label" for="filterNo2g">no2G</label>
-                                    </div>
+                                    
                                     <div class="form-check form-check-inline align-middle">
                                         <input class="form-check-input" type="checkbox" id="filterS2" value="S2">
                                         <label class="form-check-label" for="filterS2">S2</label>
@@ -736,7 +741,15 @@ document.addEventListener('DOMContentLoaded', function() {
             manageFilesTitleText: 'ფაილების მართვა',
             tabRefText: 'Reference XML ფაილები',
             tabIpText: 'IP Plan',
-            tabGenText: 'გენერირებული'
+            tabGenText: 'გენერირებული',
+            autoDownloadStartLog: 'ფაილის ავტომატური ჩამოტვირთვა იწყება...',
+            generationSuccessAlert: 'XML ფაილი წარმატებით გენერირდა და ჩამოიტვირთა! ფაილი:',
+            detectedLabel: 'აღმოჩენილი:',
+            modulesLabel: 'მოდულები:',
+            suggestionLabel: 'შეთავაზებული:',
+            yesLabel: 'კი',
+            noLabel: 'არა',
+            sectorsLabel: 'სექტორები'
         },
         en: {
             manageCloseText: 'Close',
@@ -781,7 +794,15 @@ document.addEventListener('DOMContentLoaded', function() {
             manageFilesTitleText: 'Manage Files',
             tabRefText: 'Reference XMLs',
             tabIpText: 'IP Plan',
-            tabGenText: 'Generated'
+            tabGenText: 'Generated',
+            autoDownloadStartLog: 'Automatic file download is starting...',
+            generationSuccessAlert: 'XML file generated and downloaded successfully! File:',
+            detectedLabel: 'Detected:',
+            modulesLabel: 'Modules:',
+            suggestionLabel: 'Suggestion:',
+            yesLabel: 'YES',
+            noLabel: 'NO',
+            sectorsLabel: 'Sectors'
         }
     };
     function applyLang(lang) {
@@ -828,6 +849,9 @@ document.addEventListener('DOMContentLoaded', function() {
             tabRefText: '#tabRefText',
             tabIpText: '#tabIpText',
             tabGenText: '#tabGenText',
+            detectedLabel: '#detectedLabel',
+            modulesLabel: '#modulesLabel',
+            suggestionLabel: '#suggestionLabel',
             refreshRefText: '#refreshRefText',
             refreshIpText: '#refreshIpText'
         };
@@ -1433,7 +1457,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             // Filter handlers
-            ['filterNo2g','filterS2','filterS3','filterS4','filterModelAHEGA','filterModelAHEGB'].forEach(id => {
+            ['filterS2','filterS3','filterS4','filterModelAHEGA','filterModelAHEGB'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.addEventListener('change', () => applyReferenceFilters());
             });
@@ -2245,10 +2269,12 @@ const form = document.getElementById('modernizationForm');
                     }
                     
                     // Start automatic download
-                    addGenerationLog(`ფაილის ავტომატური ჩამოტვირთვა იწყება...`, 'info');
+                    const lang = localStorage.getItem('lang') || 'ka';
+                    const t = i18n[lang] || i18n.ka;
+                    addGenerationLog(t.autoDownloadStartLog, 'info');
                     downloadGeneratedFile(data.filename);
                     
-                    showAlert('success', `XML ფაილი წარმატებით გენერირდა და ჩამოიტვირთა! ფაილი: ${data.filename}`);
+                    showAlert('success', `${t.generationSuccessAlert} ${data.filename}`);
                     
                     // Switch to generation tab to show logs
                     const generationTab = document.getElementById('generation-tab');
@@ -2394,20 +2420,37 @@ const form = document.getElementById('modernizationForm');
             try {
                 const fd = new FormData();
                 fd.append('existingXml', file);
+                const region = document.getElementById('regionSwitch')?.checked ? 'West' : 'East';
+                fd.append('region', region);
                 const res = await fetch('/api/modernization/inspect', { method: 'POST', body: fd });
                 const data = await res.json();
                 if (!data.success) return;
                 const d = data.data;
                 // Summary UI
                 document.getElementById('autoSuggestSummary').classList.remove('d-none');
-                document.getElementById('detect2g').textContent = `2G: ${d.has2G ? 'YES' : 'NO'}`;
-                document.getElementById('detect3g').textContent = `3G: ${d.has3G ? 'YES' : 'NO'}`;
-                document.getElementById('detectSectors').textContent = `Sectors: ${d.sectorCount}`;
+                const lang = localStorage.getItem('lang') || 'ka';
+                // Safe fallback in case i18n is not available for any reason
+                let tDetect = { yesLabel: 'YES', noLabel: 'NO', sectorsLabel: 'Sectors' };
+                try {
+                    if (typeof i18n !== 'undefined') {
+                        const base = i18n[lang] || i18n.ka;
+                        tDetect = {
+                            yesLabel: base.yesLabel || tDetect.yesLabel,
+                            noLabel: base.noLabel || tDetect.noLabel,
+                            sectorsLabel: base.sectorsLabel || tDetect.sectorsLabel,
+                        };
+                    }
+                } catch (e) {
+                    // fall back to defaults above
+                }
+                document.getElementById('detect3g').textContent = `3G: ${d.has3G ? tDetect.yesLabel : tDetect.noLabel}`;
+                document.getElementById('detect4g').textContent = `4G: ${d.has4G ? tDetect.yesLabel : tDetect.noLabel}`;
+                document.getElementById('detect5g').textContent = `5G: ${d.has5G ? tDetect.yesLabel : tDetect.noLabel}`;
+                document.getElementById('detectSectors').textContent = `${tDetect.sectorsLabel}: ${d.sectorCount}`;
                 const modelList = (d.models && d.models.length) ? d.models : (d.modelCodes || []);
                 document.getElementById('detectModules').textContent = modelList.length ? modelList.join(', ') : '-';
                 document.getElementById('detectSuggestion').textContent = d.suggestedReference || '-';
                 // Pre-fill filters
-                document.getElementById('filterNo2g').checked = !d.has2G;
                 document.getElementById('filterS2').checked = d.sectorCount === 2;
                 document.getElementById('filterS3').checked = d.sectorCount === 3;
                 document.getElementById('filterS4').checked = d.sectorCount === 4;
@@ -2421,7 +2464,6 @@ const form = document.getElementById('modernizationForm');
                 if (modelA && modelB && hasAHEGA && hasAHEGB) { modelA.checked = true; modelB.checked = true; }
                 // Apply filter and select suggestion
                 await loadExampleFiles(); // ensure dropdown options loaded before filtering
-                window.detectedHas2G = !!d.has2G;
                 applyReferenceFilters(modelList); // filter options using model tokens
                 if (d.suggestedReference) {
                     const select = document.getElementById('reference5gXmlSelection');
@@ -2435,45 +2477,30 @@ const form = document.getElementById('modernizationForm');
 
         function applyReferenceFilters(modelHints = []) {
             const select = document.getElementById('reference5gXmlSelection');
-            const no2g = document.getElementById('filterNo2g').checked;
             const s2 = document.getElementById('filterS2').checked;
             const s3 = document.getElementById('filterS3').checked;
             const s4 = document.getElementById('filterS4').checked;
             const mA = document.getElementById('filterModelAHEGA').checked;
             const mB = document.getElementById('filterModelAHEGB').checked;
             const tokens = [];
-            // 'no2G' checkbox now means "include no2G references" when checked
             if (s2) tokens.push('S2');
             if (s3) tokens.push('S3');
             if (s4) tokens.push('S4');
             const selectedModels = [];
             if (mA) selectedModels.push('AHEGA');
             if (mB) selectedModels.push('AHEGB');
- 
+
             const allOptions = Array.from(select.options);
             allOptions.forEach(opt => {
                 if (!opt.value || opt.value === 'upload') return;
                 const name = opt.value;
-                const upper = name.toUpperCase();
                 let ok = true;
                 tokens.forEach(t => { if (ok && !name.includes(t)) ok = false; });
-                // Model filtering: explicit checkboxes override hints
                 if (ok) {
                     if (selectedModels.length) {
                         ok = selectedModels.some(m => name.includes(m));
                     } else if (modelHints.length) {
                         ok = modelHints.some(m => name.includes(m));
-                    }
-                }
-                // no2G filter behavior (case-insensitive)
-                if (ok) {
-                    if (no2g) {
-                        // When checked, show only no2G references
-                        if (!upper.includes('NO2G')) ok = false;
-                    } else {
-                        // When unchecked, if station has 2G -> hide no2G; if no 2G -> prefer only no2G
-                        if (window.detectedHas2G === true && upper.includes('NO2G')) ok = false;
-                        if (window.detectedHas2G === false && !upper.includes('NO2G')) ok = false;
                     }
                 }
                 opt.hidden = !ok;
