@@ -2270,7 +2270,22 @@ const form = document.getElementById('modernizationForm');
                     
                     // Start automatic download
                     const lang = localStorage.getItem('lang') || 'ka';
-                    const t = i18n[lang] || i18n.ka;
+                    // Safe fallback in case i18n is not available for any reason
+                    let t = {
+                        autoDownloadStartLog: 'Automatic file download is starting...',
+                        generationSuccessAlert: 'XML file generated and downloaded successfully! File:'
+                    };
+                    try {
+                        if (typeof i18n !== 'undefined') {
+                            const base = i18n[lang] || i18n.ka;
+                            t = {
+                                autoDownloadStartLog: base.autoDownloadStartLog || t.autoDownloadStartLog,
+                                generationSuccessAlert: base.generationSuccessAlert || t.generationSuccessAlert
+                            };
+                        }
+                    } catch (e) {
+                        // If anything goes wrong with i18n, fall back to defaults above
+                    }
                     addGenerationLog(t.autoDownloadStartLog, 'info');
                     downloadGeneratedFile(data.filename);
                     
