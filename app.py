@@ -1830,9 +1830,19 @@ def sftp_download():
             return jsonify({'error': 'Missing parameter: query (ID or Name)'}), 400
 
         # Load Excel with mapping
-        excel_path = os.path.join(app.config['EXAMPLE_FILES_FOLDER'], 'data.xlsx')
-        if not os.path.exists(excel_path):
-            return jsonify({'error': f'Excel file not found at {excel_path}'}), 404
+        # Prefer example_files/BTSNaming/data.xlsx so naming stays organized
+        base_examples = app.config['EXAMPLE_FILES_FOLDER']
+        candidates = [
+            os.path.join(base_examples, 'BTSNaming', 'data.xlsx'),
+            os.path.join(base_examples, 'data.xlsx'),
+        ]
+        excel_path = None
+        for candidate in candidates:
+            if os.path.exists(candidate):
+                excel_path = candidate
+                break
+        if not excel_path:
+            return jsonify({'error': f'Excel file not found in BTSNaming or example_files root'}), 404
 
         df = pd.read_excel(excel_path, engine='openpyxl')
 

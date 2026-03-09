@@ -51,10 +51,21 @@ def download_from_sftp(backup_name, local_base_filename=None):
 # Main program
 # ----------------------------
 if __name__ == "__main__":
-    # Prefer example_files/data.xlsx; fallback to local data.xlsx
-    excel_path = os.path.join("example_files", "data.xlsx")
-    if not os.path.exists(excel_path):
-        excel_path = "data.xlsx"
+    # Prefer example_files/BTSNaming/data.xlsx; then example_files/data.xlsx; then local data.xlsx
+    candidates = [
+        os.path.join("example_files", "BTSNaming", "data.xlsx"),
+        os.path.join("example_files", "data.xlsx"),
+        "data.xlsx",
+    ]
+    excel_path = None
+    for candidate in candidates:
+        if os.path.exists(candidate):
+            excel_path = candidate
+            break
+    if not excel_path:
+        raise FileNotFoundError(
+            "Could not find data.xlsx in example_files/BTSNaming, example_files/, or current directory."
+        )
 
     # Load Excel file
     df = pd.read_excel(excel_path, engine="openpyxl")  # Make sure openpyxl is installed
