@@ -53,7 +53,7 @@ import type { InspectResult } from '../api/client';
 import DebugConsole, { type LogEntry, createLog } from '../components/DebugConsole';
 import FileManagerModal from '../components/FileManagerModal';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export default function ModernizationPage() {
   const { t } = useTranslation();
@@ -330,25 +330,6 @@ export default function ModernizationPage() {
 
   return (
     <>
-      {/* ─── Page Header ─── */}
-      <div className="mod-page-header">
-        <div>
-          <Title level={3} className="gradient-text" style={{ margin: 0, fontWeight: 700 }}>
-            {t('modernization')}
-          </Title>
-          <Text style={{ color: '#6b6b88', fontSize: 13 }}>
-            {mode === 'modernization' ? '5G upgrade for existing base station' : 'New site rollout configuration'}
-          </Text>
-        </div>
-        <Button
-          icon={<FolderOpenOutlined />}
-          onClick={() => setFileModalOpen(true)}
-          className="mod-manage-btn"
-        >
-          {t('manageFiles')}
-        </Button>
-      </div>
-
       {/* ─── Top Controls Bar ─── */}
       <div className="mod-controls-bar">
         <div className="mod-control-group">
@@ -391,6 +372,16 @@ export default function ModernizationPage() {
             />
             <Button type="primary" icon={<CloudDownloadOutlined />} loading={sftpLoading} onClick={handleSftpDownload} size="small" style={{ borderRadius: '0 8px 8px 0' }} />
           </Space.Compact>
+        </div>
+        <div style={{ marginLeft: 'auto' }}>
+          <Button
+            icon={<FolderOpenOutlined />}
+            onClick={() => setFileModalOpen(true)}
+            className="mod-manage-btn"
+            size="small"
+          >
+            {t('manageFiles')}
+          </Button>
         </div>
       </div>
 
@@ -483,52 +474,44 @@ export default function ModernizationPage() {
                 <span>{t('ipPlan')}</span>
                 <span className="mod-step-badge">3</span>
               </div>
-              <div className="ip-layout" style={{ display: 'flex', gap: 12 }}>
-                <div style={{ flex: '0 0 45%', minWidth: 0 }}>
-                  <Select
-                    value={selectedIp}
-                    onChange={(v) => { setSelectedIp(v); if (v) addLog(`IP Plan selected: ${v}`, 'info', 'system'); }}
-                    placeholder={t('selectFile')}
-                    allowClear showSearch
-                    options={ipFiles.map((f) => ({ label: f, value: f }))}
-                    style={{ width: '100%', marginBottom: 8 }}
-                    size="small"
-                  />
-                  <Upload accept=".xlsx,.xls" maxCount={1} showUploadList beforeUpload={(file) => { setIpUploadFile(file); return false; }} onRemove={() => setIpUploadFile(null)}>
-                    <Button size="small" icon={<UploadOutlined />} style={{ borderRadius: 8, color: '#8888a8', fontSize: 12 }}>{t('uploadNew')}</Button>
-                  </Upload>
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  {ipPreview?.technologies ? (
-                    <div className="ip-preview-grid">
-                      {Object.entries(ipPreview.technologies).map(([tech, info]: [string, any]) => {
-                        if (tech === '2G') return null;
-                        if (!info?.vlanId && !info?.localIpAddr) return null;
-                        return (
-                          <div key={tech} className="ip-preview-item">
-                            <span className="ip-preview-tech">{tech}</span>
-                            <span className="ip-preview-ip">{info.localIpAddr || '-'}</span>
-                            <span className="ip-preview-detail">VLAN {info.vlanId || '-'} | GW {info.gateway || '-'}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : ipNotFound && ipLookupName ? (
-                    <div className="ip-preview-notfound">
-                      <ExclamationCircleOutlined style={{ color: '#f59e0b', marginRight: 6 }} />
-                      <span><strong>{ipLookupName}</strong> not found in IP Plan. VLAN/IP/GW will not be replaced.</span>
-                    </div>
-                  ) : selectedIp && !ipLookupName ? (
-                    <div style={{ color: '#555578', fontSize: 12, fontStyle: 'italic', paddingTop: 4 }}>
-                      {mode === 'modernization' ? 'Upload XML to detect station' : 'Enter MRBTS Name to preview'}
-                    </div>
-                  ) : (
-                    <div style={{ color: '#3a3a55', fontSize: 12, fontStyle: 'italic', paddingTop: 4 }}>
-                      Select IP Plan to preview
-                    </div>
-                  )}
-                </div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
+                <Select
+                  value={selectedIp}
+                  onChange={(v) => { setSelectedIp(v); if (v) addLog(`IP Plan selected: ${v}`, 'info', 'system'); }}
+                  placeholder={t('selectFile')}
+                  allowClear showSearch
+                  options={ipFiles.map((f) => ({ label: f, value: f }))}
+                  style={{ flex: 1 }}
+                  size="small"
+                />
+                <Upload accept=".xlsx,.xls" maxCount={1} showUploadList={false} beforeUpload={(file) => { setIpUploadFile(file); return false; }}>
+                  <Button size="small" icon={<UploadOutlined />} style={{ borderRadius: 8, color: '#8888a8', fontSize: 12 }}>{t('uploadNew')}</Button>
+                </Upload>
               </div>
+              {ipPreview?.technologies ? (
+                <div className="ip-preview-grid">
+                  {Object.entries(ipPreview.technologies).map(([tech, info]: [string, any]) => {
+                    if (tech === '2G') return null;
+                    if (!info?.vlanId && !info?.localIpAddr) return null;
+                    return (
+                      <div key={tech} className="ip-preview-item">
+                        <span className="ip-preview-tech">{tech}</span>
+                        <span className="ip-preview-ip">{info.localIpAddr || '-'}</span>
+                        <span className="ip-preview-detail">VLAN {info.vlanId || '-'} | GW {info.gateway || '-'}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : ipNotFound && ipLookupName ? (
+                <div className="ip-preview-notfound">
+                  <ExclamationCircleOutlined style={{ color: '#f59e0b', marginRight: 6 }} />
+                  <span><strong>{ipLookupName}</strong> not found in IP Plan. VLAN/IP/GW will not be replaced.</span>
+                </div>
+              ) : selectedIp && !ipLookupName ? (
+                <div style={{ color: '#555578', fontSize: 12, fontStyle: 'italic' }}>
+                  {mode === 'modernization' ? 'Upload XML to detect station' : 'Enter MRBTS Name to preview'}
+                </div>
+              ) : null}
             </div>
 
             {/* Generate */}
@@ -617,7 +600,7 @@ export default function ModernizationPage() {
                   <span className="mod-history-name">{f.name}</span>
                   {f.mtime && (
                     <span className="mod-history-time">
-                      {new Date(f.mtime * 1000).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                      {new Date(f.mtime * 1000).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </span>
                   )}
                   <a href={downloadUrl(f.name)} download className="mod-history-dl">

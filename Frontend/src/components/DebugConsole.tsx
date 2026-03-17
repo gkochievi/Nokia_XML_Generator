@@ -36,15 +36,12 @@ export default function DebugConsole({ logs, onClear }: Props) {
 
   const filteredLogs = logs.filter((l) => l.tab === activeTab);
 
-  // Auto-switch to the tab that received the latest log and expand if collapsed
+  // Auto-switch to the tab that received the latest log
   useEffect(() => {
     if (logs.length > 0) {
       const lastLog = logs[logs.length - 1];
       if (lastLog.tab !== activeTab) {
         setActiveTab(lastLog.tab);
-      }
-      if (collapsed) {
-        setCollapsed(false);
       }
     }
   }, [logs.length]); // eslint-disable-line react-hooks/exhaustive-deps
