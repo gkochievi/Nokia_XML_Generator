@@ -96,4 +96,9 @@ export const viewXml = (filename: string) =>
 export const deleteUploadedXml = (filename: string) =>
   api.delete(`/api/delete-xml/${encodeURIComponent(filename)}`);
 
+/* ───── IP Plan Preview ───── */
+
+export const parseIpPlanFromExample = (stationName: string, filename: string) =>
+  api.get('/api/parse-ip-plan-from-example', { params: { station_name: stationName, filename } });
+
 export default api;

@@ -30,7 +30,7 @@ export function createLog(
 
 export default function DebugConsole({ logs, onClear }: Props) {
   const { t } = useTranslation();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const [activeTab, setActiveTab] = useState('extraction');
   const endRef = useRef<HTMLDivElement>(null);
 

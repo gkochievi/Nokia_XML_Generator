@@ -386,27 +386,25 @@ def modernization_inspect():
         has4g = station.get('has4G', False)
         has5g = station.get('has5G', False)
         sector_count = radio.get('sectorCount', 0)
-        model_codes = []
+
+        # Use improved radio module detection
+        radio_modules = hardware.get('radioModules', [])
+        radio_summary = hardware.get('radioModuleSummary', '')
+        radio_code_set = getattr(XMLViewer, 'RADIO_MODULE_CODES', {'AHEGA', 'AHEGB', 'AWHQA'})
+
         models = []
+        for rm in radio_modules:
+            m = rm.get('model', '')
+            if m and m not in models:
+                models.append(m)
+
+        model_codes = []
         code_map = XMLViewer.MODEL_CODE_MAP if hasattr(XMLViewer, 'MODEL_CODE_MAP') else {}
         for m in hardware.get('modules', []):
-            code = (m.get('productCode') or '').strip().upper()
-            if not code:
-                continue
-            model_codes.append(code)
-            mapped = code_map.get(code)
-            if not mapped and '.' in code:
-                base = code.split('.')[0]
-                mapped = code_map.get(base)
-            if not mapped:
-                for base, name in code_map.items():
-                    if code.startswith(base):
-                        mapped = name
-                        break
-            if mapped and mapped not in models:
-                models.append(mapped)
-        if not models and model_codes:
-            models = list(dict.fromkeys(model_codes))
+            code = (m.get('productCode') or '').strip()
+            mapped = code_map.get(code, '')
+            if mapped in radio_code_set and code not in model_codes:
+                model_codes.append(code)
 
         # Collect reference XMLs from region folder (matches dropdown from /api/example-files/xml?region=)
         base_dir = app.config['EXAMPLE_FILES_FOLDER']
@@ -478,6 +476,8 @@ def modernization_inspect():
                 'sectorCount': sector_count,
                 'models': models or model_codes,
                 'modelCodes': model_codes,
+                'radioModules': radio_modules,
+                'radioModuleSummary': radio_summary,
                 'suggestedReference': suggestion,
                 'availableReferences': files
             }

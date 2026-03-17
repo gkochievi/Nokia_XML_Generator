@@ -9,9 +9,19 @@ class XMLViewer:
     """Viewer for Nokia WebEM XML configuration files"""
     
     MODEL_CODE_MAP = {
-        "474090A": "AHEGB",
         "473995A": "AHEGA",
-        "474090A.101": "AHEGB"
+        "474090A": "AHEGB",
+        "474090A.101": "AHEGB",
+        "474084A": "AHEGA",
+        "474082A": "AHEGA",
+        "474086A": "AHEGA",
+        "474088A": "AHEGB",
+        "474092A": "AHEGB",
+        "472815A": "AWHQA",
+        "476501A": "AAHF",
+        "476461A": "AEQM",
+        "473997A": "AZQL",
+        "475130A": "AHPMDA",
     }
     
     def __init__(self) -> None:
@@ -497,31 +507,66 @@ class XMLViewer:
         
         return info
     
+    RADIO_MODULE_CODES = {'AHEGA', 'AHEGB', 'AWHQA'}
+
     def _extract_hardware_info(self, tree):
-        """Extract hardware configuration"""
+        """Extract hardware configuration with per-sector radio module breakdown"""
         info = {
             'modules': [],
-            'cabinetCount': 0
+            'cabinetCount': 0,
+            'radioModules': [],
+            'radioModuleSummary': '',
         }
         managed_objects = self._findall_managed_objects(tree)
-        # Extract radio modules
         rmods = [mo for mo in managed_objects if mo.get('class','').endswith('RMOD')]
         for rmod in rmods:
             module_data = {
                 'id': rmod.get('distName', '').split('/')[-1],
                 'productCode': '',
-                'state': ''
+                'state': '',
+                'model': '',
             }
-            for p in rmod.findall(".//p"):
+            for p in rmod.findall(".//{*}p"):
                 name = p.get('name')
-                # Support multiple possible product code field names
                 if name in ['prodCodePlanned', 'prodCode', 'prodCodeProposed', 'prodCodeActual']:
                     if p.text:
                         module_data['productCode'] = p.text
                 elif name == 'administrativeState':
                     module_data['state'] = p.text
+            module_data['model'] = self.MODEL_CODE_MAP.get(module_data['productCode'], '')
             info['modules'].append(module_data)
-        
+
+        # Identify radio modules per sector (RMOD-X2 pattern: sector digit + sub-module 2)
+        radio_models_per_sector = {}
+        for m in info['modules']:
+            rmod_id = m['id']
+            model = m['model']
+            if model not in self.RADIO_MODULE_CODES:
+                continue
+            import re
+            match = re.match(r'RMOD-(\d)(\d)', rmod_id)
+            if match:
+                sector = match.group(1)
+                radio_models_per_sector.setdefault(sector, []).append(model)
+            else:
+                match_single = re.match(r'RMOD-(\d)$', rmod_id)
+                if match_single and model in self.RADIO_MODULE_CODES:
+                    sector = match_single.group(1)
+                    radio_models_per_sector.setdefault(sector, []).append(model)
+
+        radio_list = []
+        for sector in sorted(radio_models_per_sector.keys()):
+            models = radio_models_per_sector[sector]
+            for mdl in models:
+                radio_list.append({'sector': sector, 'model': mdl})
+        info['radioModules'] = radio_list
+
+        model_counts = {}
+        for r in radio_list:
+            model_counts[r['model']] = model_counts.get(r['model'], 0) + 1
+        parts = [f"{count}x {model}" for model, count in sorted(model_counts.items())]
+        info['radioModuleSummary'] = ' + '.join(parts) if parts else ''
+
         # Extract cabinet info
         cabinets = [mo for mo in managed_objects if mo.get('class','').endswith('CABINET')]
         info['cabinetCount'] = len(cabinets)

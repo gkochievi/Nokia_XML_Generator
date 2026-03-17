@@ -34,16 +34,20 @@ import {
   AppstoreOutlined,
   BranchesOutlined,
   FileProtectOutlined,
+  HistoryOutlined,
+  DownloadOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import {
   listExampleXml,
   listExampleExcel,
+  listGeneratedFiles,
   inspectExistingXml,
   generateModernization,
   sftpDownload,
   downloadUrl,
   extractBtsName,
+  parseIpPlanFromExample,
 } from '../api/client';
 import type { InspectResult } from '../api/client';
 import DebugConsole, { type LogEntry, createLog } from '../components/DebugConsole';
@@ -55,6 +59,7 @@ export default function ModernizationPage() {
   const { t } = useTranslation();
   const [form] = Form.useForm();
 
+  const rolloutName = Form.useWatch('rolloutName', form);
   const [mode, setMode] = useState<'modernization' | 'rollout'>('modernization');
   const [region, setRegion] = useState('East');
   const [existingFile, setExistingFile] = useState<File | null>(null);
@@ -76,6 +81,10 @@ export default function ModernizationPage() {
   const [sftpLoading, setSftpLoading] = useState(false);
   const [fileModalOpen, setFileModalOpen] = useState(false);
 
+  const [recentFiles, setRecentFiles] = useState<{ name: string; mtime?: number }[]>([]);
+  const [ipPreview, setIpPreview] = useState<any>(null);
+  const [ipNotFound, setIpNotFound] = useState(false);
+
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const addLog = useCallback(
     (msg: string, level: LogEntry['level'], tab: LogEntry['tab']) =>
@@ -86,6 +95,15 @@ export default function ModernizationPage() {
     (tab: string) => setLogs((prev) => prev.filter((l) => l.tab !== tab)),
     [],
   );
+
+  const loadRecentFiles = useCallback(async () => {
+    try {
+      const { data } = await listGeneratedFiles();
+      setRecentFiles((data.filesWithMtime || []).slice(0, 5));
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => { loadRecentFiles(); }, [loadRecentFiles]);
 
   const loadFiles = useCallback(async () => {
     try {
@@ -105,6 +123,25 @@ export default function ModernizationPage() {
   }, [region, addLog, selectedIp]);
 
   useEffect(() => { loadFiles(); }, [loadFiles]);
+
+  // Load IP plan preview when station name + IP plan file are both set
+  const ipLookupName = mode === 'rollout'
+    ? (rolloutName || stationName)
+    : stationName;
+
+  useEffect(() => {
+    if (!ipLookupName || !selectedIp) { setIpPreview(null); setIpNotFound(false); return; }
+    let cancelled = false;
+    setIpNotFound(false);
+    parseIpPlanFromExample(ipLookupName, selectedIp)
+      .then(({ data }) => {
+        if (cancelled) return;
+        if (data.success) { setIpPreview(data.data || data); setIpNotFound(false); }
+        else { setIpPreview(null); setIpNotFound(true); }
+      })
+      .catch(() => { if (!cancelled) { setIpPreview(null); setIpNotFound(true); } });
+    return () => { cancelled = true; };
+  }, [ipLookupName, selectedIp]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const filteredRefFiles = refFiles.filter((f) => {
     const upper = f.toUpperCase();
@@ -254,6 +291,7 @@ export default function ModernizationPage() {
           link.href = downloadUrl(data.filename); link.download = data.filename; link.click();
           message.success(`${t('generationSuccess')} ${data.filename}`);
           addLog(`${t('generationSuccess')} ${data.filename}`, 'success', 'generation');
+          loadRecentFiles();
         };
         if (data.warnings?.ip_plan) {
           addLog(`\u26A0 ${data.warnings.ip_plan}`, 'warning', 'generation');
@@ -356,7 +394,7 @@ export default function ModernizationPage() {
         </div>
       </div>
 
-      <Row gutter={20}>
+      <Row gutter={20} style={{ alignItems: 'stretch' }}>
         {/* ─── Left: Form ─── */}
         <Col xs={24} lg={16}>
           <Form form={form} layout="vertical" requiredMark={false}>
@@ -445,17 +483,52 @@ export default function ModernizationPage() {
                 <span>{t('ipPlan')}</span>
                 <span className="mod-step-badge">3</span>
               </div>
-              <Select
-                value={selectedIp}
-                onChange={(v) => { setSelectedIp(v); if (v) addLog(`IP Plan selected: ${v}`, 'info', 'system'); }}
-                placeholder={t('selectFile')}
-                allowClear showSearch
-                options={ipFiles.map((f) => ({ label: f, value: f }))}
-                style={{ width: '100%', marginBottom: 8 }}
-              />
-              <Upload accept=".xlsx,.xls" maxCount={1} showUploadList beforeUpload={(file) => { setIpUploadFile(file); return false; }} onRemove={() => setIpUploadFile(null)}>
-                <Button size="small" icon={<UploadOutlined />} style={{ borderRadius: 8, color: '#8888a8', fontSize: 12 }}>{t('uploadNew')}</Button>
-              </Upload>
+              <div className="ip-layout" style={{ display: 'flex', gap: 12 }}>
+                <div style={{ flex: '0 0 45%', minWidth: 0 }}>
+                  <Select
+                    value={selectedIp}
+                    onChange={(v) => { setSelectedIp(v); if (v) addLog(`IP Plan selected: ${v}`, 'info', 'system'); }}
+                    placeholder={t('selectFile')}
+                    allowClear showSearch
+                    options={ipFiles.map((f) => ({ label: f, value: f }))}
+                    style={{ width: '100%', marginBottom: 8 }}
+                    size="small"
+                  />
+                  <Upload accept=".xlsx,.xls" maxCount={1} showUploadList beforeUpload={(file) => { setIpUploadFile(file); return false; }} onRemove={() => setIpUploadFile(null)}>
+                    <Button size="small" icon={<UploadOutlined />} style={{ borderRadius: 8, color: '#8888a8', fontSize: 12 }}>{t('uploadNew')}</Button>
+                  </Upload>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  {ipPreview?.technologies ? (
+                    <div className="ip-preview-grid">
+                      {Object.entries(ipPreview.technologies).map(([tech, info]: [string, any]) => {
+                        if (tech === '2G') return null;
+                        if (!info?.vlanId && !info?.localIpAddr) return null;
+                        return (
+                          <div key={tech} className="ip-preview-item">
+                            <span className="ip-preview-tech">{tech}</span>
+                            <span className="ip-preview-ip">{info.localIpAddr || '-'}</span>
+                            <span className="ip-preview-detail">VLAN {info.vlanId || '-'} | GW {info.gateway || '-'}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : ipNotFound && ipLookupName ? (
+                    <div className="ip-preview-notfound">
+                      <ExclamationCircleOutlined style={{ color: '#f59e0b', marginRight: 6 }} />
+                      <span><strong>{ipLookupName}</strong> not found in IP Plan. VLAN/IP/GW will not be replaced.</span>
+                    </div>
+                  ) : selectedIp && !ipLookupName ? (
+                    <div style={{ color: '#555578', fontSize: 12, fontStyle: 'italic', paddingTop: 4 }}>
+                      {mode === 'modernization' ? 'Upload XML to detect station' : 'Enter MRBTS Name to preview'}
+                    </div>
+                  ) : (
+                    <div style={{ color: '#3a3a55', fontSize: 12, fontStyle: 'italic', paddingTop: 4 }}>
+                      Select IP Plan to preview
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Generate */}
@@ -467,6 +540,7 @@ export default function ModernizationPage() {
               onClick={handleGenerate}
               block
               className="generate-btn"
+              style={{ marginTop: 16, marginBottom: 8 }}
             >
               {generating ? t('processing') : t('generate')}
             </Button>
@@ -474,7 +548,8 @@ export default function ModernizationPage() {
         </Col>
 
         {/* ─── Right: Info + Console ─── */}
-        <Col xs={24} lg={8}>
+        <Col xs={24} lg={8} style={{ display: 'flex', flexDirection: 'column' }}>
+          <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
           {inspectData && (
             <div className="mod-inspect-card">
               <div className="mod-section-header" style={{ marginBottom: 14 }}>
@@ -491,13 +566,25 @@ export default function ModernizationPage() {
                 <span className="mod-inspect-label">{t('sectors')}</span>
                 <span className="mod-inspect-value">{inspectData.sectorCount}</span>
               </div>
-              {inspectData.models?.length > 0 && (
+              {((inspectData as any).radioModuleSummary || inspectData.models?.length > 0) && (
                 <div className="mod-inspect-row">
                   <BranchesOutlined style={{ color: '#818cf8' }} />
                   <span className="mod-inspect-label">{t('modules')}</span>
-                  <span style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                    {inspectData.models.map((m) => <Tag key={m} color="geekblue" style={{ margin: 0 }}>{m}</Tag>)}
+                  <span style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
+                    {(inspectData as any).radioModuleSummary
+                      ? <Tag color="geekblue" style={{ margin: 0, fontWeight: 600 }}>{(inspectData as any).radioModuleSummary}</Tag>
+                      : inspectData.models.map((m) => <Tag key={m} color="geekblue" style={{ margin: 0 }}>{m}</Tag>)
+                    }
                   </span>
+                </div>
+              )}
+              {(inspectData as any).radioModules?.length > 0 && (
+                <div style={{ marginTop: 6, paddingLeft: 30 }}>
+                  {(inspectData as any).radioModules.map((rm: any, i: number) => (
+                    <span key={i} style={{ fontSize: 11, color: '#7878a0', marginRight: 10 }}>
+                      S{rm.sector}: <span style={{ color: rm.model === 'AHEGA' ? '#34d399' : rm.model === 'AHEGB' ? '#60a5fa' : '#fbbf24', fontWeight: 600 }}>{rm.model}</span>
+                    </span>
+                  ))}
                 </div>
               )}
               {inspectData.suggestedReference && (
@@ -518,7 +605,33 @@ export default function ModernizationPage() {
             </div>
           )}
 
-          <DebugConsole logs={logs} onClear={clearLogs} />
+          {/* Generation History */}
+          {recentFiles.length > 0 && (
+            <div className="mod-history-card">
+              <div className="mod-section-header" style={{ marginBottom: 10 }}>
+                <HistoryOutlined style={{ color: '#60a5fa' }} />
+                <span style={{ fontSize: 13 }}>Recent Generations</span>
+              </div>
+              {recentFiles.map((f, i) => (
+                <div key={i} className="mod-history-item">
+                  <span className="mod-history-name">{f.name}</span>
+                  {f.mtime && (
+                    <span className="mod-history-time">
+                      {new Date(f.mtime * 1000).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  )}
+                  <a href={downloadUrl(f.name)} download className="mod-history-dl">
+                    <DownloadOutlined />
+                  </a>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <DebugConsole logs={logs} onClear={clearLogs} />
+          </div>
+          </div>
         </Col>
       </Row>
 
