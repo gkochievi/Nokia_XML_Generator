@@ -1281,8 +1281,14 @@ def delete_example_file_post():
 def list_generated_files():
     try:
         gen_dir = app.config['GENERATED_FOLDER']
-        files = [f for f in os.listdir(gen_dir) if f.lower().endswith('.xml')]
-        return jsonify({'success': True, 'files': files})
+        files = []
+        for f in os.listdir(gen_dir):
+            if f.lower().endswith('.xml'):
+                fpath = os.path.join(gen_dir, f)
+                mtime = os.path.getmtime(fpath)
+                files.append({'name': f, 'mtime': mtime})
+        files.sort(key=lambda x: x['mtime'], reverse=True)
+        return jsonify({'success': True, 'files': [f['name'] for f in files], 'filesWithMtime': files})
     except Exception as e:
         logger.error(f"Error listing generated files: {str(e)}")
         return jsonify({'error': str(e)}), 500

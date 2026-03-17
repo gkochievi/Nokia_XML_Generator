@@ -39,11 +39,13 @@ class ModernizationGenerator:
                         lookup_station = str(overrides.get('name')).strip()
                     ip_plan_lookup_station = lookup_station
                     ip_plan_data = self.excel_parser.parse_ip_plan_excel(ip_plan_excel_path, lookup_station)
-                    if ip_plan_data:
+                    if ip_plan_data and ip_plan_data.get('success'):
                         logger.info(f"IP Plan data loaded successfully for station: {lookup_station}")
                         logger.info(f"IP Plan technologies: {list(ip_plan_data['technologies'].keys())}")
                     else:
-                        logger.warning(f"No IP Plan data found for station: {lookup_station}")
+                        err_msg = (ip_plan_data or {}).get('error', 'unknown')
+                        logger.warning(f"No IP Plan data found for station: {lookup_station} ({err_msg})")
+                        ip_plan_data = None
                 except Exception as e:
                     logger.error(f"Error parsing IP Plan Excel: {str(e)}")
                     ip_plan_data = None
@@ -146,6 +148,9 @@ class ModernizationGenerator:
             # Perform template replacements
             updated_content = template_content
             debug_log = []
+
+            if ip_plan_data is None and ip_plan_excel_path:
+                debug_log.append(f"○ Station '{ip_plan_lookup_station}' not found in IP Plan Excel — IP/VLAN/routing replacement will be skipped")
             
             # Replace station names (Modernization: use existing; Rollout: use override when provided)
             target_name = None

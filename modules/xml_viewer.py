@@ -153,6 +153,24 @@ class XMLViewer:
             })
         info['vlan_ip_combined'] = combined
         logger.warning(f'vlan_ip_combined: {combined}')
+
+        # Extract NRX2LINK_TRUST ipV4Addr (LTE X2 link IP)
+        nrx2link_list = []
+        for obj in [mo for mo in managed_objects if 'NRX2LINK_TRUST' in mo.get('class', '')]:
+            dn = obj.get('distName', '')
+            for p in obj.xpath('./*[local-name()="p"]'):
+                if p.get('name') == 'ipV4Addr' and p.text:
+                    nrx2link_list.append({'distName': dn, 'ipV4Addr': p.text.strip()})
+        info['nrx2link_trust'] = nrx2link_list
+
+        # Extract LNADJGNB cPlaneIpAddr (5G gNB C-Plane IP)
+        lnadjgnb_list = []
+        for obj in [mo for mo in managed_objects if 'LNADJGNB' in mo.get('class', '')]:
+            dn = obj.get('distName', '')
+            for p in obj.xpath('./*[local-name()="p"]'):
+                if p.get('name') == 'cPlaneIpAddr' and p.text:
+                    lnadjgnb_list.append({'distName': dn, 'cPlaneIpAddr': p.text.strip()})
+        info['lnadjgnb'] = lnadjgnb_list
         
         return info
     
@@ -419,6 +437,8 @@ class XMLViewer:
                     cell['localCellId'] = p.text
                 elif name == 'physCellId':
                     cell['phyCellId'] = p.text
+                elif name == 'configuredEpsTac':
+                    cell['trackingAreaCode'] = p.text
                 elif name == 'cellTechnology':
                     cell['cellTechnology'] = p.text
                 elif name == 'nrCellType':
