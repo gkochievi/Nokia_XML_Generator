@@ -38,6 +38,7 @@ import {
   DownloadOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import {
   listExampleXml,
   listExampleExcel,
@@ -59,8 +60,11 @@ export default function ModernizationPage() {
   const { t } = useTranslation();
   const [form] = Form.useForm();
 
+  const [searchParams] = useSearchParams();
   const rolloutName = Form.useWatch('rolloutName', form);
-  const [mode, setMode] = useState<'modernization' | 'rollout'>('modernization');
+  const [mode, setMode] = useState<'modernization' | 'rollout'>(
+    searchParams.get('mode') === 'rollout' ? 'rollout' : 'modernization'
+  );
   const [region, setRegion] = useState('East');
   const [existingFile, setExistingFile] = useState<File | null>(null);
   const [stationName, setStationName] = useState('');
