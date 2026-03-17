@@ -366,6 +366,7 @@ export default function ModernizationPage() {
                 <div className="mod-section-header">
                   <AimOutlined style={{ color: '#f87171' }} />
                   <span>Rollout Overrides</span>
+                  <span className="mod-step-badge">1</span>
                 </div>
                 <Row gutter={12}>
                   <Col span={8}><Form.Item name="rolloutId" label={t('mrbtsId')}><Input size="small" /></Form.Item></Col>
@@ -413,7 +414,7 @@ export default function ModernizationPage() {
               <div className="mod-section-header">
                 <WifiOutlined style={{ color: '#818cf8' }} />
                 <span>{t('reference5g')}</span>
-                <span className="mod-step-badge">{mode === 'modernization' ? 2 : 1}</span>
+                <span className="mod-step-badge">2</span>
               </div>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
                 {['S2', 'S3', 'S4'].map((s) => (
@@ -442,7 +443,7 @@ export default function ModernizationPage() {
               <div className="mod-section-header">
                 <DatabaseOutlined style={{ color: '#34d399' }} />
                 <span>{t('ipPlan')}</span>
-                <span className="mod-step-badge">{mode === 'modernization' ? 3 : 2}</span>
+                <span className="mod-step-badge">3</span>
               </div>
               <Select
                 value={selectedIp}
