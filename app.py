@@ -168,18 +168,19 @@ def modernization():
         # Get file paths - either from uploads or example_files selections
         file_paths = {}
         
-        # Handle existing XML (always uploaded)
-        if 'existingXml' not in request.files or request.files['existingXml'].filename == '':
+        # Handle existing XML (uploaded file OR selection from example_files for rollout)
+        existing_xml_selection = request.form.get('existingXmlSelection')
+        if existing_xml_selection:
+            file_paths['existingXml'] = resolve_example_xml_path(existing_xml_selection, region)
+        elif 'existingXml' in request.files and request.files['existingXml'].filename != '':
+            existing_xml_file = request.files['existingXml']
+            if not allowed_file(existing_xml_file.filename):
+                return jsonify({'error': 'არასწორი ფაილის ტიპი არსებული XML-ისთვის'}), 400
+            temp_existing_xml = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(existing_xml_file.filename))
+            existing_xml_file.save(temp_existing_xml)
+            file_paths['existingXml'] = temp_existing_xml
+        else:
             return jsonify({'error': 'არსებული სადგურის XML ფაილი აუცილებელია'}), 400
-        
-        existing_xml_file = request.files['existingXml']
-        if not allowed_file(existing_xml_file.filename):
-            return jsonify({'error': 'არასწორი ფაილის ტიპი არსებული XML-ისთვის'}), 400
-        
-        # Save existing XML to temp location
-        temp_existing_xml = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(existing_xml_file.filename))
-        existing_xml_file.save(temp_existing_xml)
-        file_paths['existingXml'] = temp_existing_xml
         
         # Handle Reference 5G XML (dropdown selection or upload)
         reference_5g_selection = request.form.get('reference5gXmlSelection')
