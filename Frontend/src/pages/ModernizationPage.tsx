@@ -147,6 +147,33 @@ export default function ModernizationPage() {
     return () => { cancelled = true; };
   }, [ipLookupName, selectedIp]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Auto-select model filter when inspect data changes
+  useEffect(() => {
+    if (!inspectData) return;
+    // Count radio modules per model
+    const rmods = (inspectData as any).radioModules || [];
+    const counts: Record<string, number> = {};
+    for (const rm of rmods) {
+      const m = (rm.model || '').toUpperCase();
+      if (m === 'AHEGA' || m === 'AHEGB') {
+        counts[m] = (counts[m] || 0) + 1;
+      }
+    }
+    // Pick the one with most modules
+    let best: string | null = null;
+    let bestCount = 0;
+    for (const [m, c] of Object.entries(counts)) {
+      if (c > bestCount) { best = m; bestCount = c; }
+    }
+    // Fallback: check suggested reference filename
+    if (!best && inspectData.suggestedReference) {
+      const s = inspectData.suggestedReference.toUpperCase();
+      if (s.includes('AHEGB')) best = 'AHEGB';
+      else if (s.includes('AHEGA')) best = 'AHEGA';
+    }
+    if (best) setModelFilter(best);
+  }, [inspectData]);
+
   const filteredRefFiles = refFiles.filter((f) => {
     const upper = f.toUpperCase();
     if (sectorFilter && !upper.includes(sectorFilter)) return false;
@@ -175,7 +202,6 @@ export default function ModernizationPage() {
           addLog(`3G: ${d.has3G ? 'YES' : 'NO'}, 4G: ${d.has4G ? 'YES' : 'NO'}, 5G: ${d.has5G ? 'YES' : 'NO'}, Sectors: ${d.sectorCount}`, 'success', 'extraction');
           if (d.suggestedReference) { setSelectedRef(d.suggestedReference); addLog(`Suggested: ${d.suggestedReference}`, 'info', 'extraction'); }
           if (d.sectorCount) setSectorFilter(`S${d.sectorCount}`);
-          if (d.modelCodes?.length) setModelFilter(d.modelCodes[0].toUpperCase());
         }
       } catch { addLog('Could not inspect XML', 'warning', 'extraction'); }
     },
