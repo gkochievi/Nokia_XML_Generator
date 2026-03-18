@@ -10,3 +10,12 @@ services:
     env_file:
       - ./.env
     restart: unless-stopped
+
+  frontend:
+    build: ./Frontend
+    container_name: nokia-webem-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - web
+    restart: unless-stopped

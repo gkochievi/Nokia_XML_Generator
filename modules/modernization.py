@@ -276,12 +276,14 @@ class ModernizationGenerator:
             else:
                 logger.info("5G NRCELL physCellId parameters not available for replacement - station may not have 5G cells or 4G cells")
             
-            # Replace 4G TDD cell tac if existing has TDD cells
+            # Replace 4G TDD cell tac: use existing TDD cells if available, otherwise FDD→TDD copy handles it
             if existing_4g_tdd_cells and reference_4g_tdd_cells:
                 logger.info("Performing template-based 4G TDD cell parameter replacement...")
                 updated_content = self._replace_4g_tdd_cells(
                     updated_content, reference_4g_tdd_cells, existing_4g_tdd_cells
                 )
+            elif not existing_4g_tdd_cells and reference_4g_tdd_cells:
+                logger.info("Existing station has no TDD cells — FDD→TDD copy will handle TAC/PCI")
             else:
                 logger.info("4G TDD cell parameters not available for replacement")
 
@@ -1441,28 +1443,30 @@ class ModernizationGenerator:
         return xml_content
 
     def _replace_tdd_pci_from_fdd(self, xml_content, reference_4g_cells, existing_4g_cells):
-        """Copy phyCellId from existing FDD cells to TDD cells in the reference template.
-        TDD cells (5x, 6x) that don't exist in the existing station get PCI from same-sector FDD cells (1x, 2x, 3x).
-        Sector is determined by last digit: x1→sector1, x2→sector2, x3→sector3.
+        """Copy phyCellId and tac from existing FDD cells to TDD cells in the reference template.
+        TDD cells (5x, 6x) that don't exist in the existing station get PCI and TAC
+        from same-sector FDD cells (1x, 2x, 3x).
+        Sector is determined by last digit: x1->sector1, x2->sector2, x3->sector3.
         """
-        logger.info("Copying PCI from existing FDD cells to reference TDD cells")
+        logger.info("Copying PCI+TAC from existing FDD cells to reference TDD cells")
         total = 0
         import re
 
         existing_cell_ids = set(existing_4g_cells.keys())
-        fdd_by_sector = {}
+        fdd_by_sector: dict[str, dict] = {}
         for cell_id, params in existing_4g_cells.items():
             m = re.search(r'LNCEL-(\d+)', cell_id)
             if not m:
                 continue
             num = m.group(1)
             sector = num[-1]
-            pci = params.get('phyCellId')
-            if pci and int(num) < 50:
-                if sector not in fdd_by_sector:
-                    fdd_by_sector[sector] = pci
+            if int(num) < 50 and sector not in fdd_by_sector:
+                fdd_by_sector[sector] = {
+                    'phyCellId': params.get('phyCellId'),
+                    'tac': params.get('tac'),
+                }
 
-        logger.info(f"FDD PCI by sector: {fdd_by_sector}")
+        logger.info(f"FDD params by sector: {fdd_by_sector}")
 
         for ref_cell_id, ref_params in reference_4g_cells.items():
             if ref_cell_id in existing_cell_ids:
@@ -1476,25 +1480,29 @@ class ModernizationGenerator:
                 continue
 
             sector = str(num)[-1]
-            new_pci = fdd_by_sector.get(sector)
-            old_pci = ref_params.get('phyCellId')
-
-            if not new_pci or not old_pci or old_pci == new_pci:
+            fdd_data = fdd_by_sector.get(sector)
+            if not fdd_data:
                 continue
 
-            pattern = rf'(<managedObject[^>]*class="[^"]*:LNCEL"[^>]*distName="[^"]*{re.escape(ref_cell_id)}[^"]*"[^>]*>.*?<p\s+name="phyCellId"[^>]*>)\s*{re.escape(old_pci)}\s*(</p>.*?</managedObject>)'
-            matches = re.findall(pattern, xml_content, re.DOTALL | re.IGNORECASE)
-            if matches:
-                xml_content = re.sub(
-                    pattern,
-                    lambda m: f"{m.group(1)}{new_pci}{m.group(2)}",
-                    xml_content,
-                    flags=re.DOTALL | re.IGNORECASE
-                )
-                total += len(matches)
-                logger.info(f"TDD {ref_cell_id} phyCellId {old_pci} -> {new_pci} (from FDD sector {sector})")
+            for param_name in ['phyCellId', 'tac']:
+                new_val = fdd_data.get(param_name)
+                old_val = ref_params.get(param_name)
+                if not new_val or not old_val or old_val == new_val:
+                    continue
 
-        logger.info(f"Total TDD PCI replacements from FDD: {total}")
+                pattern = rf'(<managedObject[^>]*class="[^"]*:LNCEL"[^>]*distName="[^"]*{re.escape(ref_cell_id)}[^"]*"[^>]*>.*?<p\s+name="{param_name}"[^>]*>)\s*{re.escape(old_val)}\s*(</p>.*?</managedObject>)'
+                matches = re.findall(pattern, xml_content, re.DOTALL | re.IGNORECASE)
+                if matches:
+                    xml_content = re.sub(
+                        pattern,
+                        lambda m, nv=new_val: f"{m.group(1)}{nv}{m.group(2)}",
+                        xml_content,
+                        flags=re.DOTALL | re.IGNORECASE
+                    )
+                    total += len(matches)
+                    logger.info(f"TDD {ref_cell_id} {param_name} {old_val} -> {new_val} (from FDD sector {sector})")
+
+        logger.info(f"Total TDD param replacements from FDD: {total}")
         return xml_content
 
     def _replace_5g_nrcell_details(self, xml_content, reference_details, existing_details):
