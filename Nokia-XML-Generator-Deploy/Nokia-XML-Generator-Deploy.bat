@@ -81,5 +81,5 @@ echo    React UI:    http://localhost
 echo    Old UI:      http://localhost:5000
 echo  ================================================
 echo.
-start "" "http://localhost/modernization"
+start "" "http://localhost/"
 pause
