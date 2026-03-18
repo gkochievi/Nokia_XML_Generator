@@ -34,11 +34,9 @@ RUN mkdir -p uploads generated example_files
 
 # Copy built frontend
 COPY --from=frontend-build /src/Frontend/dist /var/www/frontend
-COPY nginx.conf /etc/nginx/sites-enabled/default
+RUN rm -f /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 5000 80
 
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
-CMD ["/entrypoint.sh"]
+CMD ["sh", "-c", "nginx && exec gunicorn -b 127.0.0.1:5000 app:app"]

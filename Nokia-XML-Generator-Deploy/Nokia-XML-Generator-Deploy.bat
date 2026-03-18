@@ -50,6 +50,10 @@ echo    (always pulls latest code)
 echo  ================================================
 echo.
 
+REM Stop and remove any existing container with the same name
+docker stop nokia-webem-generator >nul 2>nul
+docker rm nokia-webem-generator >nul 2>nul
+
 REM Force fresh git clone by busting Docker cache
 set CACHE_BUST=%RANDOM%%RANDOM%
 
