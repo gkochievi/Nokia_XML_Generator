@@ -77,9 +77,9 @@ echo.
 echo  ================================================
 echo    Done! Application is running:
 echo.
-echo    React UI:    http://localhost
+echo    React UI:    http://localhost:3000
 echo    Old UI:      http://localhost:5000
 echo  ================================================
 echo.
-start "" "http://localhost/"
+start "" "http://localhost:3000/"
 pause

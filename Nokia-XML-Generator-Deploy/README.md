@@ -21,7 +21,7 @@ It always pulls the latest code from GitHub and rebuilds.
 
 | URL | Description |
 |-----|-------------|
-| http://localhost | New React UI (Modernization, XML Viewer) |
+| http://localhost:3000 | New React UI (Modernization, XML Viewer) |
 | http://localhost:5000 | Original UI (all features) |
 
 ## Configuration
