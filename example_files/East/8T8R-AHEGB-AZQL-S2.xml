@@ -2,7 +2,7 @@
 <raml xmlns="raml21.xsd" version="2.1">
   <cmData type="plan" scope="all" id="4208913589">
     <header>
-      <log action="create" dateTime="2026-03-09T08:40:23.281Z"/>
+      <log action="create" dateTime="2026-03-18T08:33:14.626Z"/>
     </header>
     <managedObject class="com.nokia.srbts:MRBTS" distName="MRBTS-91980" version="SBTS25R3_2505_100" operation="create">
       <p name="btsName">TBLS_Tskneti_Road</p>
@@ -1457,7 +1457,7 @@
           <p name="arpEnDcMask">65534</p>
           <p name="boostFactorDl">20</p>
           <p name="boostFactorUl">20</p>
-          <p name="drxProfileIndex">3</p>
+          <p name="drxProfileIndex">2</p>
           <p name="dscp">34</p>
           <p name="enforceTtiBundling">false</p>
           <p name="lcgid">0</p>
@@ -2693,7 +2693,7 @@
       <p name="actDlsVoicePacketAgg">true</p>
       <p name="actDownSampling">false</p>
       <p name="actDrx">true</p>
-      <p name="actDrxDuringMeasGap">false</p>
+      <p name="actDrxDuringMeasGap">true</p>
       <p name="actDrxDuringTTIB">true</p>
       <p name="actDynamicDataSessionProf">false</p>
       <p name="actEDrxIdle">false</p>
@@ -3332,7 +3332,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -4047,7 +4047,7 @@
       <p name="actDlsVoicePacketAgg">true</p>
       <p name="actDownSampling">false</p>
       <p name="actDrx">true</p>
-      <p name="actDrxDuringMeasGap">false</p>
+      <p name="actDrxDuringMeasGap">true</p>
       <p name="actDrxDuringTTIB">true</p>
       <p name="actDynamicDataSessionProf">false</p>
       <p name="actEDrxIdle">false</p>
@@ -4686,7 +4686,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -5401,7 +5401,7 @@
       <p name="actDlsVoicePacketAgg">true</p>
       <p name="actDownSampling">false</p>
       <p name="actDrx">true</p>
-      <p name="actDrxDuringMeasGap">false</p>
+      <p name="actDrxDuringMeasGap">true</p>
       <p name="actDrxDuringTTIB">true</p>
       <p name="actDynamicDataSessionProf">false</p>
       <p name="actEDrxIdle">false</p>
@@ -5945,7 +5945,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -6658,7 +6658,7 @@
       <p name="actDlsVoicePacketAgg">true</p>
       <p name="actDownSampling">false</p>
       <p name="actDrx">true</p>
-      <p name="actDrxDuringMeasGap">false</p>
+      <p name="actDrxDuringMeasGap">true</p>
       <p name="actDrxDuringTTIB">true</p>
       <p name="actDynamicDataSessionProf">false</p>
       <p name="actEDrxIdle">false</p>
@@ -7202,7 +7202,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -7915,7 +7915,7 @@
       <p name="actDlsVoicePacketAgg">true</p>
       <p name="actDownSampling">false</p>
       <p name="actDrx">true</p>
-      <p name="actDrxDuringMeasGap">false</p>
+      <p name="actDrxDuringMeasGap">true</p>
       <p name="actDrxDuringTTIB">true</p>
       <p name="actDynamicDataSessionProf">false</p>
       <p name="actEDrxIdle">false</p>
@@ -8459,7 +8459,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -9172,7 +9172,7 @@
       <p name="actDlsVoicePacketAgg">true</p>
       <p name="actDownSampling">false</p>
       <p name="actDrx">true</p>
-      <p name="actDrxDuringMeasGap">false</p>
+      <p name="actDrxDuringMeasGap">true</p>
       <p name="actDrxDuringTTIB">true</p>
       <p name="actDynamicDataSessionProf">false</p>
       <p name="actEDrxIdle">false</p>
@@ -9716,7 +9716,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -10426,8 +10426,8 @@
       <p name="actDlsOldtc">false</p>
       <p name="actDlsVoicePacketAgg">true</p>
       <p name="actDownSampling">false</p>
-      <p name="actDrx">false</p>
-      <p name="actDrxDuringMeasGap">false</p>
+      <p name="actDrx">true</p>
+      <p name="actDrxDuringMeasGap">true</p>
       <p name="actDrxDuringTTIB">false</p>
       <p name="actDynamicDataSessionProf">false</p>
       <p name="actEDrxIdle">false</p>
@@ -10821,7 +10821,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">6</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">6</p>
         </item>
       </list>
@@ -11353,8 +11353,8 @@
       <p name="actDlsOldtc">false</p>
       <p name="actDlsVoicePacketAgg">true</p>
       <p name="actDownSampling">false</p>
-      <p name="actDrx">false</p>
-      <p name="actDrxDuringMeasGap">false</p>
+      <p name="actDrx">true</p>
+      <p name="actDrxDuringMeasGap">true</p>
       <p name="actDrxDuringTTIB">false</p>
       <p name="actDynamicDataSessionProf">false</p>
       <p name="actEDrxIdle">false</p>
@@ -11748,7 +11748,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">6</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">6</p>
         </item>
       </list>
@@ -12280,8 +12280,8 @@
       <p name="actDlsOldtc">false</p>
       <p name="actDlsVoicePacketAgg">true</p>
       <p name="actDownSampling">false</p>
-      <p name="actDrx">false</p>
-      <p name="actDrxDuringMeasGap">false</p>
+      <p name="actDrx">true</p>
+      <p name="actDrxDuringMeasGap">true</p>
       <p name="actDrxDuringTTIB">false</p>
       <p name="actDynamicDataSessionProf">false</p>
       <p name="actEDrxIdle">false</p>
@@ -12675,7 +12675,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">6</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">6</p>
         </item>
       </list>
@@ -13207,8 +13207,8 @@
       <p name="actDlsOldtc">false</p>
       <p name="actDlsVoicePacketAgg">true</p>
       <p name="actDownSampling">false</p>
-      <p name="actDrx">false</p>
-      <p name="actDrxDuringMeasGap">false</p>
+      <p name="actDrx">true</p>
+      <p name="actDrxDuringMeasGap">true</p>
       <p name="actDrxDuringTTIB">false</p>
       <p name="actDynamicDataSessionProf">false</p>
       <p name="actEDrxIdle">false</p>
@@ -13602,7 +13602,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">6</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">6</p>
         </item>
       </list>
@@ -14569,12 +14569,12 @@
       <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-12/ANTL-1</p>
       <p name="direction">TX</p>
     </managedObject>
-    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-21/CHANNELGROUP-1/CHANNEL-5" version="MNL25R3_2513_101" operation="create">
-      <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-12/ANTL-2</p>
+    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-21/CHANNELGROUP-1/CHANNEL-3" version="MNL25R3_2513_101" operation="create">
+      <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-12/ANTL-3</p>
       <p name="direction">TX</p>
     </managedObject>
-    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-21/CHANNELGROUP-1/CHANNEL-6" version="MNL25R3_2513_101" operation="create">
-      <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-12/ANTL-2</p>
+    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-21/CHANNELGROUP-1/CHANNEL-4" version="MNL25R3_2513_101" operation="create">
+      <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-12/ANTL-3</p>
       <p name="direction">RX</p>
     </managedObject>
     <managedObject class="com.nokia.srbts.mnl:LCELL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-22" version="MNL25R3_2513_101" operation="create">
@@ -14591,12 +14591,12 @@
       <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-22/ANTL-1</p>
       <p name="direction">TX</p>
     </managedObject>
-    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-22/CHANNELGROUP-1/CHANNEL-5" version="MNL25R3_2513_101" operation="create">
-      <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-22/ANTL-2</p>
+    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-22/CHANNELGROUP-1/CHANNEL-3" version="MNL25R3_2513_101" operation="create">
+      <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-22/ANTL-3</p>
       <p name="direction">TX</p>
     </managedObject>
-    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-22/CHANNELGROUP-1/CHANNEL-6" version="MNL25R3_2513_101" operation="create">
-      <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-22/ANTL-2</p>
+    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-22/CHANNELGROUP-1/CHANNEL-4" version="MNL25R3_2513_101" operation="create">
+      <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-22/ANTL-3</p>
       <p name="direction">RX</p>
     </managedObject>
     <managedObject class="com.nokia.srbts.mnl:LCELL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-31" version="MNL25R3_2513_101" operation="create">
@@ -14613,12 +14613,12 @@
       <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-12/ANTL-1</p>
       <p name="direction">TX</p>
     </managedObject>
-    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-31/CHANNELGROUP-1/CHANNEL-5" version="MNL25R3_2513_101" operation="create">
-      <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-12/ANTL-2</p>
+    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-31/CHANNELGROUP-1/CHANNEL-3" version="MNL25R3_2513_101" operation="create">
+      <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-12/ANTL-3</p>
       <p name="direction">TX</p>
     </managedObject>
-    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-31/CHANNELGROUP-1/CHANNEL-6" version="MNL25R3_2513_101" operation="create">
-      <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-12/ANTL-2</p>
+    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-31/CHANNELGROUP-1/CHANNEL-4" version="MNL25R3_2513_101" operation="create">
+      <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-12/ANTL-3</p>
       <p name="direction">RX</p>
     </managedObject>
     <managedObject class="com.nokia.srbts.mnl:LCELL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-32" version="MNL25R3_2513_101" operation="create">
@@ -14635,12 +14635,12 @@
       <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-22/ANTL-1</p>
       <p name="direction">TX</p>
     </managedObject>
-    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-32/CHANNELGROUP-1/CHANNEL-5" version="MNL25R3_2513_101" operation="create">
-      <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-22/ANTL-2</p>
+    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-32/CHANNELGROUP-1/CHANNEL-3" version="MNL25R3_2513_101" operation="create">
+      <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-22/ANTL-3</p>
       <p name="direction">TX</p>
     </managedObject>
-    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-32/CHANNELGROUP-1/CHANNEL-6" version="MNL25R3_2513_101" operation="create">
-      <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-22/ANTL-2</p>
+    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-32/CHANNELGROUP-1/CHANNEL-4" version="MNL25R3_2513_101" operation="create">
+      <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-22/ANTL-3</p>
       <p name="direction">RX</p>
     </managedObject>
     <managedObject class="com.nokia.srbts.mnl:LCELL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-51" version="MNL25R3_2513_101" operation="create">
@@ -22270,12 +22270,30 @@
       <p name="mtWBTSLevelMon">60min</p>
       <p name="mtWBTSR99Res">60min</p>
     </managedObject>
-    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-21/CHANNELGROUP-1/CHANNEL-3" version="MNL25R3_2513_101" operation="create">
-      <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-12/ANTL-3</p>
+    <managedObject class="com.nokia.srbts.tnl:ETHLK" distName="MRBTS-91980/TNLSVC-1/TNL-1/ETHSVC-1/ETHLK-1" version="TNL25R3_2513_101" operation="create">
+      <p name="administrativeState">unlocked</p>
+      <p name="connectorLabel">EIF1</p>
+      <p name="l2IngressRate">10000000</p>
+      <p name="modDN">MRBTS-91980/EQM-1/APEQM-1/CABINET-1/SMOD-1</p>
+      <p name="speedAndDuplex">AUTODETECT</p>
+    </managedObject>
+    <managedObject class="com.nokia.srbts.tnl:BRGPRT" distName="MRBTS-91980/TNLSVC-1/TNL-1/ETHSVC-1/L2SWI-1/BRGPRT-1" version="TNL25R3_2513_101" operation="create">
+      <p name="acceptableFrameTypes">ADMIT_ALL</p>
+      <p name="ethlkDN">MRBTS-91980/TNLSVC-1/TNL-1/ETHSVC-1/ETHLK-1</p>
+      <p name="flushFdbOnLos">false</p>
+      <p name="l2BurstSize">1048576</p>
+      <p name="l2ShaperRate">10000000</p>
+      <p name="portDefaultVlanId">1</p>
+    </managedObject>
+    <managedObject class="com.nokia.srbts.tnl:ETHIF" distName="MRBTS-91980/TNLSVC-1/TNL-1/ETHSVC-1/ETHIF-2" version="TNL25R3_2513_101" operation="create">
+      <p name="linkSelectorDN">MRBTS-91980/TNLSVC-1/TNL-1/ETHSVC-1/L2SWI-1/BRGPRT-1</p>
+    </managedObject>
+    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-21/CHANNELGROUP-1/CHANNEL-5" version="MNL25R3_2513_101" operation="create">
+      <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-12/ANTL-2</p>
       <p name="direction">TX</p>
     </managedObject>
-    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-21/CHANNELGROUP-1/CHANNEL-4" version="MNL25R3_2513_101" operation="create">
-      <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-12/ANTL-3</p>
+    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-21/CHANNELGROUP-1/CHANNEL-6" version="MNL25R3_2513_101" operation="create">
+      <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-12/ANTL-2</p>
       <p name="direction">RX</p>
     </managedObject>
     <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-21/CHANNELGROUP-1/CHANNEL-7" version="MNL25R3_2513_101" operation="create">
@@ -22286,12 +22304,12 @@
       <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-12/ANTL-4</p>
       <p name="direction">RX</p>
     </managedObject>
-    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-22/CHANNELGROUP-1/CHANNEL-3" version="MNL25R3_2513_101" operation="create">
-      <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-22/ANTL-3</p>
+    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-22/CHANNELGROUP-1/CHANNEL-5" version="MNL25R3_2513_101" operation="create">
+      <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-22/ANTL-2</p>
       <p name="direction">TX</p>
     </managedObject>
-    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-22/CHANNELGROUP-1/CHANNEL-4" version="MNL25R3_2513_101" operation="create">
-      <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-22/ANTL-3</p>
+    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-22/CHANNELGROUP-1/CHANNEL-6" version="MNL25R3_2513_101" operation="create">
+      <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-22/ANTL-2</p>
       <p name="direction">RX</p>
     </managedObject>
     <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-22/CHANNELGROUP-1/CHANNEL-7" version="MNL25R3_2513_101" operation="create">
@@ -22302,12 +22320,12 @@
       <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-22/ANTL-4</p>
       <p name="direction">RX</p>
     </managedObject>
-    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-31/CHANNELGROUP-1/CHANNEL-3" version="MNL25R3_2513_101" operation="create">
-      <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-12/ANTL-3</p>
+    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-31/CHANNELGROUP-1/CHANNEL-5" version="MNL25R3_2513_101" operation="create">
+      <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-12/ANTL-2</p>
       <p name="direction">TX</p>
     </managedObject>
-    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-31/CHANNELGROUP-1/CHANNEL-4" version="MNL25R3_2513_101" operation="create">
-      <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-12/ANTL-3</p>
+    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-31/CHANNELGROUP-1/CHANNEL-6" version="MNL25R3_2513_101" operation="create">
+      <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-12/ANTL-2</p>
       <p name="direction">RX</p>
     </managedObject>
     <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-31/CHANNELGROUP-1/CHANNEL-7" version="MNL25R3_2513_101" operation="create">
@@ -22318,12 +22336,12 @@
       <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-12/ANTL-4</p>
       <p name="direction">RX</p>
     </managedObject>
-    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-32/CHANNELGROUP-1/CHANNEL-3" version="MNL25R3_2513_101" operation="create">
-      <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-22/ANTL-3</p>
+    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-32/CHANNELGROUP-1/CHANNEL-5" version="MNL25R3_2513_101" operation="create">
+      <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-22/ANTL-2</p>
       <p name="direction">TX</p>
     </managedObject>
-    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-32/CHANNELGROUP-1/CHANNEL-4" version="MNL25R3_2513_101" operation="create">
-      <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-22/ANTL-3</p>
+    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-32/CHANNELGROUP-1/CHANNEL-6" version="MNL25R3_2513_101" operation="create">
+      <p name="antlDN">MRBTS-91980/EQM-1/APEQM-1/RMOD-22/ANTL-2</p>
       <p name="direction">RX</p>
     </managedObject>
     <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-91980/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-32/CHANNELGROUP-1/CHANNEL-7" version="MNL25R3_2513_101" operation="create">

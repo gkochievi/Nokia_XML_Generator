@@ -2,7 +2,7 @@
 <raml xmlns="raml21.xsd" version="2.1">
   <cmData type="plan" scope="all" id="4208913589">
     <header>
-      <log action="create" dateTime="2026-03-04T08:20:16.361Z"/>
+      <log action="create" dateTime="2026-03-18T09:19:48.030Z"/>
     </header>
     <managedObject class="com.nokia.srbts:MRBTS" distName="MRBTS-90072" version="SBTS25R3_2505_100" operation="create">
       <p name="btsName">TBLS-Switch-5G</p>
@@ -4437,7 +4437,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -6660,7 +6660,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -8748,7 +8748,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -10918,7 +10918,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -13234,7 +13234,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -15381,7 +15381,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -17296,7 +17296,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -19237,7 +19237,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -20970,7 +20970,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -22919,7 +22919,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -25344,7 +25344,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -28562,7 +28562,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -31152,7 +31152,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -33833,7 +33833,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -37177,7 +37177,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>

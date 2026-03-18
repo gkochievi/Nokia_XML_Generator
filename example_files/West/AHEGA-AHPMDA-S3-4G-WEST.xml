@@ -2,7 +2,7 @@
 <raml xmlns="raml21.xsd" version="2.1">
   <cmData type="plan" scope="all" id="4208913589">
     <header>
-      <log action="create" dateTime="2026-03-18T09:41:37.467Z"/>
+      <log action="create" dateTime="2026-03-18T09:43:11.012Z"/>
     </header>
     <managedObject class="com.nokia.srbts:MRBTS" distName="MRBTS-70944" version="SBTS25R1FSM3_2419_100" operation="create">
       <p name="btsName">MEGR-Senaki-70-Mgt</p>
@@ -768,7 +768,7 @@
       <p name="legacyWideCarrierMode">false</p>
       <p name="pimCancellingEnabled">true</p>
       <p name="plainTextConnectionAllowed">true</p>
-      <p name="prodCodePlanned">474090A</p>
+      <p name="prodCodePlanned">473995A</p>
     </managedObject>
     <managedObject class="com.nokia.srbts.eqm:ANTL" distName="MRBTS-70944/EQM-1/APEQM-1/RMOD-12/ANTL-1" version="EQM24R3FSM3_2409_100" operation="create">
       <p name="antPortId">1</p>
@@ -876,7 +876,7 @@
       <p name="legacyWideCarrierMode">false</p>
       <p name="pimCancellingEnabled">true</p>
       <p name="plainTextConnectionAllowed">true</p>
-      <p name="prodCodePlanned">474090A</p>
+      <p name="prodCodePlanned">473995A</p>
     </managedObject>
     <managedObject class="com.nokia.srbts.eqm:ANTL" distName="MRBTS-70944/EQM-1/APEQM-1/RMOD-22/ANTL-1" version="EQM24R3FSM3_2409_100" operation="create">
       <p name="antPortId">1</p>
@@ -984,7 +984,7 @@
       <p name="legacyWideCarrierMode">false</p>
       <p name="pimCancellingEnabled">true</p>
       <p name="plainTextConnectionAllowed">true</p>
-      <p name="prodCodePlanned">474090A</p>
+      <p name="prodCodePlanned">473995A</p>
     </managedObject>
     <managedObject class="com.nokia.srbts.eqm:ANTL" distName="MRBTS-70944/EQM-1/APEQM-1/RMOD-32/ANTL-1" version="EQM24R3FSM3_2409_100" operation="create">
       <p name="antPortId">1</p>
@@ -12762,14 +12762,6 @@
       <p name="antlDN">MRBTS-70944/EQM-1/APEQM-1/RMOD-12/ANTL-1</p>
       <p name="direction">TX</p>
     </managedObject>
-    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-70944/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-21/CHANNELGROUP-1/CHANNEL-5" version="MNL25R1FSM3_2419_100" operation="create">
-      <p name="antlDN">MRBTS-70944/EQM-1/APEQM-1/RMOD-12/ANTL-2</p>
-      <p name="direction">TX</p>
-    </managedObject>
-    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-70944/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-21/CHANNELGROUP-1/CHANNEL-6" version="MNL25R1FSM3_2419_100" operation="create">
-      <p name="antlDN">MRBTS-70944/EQM-1/APEQM-1/RMOD-12/ANTL-2</p>
-      <p name="direction">RX</p>
-    </managedObject>
     <managedObject class="com.nokia.srbts.mnl:LCELL" distName="MRBTS-70944/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-22" version="MNL25R1FSM3_2419_100" operation="create">
       <p name="actAsiDistMimo">false</p>
       <p name="actDynamicSharedSpectrum">false</p>
@@ -12783,14 +12775,6 @@
     <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-70944/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-22/CHANNELGROUP-1/CHANNEL-2" version="MNL25R1FSM3_2419_100" operation="create">
       <p name="antlDN">MRBTS-70944/EQM-1/APEQM-1/RMOD-22/ANTL-1</p>
       <p name="direction">TX</p>
-    </managedObject>
-    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-70944/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-22/CHANNELGROUP-1/CHANNEL-5" version="MNL25R1FSM3_2419_100" operation="create">
-      <p name="antlDN">MRBTS-70944/EQM-1/APEQM-1/RMOD-22/ANTL-2</p>
-      <p name="direction">TX</p>
-    </managedObject>
-    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-70944/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-22/CHANNELGROUP-1/CHANNEL-6" version="MNL25R1FSM3_2419_100" operation="create">
-      <p name="antlDN">MRBTS-70944/EQM-1/APEQM-1/RMOD-22/ANTL-2</p>
-      <p name="direction">RX</p>
     </managedObject>
     <managedObject class="com.nokia.srbts.mnl:LCELL" distName="MRBTS-70944/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-23" version="MNL25R1FSM3_2419_100" operation="create">
       <p name="actAsiDistMimo">false</p>
@@ -12806,14 +12790,6 @@
       <p name="antlDN">MRBTS-70944/EQM-1/APEQM-1/RMOD-32/ANTL-1</p>
       <p name="direction">TX</p>
     </managedObject>
-    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-70944/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-23/CHANNELGROUP-1/CHANNEL-5" version="MNL25R1FSM3_2419_100" operation="create">
-      <p name="antlDN">MRBTS-70944/EQM-1/APEQM-1/RMOD-32/ANTL-2</p>
-      <p name="direction">TX</p>
-    </managedObject>
-    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-70944/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-23/CHANNELGROUP-1/CHANNEL-6" version="MNL25R1FSM3_2419_100" operation="create">
-      <p name="antlDN">MRBTS-70944/EQM-1/APEQM-1/RMOD-32/ANTL-2</p>
-      <p name="direction">RX</p>
-    </managedObject>
     <managedObject class="com.nokia.srbts.mnl:LCELL" distName="MRBTS-70944/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-31" version="MNL25R1FSM3_2419_100" operation="create">
       <p name="actAsiDistMimo">false</p>
       <p name="actDynamicSharedSpectrum">false</p>
@@ -12826,14 +12802,6 @@
     </managedObject>
     <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-70944/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-31/CHANNELGROUP-1/CHANNEL-2" version="MNL25R1FSM3_2419_100" operation="create">
       <p name="antlDN">MRBTS-70944/EQM-1/APEQM-1/RMOD-12/ANTL-3</p>
-      <p name="direction">RX</p>
-    </managedObject>
-    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-70944/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-31/CHANNELGROUP-1/CHANNEL-3" version="MNL25R1FSM3_2419_100" operation="create">
-      <p name="antlDN">MRBTS-70944/EQM-1/APEQM-1/RMOD-12/ANTL-4</p>
-      <p name="direction">TX</p>
-    </managedObject>
-    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-70944/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-31/CHANNELGROUP-1/CHANNEL-4" version="MNL25R1FSM3_2419_100" operation="create">
-      <p name="antlDN">MRBTS-70944/EQM-1/APEQM-1/RMOD-12/ANTL-4</p>
       <p name="direction">RX</p>
     </managedObject>
     <managedObject class="com.nokia.srbts.mnl:LCELL" distName="MRBTS-70944/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-32" version="MNL25R1FSM3_2419_100" operation="create">
@@ -12850,14 +12818,6 @@
       <p name="antlDN">MRBTS-70944/EQM-1/APEQM-1/RMOD-22/ANTL-3</p>
       <p name="direction">RX</p>
     </managedObject>
-    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-70944/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-32/CHANNELGROUP-1/CHANNEL-3" version="MNL25R1FSM3_2419_100" operation="create">
-      <p name="antlDN">MRBTS-70944/EQM-1/APEQM-1/RMOD-22/ANTL-4</p>
-      <p name="direction">TX</p>
-    </managedObject>
-    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-70944/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-32/CHANNELGROUP-1/CHANNEL-4" version="MNL25R1FSM3_2419_100" operation="create">
-      <p name="antlDN">MRBTS-70944/EQM-1/APEQM-1/RMOD-22/ANTL-4</p>
-      <p name="direction">RX</p>
-    </managedObject>
     <managedObject class="com.nokia.srbts.mnl:LCELL" distName="MRBTS-70944/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-33" version="MNL25R1FSM3_2419_100" operation="create">
       <p name="actAsiDistMimo">false</p>
       <p name="actDynamicSharedSpectrum">false</p>
@@ -12870,14 +12830,6 @@
     </managedObject>
     <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-70944/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-33/CHANNELGROUP-1/CHANNEL-2" version="MNL25R1FSM3_2419_100" operation="create">
       <p name="antlDN">MRBTS-70944/EQM-1/APEQM-1/RMOD-32/ANTL-3</p>
-      <p name="direction">RX</p>
-    </managedObject>
-    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-70944/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-33/CHANNELGROUP-1/CHANNEL-3" version="MNL25R1FSM3_2419_100" operation="create">
-      <p name="antlDN">MRBTS-70944/EQM-1/APEQM-1/RMOD-32/ANTL-4</p>
-      <p name="direction">TX</p>
-    </managedObject>
-    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-70944/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-33/CHANNELGROUP-1/CHANNEL-4" version="MNL25R1FSM3_2419_100" operation="create">
-      <p name="antlDN">MRBTS-70944/EQM-1/APEQM-1/RMOD-32/ANTL-4</p>
       <p name="direction">RX</p>
     </managedObject>
     <managedObject class="com.nokia.srbts.mnl:LCELW" distName="MRBTS-70944/MNL-1/MNLENT-1/CELLMAPPING-1/LCELW-11" version="MNL25R1FSM3_2419_100" operation="create">
@@ -13918,6 +13870,54 @@
       <p name="mtSignLoadWBTS">60min</p>
       <p name="mtWBTSLevelMon">60min</p>
       <p name="mtWBTSR99Res">60min</p>
+    </managedObject>
+    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-70944/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-21/CHANNELGROUP-1/CHANNEL-3" version="MNL25R1FSM3_2419_100" operation="create">
+      <p name="antlDN">MRBTS-70944/EQM-1/APEQM-1/RMOD-12/ANTL-3</p>
+      <p name="direction">TX</p>
+    </managedObject>
+    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-70944/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-21/CHANNELGROUP-1/CHANNEL-4" version="MNL25R1FSM3_2419_100" operation="create">
+      <p name="antlDN">MRBTS-70944/EQM-1/APEQM-1/RMOD-12/ANTL-3</p>
+      <p name="direction">RX</p>
+    </managedObject>
+    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-70944/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-22/CHANNELGROUP-1/CHANNEL-3" version="MNL25R1FSM3_2419_100" operation="create">
+      <p name="antlDN">MRBTS-70944/EQM-1/APEQM-1/RMOD-22/ANTL-3</p>
+      <p name="direction">TX</p>
+    </managedObject>
+    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-70944/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-22/CHANNELGROUP-1/CHANNEL-4" version="MNL25R1FSM3_2419_100" operation="create">
+      <p name="antlDN">MRBTS-70944/EQM-1/APEQM-1/RMOD-22/ANTL-3</p>
+      <p name="direction">RX</p>
+    </managedObject>
+    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-70944/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-23/CHANNELGROUP-1/CHANNEL-3" version="MNL25R1FSM3_2419_100" operation="create">
+      <p name="antlDN">MRBTS-70944/EQM-1/APEQM-1/RMOD-32/ANTL-3</p>
+      <p name="direction">TX</p>
+    </managedObject>
+    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-70944/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-23/CHANNELGROUP-1/CHANNEL-4" version="MNL25R1FSM3_2419_100" operation="create">
+      <p name="antlDN">MRBTS-70944/EQM-1/APEQM-1/RMOD-32/ANTL-3</p>
+      <p name="direction">RX</p>
+    </managedObject>
+    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-70944/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-31/CHANNELGROUP-1/CHANNEL-3" version="MNL25R1FSM3_2419_100" operation="create">
+      <p name="antlDN">MRBTS-70944/EQM-1/APEQM-1/RMOD-12/ANTL-1</p>
+      <p name="direction">TX</p>
+    </managedObject>
+    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-70944/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-31/CHANNELGROUP-1/CHANNEL-4" version="MNL25R1FSM3_2419_100" operation="create">
+      <p name="antlDN">MRBTS-70944/EQM-1/APEQM-1/RMOD-12/ANTL-1</p>
+      <p name="direction">RX</p>
+    </managedObject>
+    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-70944/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-32/CHANNELGROUP-1/CHANNEL-3" version="MNL25R1FSM3_2419_100" operation="create">
+      <p name="antlDN">MRBTS-70944/EQM-1/APEQM-1/RMOD-22/ANTL-1</p>
+      <p name="direction">TX</p>
+    </managedObject>
+    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-70944/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-32/CHANNELGROUP-1/CHANNEL-4" version="MNL25R1FSM3_2419_100" operation="create">
+      <p name="antlDN">MRBTS-70944/EQM-1/APEQM-1/RMOD-22/ANTL-1</p>
+      <p name="direction">RX</p>
+    </managedObject>
+    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-70944/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-33/CHANNELGROUP-1/CHANNEL-3" version="MNL25R1FSM3_2419_100" operation="create">
+      <p name="antlDN">MRBTS-70944/EQM-1/APEQM-1/RMOD-32/ANTL-1</p>
+      <p name="direction">TX</p>
+    </managedObject>
+    <managedObject class="com.nokia.srbts.mnl:CHANNEL" distName="MRBTS-70944/MNL-1/MNLENT-1/CELLMAPPING-1/LCELL-33/CHANNELGROUP-1/CHANNEL-4" version="MNL25R1FSM3_2419_100" operation="create">
+      <p name="antlDN">MRBTS-70944/EQM-1/APEQM-1/RMOD-32/ANTL-1</p>
+      <p name="direction">RX</p>
     </managedObject>
   </cmData>
 </raml>

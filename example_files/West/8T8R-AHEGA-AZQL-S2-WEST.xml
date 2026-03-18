@@ -2,7 +2,7 @@
 <raml xmlns="raml21.xsd" version="2.1">
   <cmData type="plan" scope="all" id="4208913589">
     <header>
-      <log action="create" dateTime="2026-03-12T10:49:12.311Z"/>
+      <log action="create" dateTime="2026-03-18T09:31:30.376Z"/>
     </header>
     <managedObject class="com.nokia.srbts:MRBTS" distName="MRBTS-91980" version="SBTS25R3_2505_100" operation="create">
       <p name="btsName">TBLS_Tskneti_Road</p>
@@ -1457,7 +1457,7 @@
           <p name="arpEnDcMask">65534</p>
           <p name="boostFactorDl">20</p>
           <p name="boostFactorUl">20</p>
-          <p name="drxProfileIndex">3</p>
+          <p name="drxProfileIndex">2</p>
           <p name="dscp">34</p>
           <p name="enforceTtiBundling">false</p>
           <p name="lcgid">0</p>
@@ -2693,7 +2693,7 @@
       <p name="actDlsVoicePacketAgg">true</p>
       <p name="actDownSampling">false</p>
       <p name="actDrx">true</p>
-      <p name="actDrxDuringMeasGap">false</p>
+      <p name="actDrxDuringMeasGap">true</p>
       <p name="actDrxDuringTTIB">true</p>
       <p name="actDynamicDataSessionProf">false</p>
       <p name="actEDrxIdle">false</p>
@@ -3332,7 +3332,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -4047,7 +4047,7 @@
       <p name="actDlsVoicePacketAgg">true</p>
       <p name="actDownSampling">false</p>
       <p name="actDrx">true</p>
-      <p name="actDrxDuringMeasGap">false</p>
+      <p name="actDrxDuringMeasGap">true</p>
       <p name="actDrxDuringTTIB">true</p>
       <p name="actDynamicDataSessionProf">false</p>
       <p name="actEDrxIdle">false</p>
@@ -4686,7 +4686,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -5401,7 +5401,7 @@
       <p name="actDlsVoicePacketAgg">true</p>
       <p name="actDownSampling">false</p>
       <p name="actDrx">true</p>
-      <p name="actDrxDuringMeasGap">false</p>
+      <p name="actDrxDuringMeasGap">true</p>
       <p name="actDrxDuringTTIB">true</p>
       <p name="actDynamicDataSessionProf">false</p>
       <p name="actEDrxIdle">false</p>
@@ -5945,7 +5945,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -6107,7 +6107,6 @@
       <p name="actUciOnlyGrants">false</p>
       <p name="actUlMultiCluster">false</p>
       <p name="actUlPwrRestrScn">none</p>
-      <p name="activatedMimoTM">TM4</p>
       <p name="addNumDrbRadioReasHo">54</p>
       <p name="addNumDrbTimeCriticalHo">72</p>
       <p name="addNumQci1DrbRadioReasHo">18</p>
@@ -6115,7 +6114,7 @@
       <p name="blankedPucch">0</p>
       <p name="cqiAperPollT">3</p>
       <p name="dlChBw">15 MHz</p>
-      <p name="dlMimoMode">Closed Loop MIMO (4x4)</p>
+      <p name="dlMimoMode">Closed Loop Mimo</p>
       <p name="dlRsBoost">0dB</p>
       <p name="dlpcMimoComp">0</p>
       <p name="earfcnDL">1875</p>
@@ -6658,7 +6657,7 @@
       <p name="actDlsVoicePacketAgg">true</p>
       <p name="actDownSampling">false</p>
       <p name="actDrx">true</p>
-      <p name="actDrxDuringMeasGap">false</p>
+      <p name="actDrxDuringMeasGap">true</p>
       <p name="actDrxDuringTTIB">true</p>
       <p name="actDynamicDataSessionProf">false</p>
       <p name="actEDrxIdle">false</p>
@@ -7202,7 +7201,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -7364,7 +7363,6 @@
       <p name="actUciOnlyGrants">false</p>
       <p name="actUlMultiCluster">false</p>
       <p name="actUlPwrRestrScn">none</p>
-      <p name="activatedMimoTM">TM4</p>
       <p name="addNumDrbRadioReasHo">54</p>
       <p name="addNumDrbTimeCriticalHo">72</p>
       <p name="addNumQci1DrbRadioReasHo">18</p>
@@ -7372,7 +7370,7 @@
       <p name="blankedPucch">0</p>
       <p name="cqiAperPollT">3</p>
       <p name="dlChBw">15 MHz</p>
-      <p name="dlMimoMode">Closed Loop MIMO (4x4)</p>
+      <p name="dlMimoMode">Closed Loop Mimo</p>
       <p name="dlRsBoost">0dB</p>
       <p name="dlpcMimoComp">0</p>
       <p name="earfcnDL">1875</p>
@@ -7915,7 +7913,7 @@
       <p name="actDlsVoicePacketAgg">true</p>
       <p name="actDownSampling">false</p>
       <p name="actDrx">true</p>
-      <p name="actDrxDuringMeasGap">false</p>
+      <p name="actDrxDuringMeasGap">true</p>
       <p name="actDrxDuringTTIB">true</p>
       <p name="actDynamicDataSessionProf">false</p>
       <p name="actEDrxIdle">false</p>
@@ -8459,7 +8457,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -8621,7 +8619,6 @@
       <p name="actUciOnlyGrants">false</p>
       <p name="actUlMultiCluster">false</p>
       <p name="actUlPwrRestrScn">none</p>
-      <p name="activatedMimoTM">TM4</p>
       <p name="addNumDrbRadioReasHo">54</p>
       <p name="addNumDrbTimeCriticalHo">72</p>
       <p name="addNumQci1DrbRadioReasHo">18</p>
@@ -8629,7 +8626,7 @@
       <p name="blankedPucch">0</p>
       <p name="cqiAperPollT">3</p>
       <p name="dlChBw">10 MHz</p>
-      <p name="dlMimoMode">Closed Loop MIMO (4x4)</p>
+      <p name="dlMimoMode">Closed Loop Mimo</p>
       <p name="dlRsBoost">0dB</p>
       <p name="dlpcMimoComp">0</p>
       <p name="earfcnDL">550</p>
@@ -9172,7 +9169,7 @@
       <p name="actDlsVoicePacketAgg">true</p>
       <p name="actDownSampling">false</p>
       <p name="actDrx">true</p>
-      <p name="actDrxDuringMeasGap">false</p>
+      <p name="actDrxDuringMeasGap">true</p>
       <p name="actDrxDuringTTIB">true</p>
       <p name="actDynamicDataSessionProf">false</p>
       <p name="actEDrxIdle">false</p>
@@ -9716,7 +9713,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -9878,7 +9875,6 @@
       <p name="actUciOnlyGrants">false</p>
       <p name="actUlMultiCluster">false</p>
       <p name="actUlPwrRestrScn">none</p>
-      <p name="activatedMimoTM">TM4</p>
       <p name="addNumDrbRadioReasHo">54</p>
       <p name="addNumDrbTimeCriticalHo">72</p>
       <p name="addNumQci1DrbRadioReasHo">18</p>
@@ -9886,7 +9882,7 @@
       <p name="blankedPucch">0</p>
       <p name="cqiAperPollT">3</p>
       <p name="dlChBw">10 MHz</p>
-      <p name="dlMimoMode">Closed Loop MIMO (4x4)</p>
+      <p name="dlMimoMode">Closed Loop Mimo</p>
       <p name="dlRsBoost">0dB</p>
       <p name="dlpcMimoComp">0</p>
       <p name="earfcnDL">550</p>
@@ -10426,8 +10422,8 @@
       <p name="actDlsOldtc">false</p>
       <p name="actDlsVoicePacketAgg">true</p>
       <p name="actDownSampling">false</p>
-      <p name="actDrx">false</p>
-      <p name="actDrxDuringMeasGap">false</p>
+      <p name="actDrx">true</p>
+      <p name="actDrxDuringMeasGap">true</p>
       <p name="actDrxDuringTTIB">false</p>
       <p name="actDynamicDataSessionProf">false</p>
       <p name="actEDrxIdle">false</p>
@@ -10821,7 +10817,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">6</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">6</p>
         </item>
       </list>
@@ -11353,8 +11349,8 @@
       <p name="actDlsOldtc">false</p>
       <p name="actDlsVoicePacketAgg">true</p>
       <p name="actDownSampling">false</p>
-      <p name="actDrx">false</p>
-      <p name="actDrxDuringMeasGap">false</p>
+      <p name="actDrx">true</p>
+      <p name="actDrxDuringMeasGap">true</p>
       <p name="actDrxDuringTTIB">false</p>
       <p name="actDynamicDataSessionProf">false</p>
       <p name="actEDrxIdle">false</p>
@@ -11748,7 +11744,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">6</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">6</p>
         </item>
       </list>
@@ -12280,8 +12276,8 @@
       <p name="actDlsOldtc">false</p>
       <p name="actDlsVoicePacketAgg">true</p>
       <p name="actDownSampling">false</p>
-      <p name="actDrx">false</p>
-      <p name="actDrxDuringMeasGap">false</p>
+      <p name="actDrx">true</p>
+      <p name="actDrxDuringMeasGap">true</p>
       <p name="actDrxDuringTTIB">false</p>
       <p name="actDynamicDataSessionProf">false</p>
       <p name="actEDrxIdle">false</p>
@@ -12675,7 +12671,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">6</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">6</p>
         </item>
       </list>
@@ -13207,8 +13203,8 @@
       <p name="actDlsOldtc">false</p>
       <p name="actDlsVoicePacketAgg">true</p>
       <p name="actDownSampling">false</p>
-      <p name="actDrx">false</p>
-      <p name="actDrxDuringMeasGap">false</p>
+      <p name="actDrx">true</p>
+      <p name="actDrxDuringMeasGap">true</p>
       <p name="actDrxDuringTTIB">false</p>
       <p name="actDynamicDataSessionProf">false</p>
       <p name="actEDrxIdle">false</p>
@@ -13602,7 +13598,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">6</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">6</p>
         </item>
       </list>

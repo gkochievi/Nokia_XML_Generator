@@ -2,7 +2,7 @@
 <raml xmlns="raml21.xsd" version="2.1">
   <cmData type="plan" scope="all" id="4208913589">
     <header>
-      <log action="create" dateTime="2026-03-04T08:14:23.825Z"/>
+      <log action="create" dateTime="2026-03-18T09:21:51.598Z"/>
     </header>
     <managedObject class="com.nokia.srbts:MRBTS" distName="MRBTS-90072" version="SBTS25R3_2505_100" operation="create">
       <p name="btsName">TBLS-Switch-5G</p>
@@ -3712,6 +3712,11 @@
       <p name="rrcConnectedLowerThresh">10</p>
       <p name="rrcConnectedUpperThresh">80</p>
     </managedObject>
+    <managedObject class="NOKLTE:LNADJGNB" distName="MRBTS-90072/LNBTS-90072/LNADJGNB-0" version="xL25R3_2513_101" operation="create">
+      <p name="administrativeState">unlocked</p>
+      <p name="cPlaneIpAddr">10.112.0.206</p>
+      <p name="cPlaneIpAddrCtrl">oamControlled</p>
+    </managedObject>
     <managedObject class="NOKLTE:LNBTS_FDD" distName="MRBTS-90072/LNBTS-90072/LNBTS_FDD-0" version="xL25R3_2513_101" operation="create">
       <p name="act1xSrvcc">false</p>
       <p name="actConvVoice">true</p>
@@ -4433,7 +4438,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -6657,7 +6662,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -8746,7 +8751,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -10916,7 +10921,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -12952,7 +12957,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -13517,7 +13522,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -14082,7 +14087,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -14927,7 +14932,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -17074,7 +17079,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -18989,7 +18994,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -20930,7 +20935,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -22663,7 +22668,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -24612,7 +24617,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -27037,7 +27042,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -30255,7 +30260,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -32845,7 +32850,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -35526,7 +35531,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -38870,7 +38875,7 @@
           <p name="drxLongCycle">40ms</p>
           <p name="drxOnDuratT">4</p>
           <p name="drxProfileIndex">2</p>
-          <p name="drxProfilePriority">40</p>
+          <p name="drxProfilePriority">50</p>
           <p name="drxRetransT">4</p>
         </item>
       </list>
@@ -50737,6 +50742,10 @@
         </item>
       </list>
     </managedObject>
+    <managedObject class="com.nokia.srbts.nrbts:NRX2LINK_TRUST" distName="MRBTS-90072/NRBTS-90072/NRX2LINK_TRUST-1" version="NRBTSCL25R3_2513_101" operation="create">
+      <p name="ipV4Addr">10.111.0.206</p>
+      <p name="x2LinkTrustCtrl">oamControlled</p>
+    </managedObject>
     <managedObject class="com.nokia.srbts.nrbts:SNSSAI" distName="MRBTS-90072/NRBTS-90072/SNSSAI-1" version="NRBTSCL25R3_2513_101" operation="create">
       <p name="administrativeState">Unlocked</p>
       <p name="applicationType">disabled</p>
@@ -51541,15 +51550,6 @@
       <p name="mtSignLoadWBTS">60min</p>
       <p name="mtWBTSLevelMon">60min</p>
       <p name="mtWBTSR99Res">60min</p>
-    </managedObject>
-    <managedObject class="NOKLTE:LNADJGNB" distName="MRBTS-90072/LNBTS-90072/LNADJGNB-0" version="xL25R3_2513_101" operation="create">
-      <p name="administrativeState">unlocked</p>
-      <p name="cPlaneIpAddr">10.112.0.206</p>
-      <p name="cPlaneIpAddrCtrl">oamControlled</p>
-    </managedObject>
-    <managedObject class="com.nokia.srbts.nrbts:NRX2LINK_TRUST" distName="MRBTS-90072/NRBTS-90072/NRX2LINK_TRUST-1" version="NRBTSCL25R3_2513_101" operation="create">
-      <p name="ipV4Addr">10.111.0.206</p>
-      <p name="x2LinkTrustCtrl">oamControlled</p>
     </managedObject>
   </cmData>
 </raml>
