@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Modal, Tabs, List, Button, Upload, Space, Input, message, Segmented, Empty } from 'antd';
+import { Modal, Tabs, List, Button, Upload, Space, Input, message, Segmented, Empty, Popconfirm } from 'antd';
 import {
   DeleteOutlined,
   DownloadOutlined,
@@ -35,6 +35,7 @@ export default function FileManagerModal({ open, onClose, region, refreshSignal 
   const [genFiles, setGenFiles] = useState<{ name: string; mtime?: number; size?: number }[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
+  const [clearConfirmLoading, setClearConfirmLoading] = useState(false);
 
   const loadRef = useCallback(async () => {
     setLoading(true);
@@ -228,28 +229,31 @@ export default function FileManagerModal({ open, onClose, region, refreshSignal 
     <>
       <Space style={{ marginBottom: 14 }}>
         <Button icon={<ReloadOutlined />} size="small" onClick={loadGen} style={{ borderRadius: 8 }} />
-        <Button
-          danger
-          icon={<DeleteOutlined />}
-          size="small"
-          onClick={() => {
-            Modal.confirm({
-              title: <span style={{ color: '#fb7185' }}>{t('clearGeneratedConfirmTitle')}</span>,
-              content: <span>{t('clearGeneratedConfirmContent')}</span>,
-              okText: t('yes'),
-              cancelText: t('no'),
-              okButtonProps: { danger: true },
-              onOk: async () => {
-                await clearGeneratedFiles();
-                message.success(t('clearGeneratedFiles'));
-                loadGen();
-              },
-            });
+        <Popconfirm
+          title={<span style={{ color: '#e0e0f0' }}>{t('clearGeneratedConfirmContent')}</span>}
+          okText={t('yes')}
+          cancelText={t('no')}
+          onConfirm={async () => {
+            try {
+              setClearConfirmLoading(true);
+              await clearGeneratedFiles();
+              message.success(t('clearGeneratedFiles'));
+              await loadGen();
+            } finally {
+              setClearConfirmLoading(false);
+            }
           }}
-          style={{ borderRadius: 8 }}
         >
-          {t('clearGeneratedFiles')}
-        </Button>
+          <Button
+            danger
+            icon={<DeleteOutlined />}
+            size="small"
+            loading={clearConfirmLoading}
+            style={{ borderRadius: 8 }}
+          >
+            {t('clearGeneratedFiles')}
+          </Button>
+        </Popconfirm>
       </Space>
       <List
         size="small"
@@ -305,43 +309,45 @@ export default function FileManagerModal({ open, onClose, region, refreshSignal 
   };
 
   return (
-    <Modal
-      title={<span style={{ color: '#f0f0f5' }}>{t('manageFiles')}</span>}
-      open={open}
-      onCancel={onClose}
-      footer={
-        <Button onClick={onClose} style={{ borderRadius: 8 }}>
-          {t('close')}
-        </Button>
-      }
-      width={660}
-      styles={{ body: { padding: 0, display: 'flex', flexDirection: 'column', maxHeight: '70vh' } }}
-    >
-      <div style={{ padding: '16px 24px 0', flexShrink: 0 }}>
-        <Input
-          placeholder={t('filter') + '...'}
-          prefix={<SearchOutlined style={{ color: '#7878a0' }} />}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          allowClear
-          style={{ marginBottom: 12 }}
-        />
-        <Tabs
-          activeKey={activeTab}
-          onChange={(key) => { setActiveTab(key); setSearch(''); }}
-          items={[
-            { key: 'ref', label: `${t('referenceXmls')} (${filteredRef.length})` },
-            { key: 'ip', label: `${t('ipPlanFiles')} (${filteredIp.length})` },
-            { key: 'gen', label: `${t('generatedFiles')} (${filteredGen.length})` },
-          ]}
-          style={{ marginBottom: 0 }}
-        />
-      </div>
-      <div style={{ flex: 1, overflowY: 'auto', padding: '0 24px 16px' }}>
-        {activeTab === 'ref' && renderRefTab()}
-        {activeTab === 'ip' && renderIpTab()}
-        {activeTab === 'gen' && renderGenTab()}
-      </div>
-    </Modal>
+    <>
+      <Modal
+        title={<span style={{ color: '#f0f0f5' }}>{t('manageFiles')}</span>}
+        open={open}
+        onCancel={onClose}
+        footer={
+          <Button onClick={onClose} style={{ borderRadius: 8 }}>
+            {t('close')}
+          </Button>
+        }
+        width={660}
+        styles={{ body: { padding: 0, display: 'flex', flexDirection: 'column', maxHeight: '70vh' } }}
+      >
+        <div style={{ padding: '16px 24px 0', flexShrink: 0 }}>
+          <Input
+            placeholder={t('filter') + '...'}
+            prefix={<SearchOutlined style={{ color: '#7878a0' }} />}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            allowClear
+            style={{ marginBottom: 12 }}
+          />
+          <Tabs
+            activeKey={activeTab}
+            onChange={(key) => { setActiveTab(key); setSearch(''); }}
+            items={[
+              { key: 'ref', label: `${t('referenceXmls')} (${filteredRef.length})` },
+              { key: 'ip', label: `${t('ipPlanFiles')} (${filteredIp.length})` },
+              { key: 'gen', label: `${t('generatedFiles')} (${filteredGen.length})` },
+            ]}
+            style={{ marginBottom: 0 }}
+          />
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '0 24px 16px' }}>
+          {activeTab === 'ref' && renderRefTab()}
+          {activeTab === 'ip' && renderIpTab()}
+          {activeTab === 'gen' && renderGenTab()}
+        </div>
+      </Modal>
+    </>
   );
 }

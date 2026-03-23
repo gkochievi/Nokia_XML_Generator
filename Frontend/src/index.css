@@ -1161,3 +1161,61 @@ html[lang="ka"] body {
 .ant-notification-notice .ant-notification-close:hover {
   color: rgba(255, 255, 255, 0.9) !important;
 }
+
+/* ─── Styled Modal.confirm (clear generated files) ─── */
+.mod-confirm-modal .ant-modal-content,
+.mod-confirm-modal.ant-modal .ant-modal-content {
+  background: rgba(9, 9, 26, 0.96) !important;
+  border: 1px solid rgba(124, 58, 237, 0.25) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 18px 80px rgba(124, 58, 237, 0.18) !important;
+}
+.mod-confirm-modal .ant-modal-header,
+.mod-confirm-modal.ant-modal .ant-modal-header {
+  background: rgba(124, 58, 237, 0.06) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+.mod-confirm-modal .ant-modal-title,
+.mod-confirm-modal.ant-modal .ant-modal-title {
+  color: var(--text-primary) !important;
+}
+.mod-confirm-modal .ant-modal-body,
+.mod-confirm-modal.ant-modal .ant-modal-body {
+  color: var(--text-primary) !important;
+}
+.mod-confirm-modal .ant-modal-confirm-btns,
+.mod-confirm-modal.ant-modal .ant-modal-confirm-btns {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.mod-confirm-modal .ant-btn,
+.mod-confirm-modal.ant-modal .ant-btn {
+  border-radius: 10px !important;
+  background: rgba(124, 58, 237, 0.06) !important;
+  border: 1px solid rgba(124, 58, 237, 0.18) !important;
+  color: var(--text-primary) !important;
+}
+.mod-confirm-modal .ant-btn:hover,
+.mod-confirm-modal.ant-modal .ant-btn:hover {
+  background: rgba(124, 58, 237, 0.14) !important;
+  border-color: rgba(124, 58, 237, 0.35) !important;
+  color: #e0e0f0 !important;
+}
+.mod-confirm-modal .ant-btn-primary,
+.mod-confirm-modal.ant-modal .ant-btn-primary {
+  background: var(--gradient-main) !important;
+  border: none !important;
+  color: #ffffff !important;
+}
+.mod-confirm-modal .ant-btn-primary:hover,
+.mod-confirm-modal.ant-modal .ant-btn-primary:hover {
+  filter: brightness(1.05);
+}
+.mod-confirm-modal .ant-btn-dangerous,
+.mod-confirm-modal.ant-modal .ant-btn-dangerous {
+  /* keep danger styling but in dark theme */
+  border: 1px solid rgba(251, 113, 133, 0.35) !important;
+  background: rgba(251, 113, 133, 0.14) !important;
+  color: #fecdd3 !important;
+}
