@@ -12,6 +12,7 @@ import {
   listExampleXml,
   listExampleExcel,
   listGeneratedFiles,
+  clearGeneratedFiles,
   deleteExampleFile,
   deleteGeneratedFile,
   uploadExampleFile,
@@ -22,15 +23,16 @@ interface Props {
   open: boolean;
   onClose: () => void;
   region: string;
+  refreshSignal?: number;
 }
 
-export default function FileManagerModal({ open, onClose, region }: Props) {
+export default function FileManagerModal({ open, onClose, region, refreshSignal }: Props) {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('ref');
   const [refRegion, setRefRegion] = useState(region);
   const [refFiles, setRefFiles] = useState<string[]>([]);
   const [ipFiles, setIpFiles] = useState<string[]>([]);
-  const [genFiles, setGenFiles] = useState<{ name: string; mtime?: number }[]>([]);
+  const [genFiles, setGenFiles] = useState<{ name: string; mtime?: number; size?: number }[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
 
@@ -75,6 +77,12 @@ export default function FileManagerModal({ open, onClose, region }: Props) {
 
   useEffect(() => { setRefRegion(region); }, [region]);
   useEffect(() => { if (open && activeTab === 'ref') loadRef(); }, [refRegion, open, activeTab, loadRef]);
+  useEffect(() => {
+    if (!open) return;
+    if (activeTab !== 'gen') return;
+    if (typeof refreshSignal !== 'number') return;
+    loadGen();
+  }, [refreshSignal, open, activeTab, loadGen]);
 
   const q = search.toLowerCase();
 
@@ -220,6 +228,28 @@ export default function FileManagerModal({ open, onClose, region }: Props) {
     <>
       <Space style={{ marginBottom: 14 }}>
         <Button icon={<ReloadOutlined />} size="small" onClick={loadGen} style={{ borderRadius: 8 }} />
+        <Button
+          danger
+          icon={<DeleteOutlined />}
+          size="small"
+          onClick={() => {
+            Modal.confirm({
+              title: <span style={{ color: '#fb7185' }}>{t('clearGeneratedConfirmTitle')}</span>,
+              content: <span>{t('clearGeneratedConfirmContent')}</span>,
+              okText: t('yes'),
+              cancelText: t('no'),
+              okButtonProps: { danger: true },
+              onOk: async () => {
+                await clearGeneratedFiles();
+                message.success(t('clearGeneratedFiles'));
+                loadGen();
+              },
+            });
+          }}
+          style={{ borderRadius: 8 }}
+        >
+          {t('clearGeneratedFiles')}
+        </Button>
       </Space>
       <List
         size="small"
@@ -252,12 +282,27 @@ export default function FileManagerModal({ open, onClose, region }: Props) {
               {f.mtime && (
                 <span style={{ color: '#6b6b88', fontSize: 11 }}>{formatDate(f.mtime)}</span>
               )}
+              {typeof f.size === 'number' && (
+                <span style={{ color: '#6b6b88', fontSize: 11 }}>{formatBytes(f.size)}</span>
+              )}
             </div>
           </List.Item>
         )}
       />
     </>
   );
+
+  const formatBytes = (bytes?: number) => {
+    if (typeof bytes !== 'number' || bytes < 0) return '';
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    let i = 0;
+    let v = bytes;
+    while (v >= 1024 && i < units.length - 1) {
+      v /= 1024;
+      i += 1;
+    }
+    return `${v.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
+  };
 
   return (
     <Modal

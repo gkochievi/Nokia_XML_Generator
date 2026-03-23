@@ -24,10 +24,13 @@ export const deleteExampleFile = (filename: string, meta: { region?: string; cat
 /* ───── Generated Files ───── */
 
 export const listGeneratedFiles = () =>
-  api.get<{ success: boolean; files: string[]; filesWithMtime?: { name: string; mtime: number }[] }>('/api/generated-files');
+  api.get<{ success: boolean; files: string[]; filesWithMtime?: { name: string; mtime: number; size: number }[] }>('/api/generated-files');
 
 export const deleteGeneratedFile = (filename: string) =>
   api.post('/api/generated-files/delete', { filename });
+
+export const clearGeneratedFiles = () =>
+  api.post('/api/generated-files/clear');
 
 export const downloadUrl = (filename: string) => `/download/${encodeURIComponent(filename)}`;
 

@@ -1287,7 +1287,8 @@ def list_generated_files():
             if f.lower().endswith('.xml'):
                 fpath = os.path.join(gen_dir, f)
                 mtime = os.path.getmtime(fpath)
-                files.append({'name': f, 'mtime': mtime})
+                size = os.path.getsize(fpath)
+                files.append({'name': f, 'mtime': mtime, 'size': size})
         files.sort(key=lambda x: x['mtime'], reverse=True)
         return jsonify({'success': True, 'files': [f['name'] for f in files], 'filesWithMtime': files})
     except Exception as e:
@@ -1323,6 +1324,27 @@ def delete_generated_file_post():
         return jsonify({'success': True, 'deleted': filename})
     except Exception as e:
         logger.error(f"Error deleting generated file (POST): {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/generated-files/clear', methods=['POST'])
+def clear_generated_files():
+    """Delete all generated XML files."""
+    try:
+        gen_dir = app.config['GENERATED_FOLDER']
+        deleted = []
+        for f in os.listdir(gen_dir):
+            if not f.lower().endswith('.xml'):
+                continue
+            path = os.path.join(gen_dir, f)
+            try:
+                if os.path.exists(path):
+                    os.remove(path)
+                    deleted.append(f)
+            except Exception as e:
+                logger.error(f"Error deleting generated file {f}: {str(e)}")
+        return jsonify({'success': True, 'count': len(deleted), 'deleted': deleted})
+    except Exception as e:
+        logger.error(f"Error clearing generated files: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/example-files/extract-bts-name/<filename>', methods=['GET'])

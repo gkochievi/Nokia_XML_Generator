@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Typography,
   Row,
@@ -13,6 +13,7 @@ import {
   Tag,
   message,
   Tooltip,
+  Steps,
   Modal,
 } from 'antd';
 import {
@@ -36,6 +37,7 @@ import {
   FileProtectOutlined,
   HistoryOutlined,
   DownloadOutlined,
+  CopyOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
@@ -62,10 +64,19 @@ export default function ModernizationPage() {
 
   const [searchParams] = useSearchParams();
   const rolloutName = Form.useWatch('rolloutName', form);
+  const rolloutId = Form.useWatch('rolloutId', form);
+  const rolloutTac = Form.useWatch('rolloutTac', form);
   const [mode, setMode] = useState<'modernization' | 'rollout'>(
     searchParams.get('mode') === 'rollout' ? 'rollout' : 'modernization'
   );
-  const [region, setRegion] = useState('East');
+  const [region, setRegion] = useState(() => {
+    try {
+      const saved = localStorage.getItem('region');
+      return saved === 'West' ? 'West' : 'East';
+    } catch {
+      return 'East';
+    }
+  });
   const [existingFile, setExistingFile] = useState<File | null>(null);
   const [stationName, setStationName] = useState('');
   const [inspectData, setInspectData] = useState<InspectResult['data'] | null>(null);
@@ -85,11 +96,24 @@ export default function ModernizationPage() {
   const [sftpLoading, setSftpLoading] = useState(false);
   const [fileModalOpen, setFileModalOpen] = useState(false);
 
-  const [recentFiles, setRecentFiles] = useState<{ name: string; mtime?: number }[]>([]);
+  const [recentFiles, setRecentFiles] = useState<{ name: string; mtime?: number; size?: number }[]>([]);
   const [ipPreview, setIpPreview] = useState<any>(null);
   const [ipNotFound, setIpNotFound] = useState(false);
 
   const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [genRefreshSignal, setGenRefreshSignal] = useState(0);
+
+  const [existingXmlParsing, setExistingXmlParsing] = useState(false);
+  const [existingXmlParseStep, setExistingXmlParseStep] = useState(0);
+  const existingXmlParseRunIdRef = useRef(0);
+
+  const [xmlGeneratingPopupOpen, setXmlGeneratingPopupOpen] = useState(false);
+  const [xmlGeneratingPopupStep, setXmlGeneratingPopupStep] = useState(0);
+  const xmlGeneratingRunIdRef = useRef(0);
+
+  // Full-page drag/drop for XML/XLSX inputs
+  const [dragActive, setDragActive] = useState(false);
+  const dragDepthRef = useRef(0);
   const addLog = useCallback(
     (msg: string, level: LogEntry['level'], tab: LogEntry['tab']) =>
       setLogs((prev) => [...prev, createLog(msg, level, tab)]),
@@ -108,6 +132,10 @@ export default function ModernizationPage() {
   }, []);
 
   useEffect(() => { loadRecentFiles(); }, [loadRecentFiles]);
+
+  useEffect(() => {
+    try { localStorage.setItem('region', region); } catch { /* ignore */ }
+  }, [region]);
 
   const loadFiles = useCallback(async () => {
     try {
@@ -181,29 +209,75 @@ export default function ModernizationPage() {
     return true;
   });
 
+  const inferModelFilterFromInspect = (d: any): string | null => {
+    const rmods = d?.radioModules || [];
+    const counts: Record<string, number> = {};
+    for (const rm of rmods) {
+      const m = (rm.model || '').toUpperCase();
+      if (m === 'AHEGA' || m === 'AHEGB') counts[m] = (counts[m] || 0) + 1;
+    }
+    let best: string | null = null;
+    let bestCount = 0;
+    for (const [m, c] of Object.entries(counts)) {
+      if (c > bestCount) { best = m; bestCount = c; }
+    }
+    if (!best && d?.suggestedReference) {
+      const s = String(d.suggestedReference).toUpperCase();
+      if (s.includes('AHEGB')) best = 'AHEGB';
+      else if (s.includes('AHEGA')) best = 'AHEGA';
+    }
+    return best;
+  };
+
   const handleExistingXmlChange = useCallback(
     async (file: File) => {
+      const runId = existingXmlParseRunIdRef.current + 1;
+      existingXmlParseRunIdRef.current = runId;
+
       setExistingFile(file);
+      setStationName('');
+      setInspectData(null);
+      setSectorFilter(null);
+      setModelFilter(null);
+      setSelectedRef(undefined);
+      setExistingXmlParseStep(0);
+      setExistingXmlParsing(true);
       addLog(`Existing XML selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`, 'info', 'system');
       addLog(`Uploading: ${file.name}`, 'info', 'extraction');
       try {
+        setExistingXmlParseStep(0);
         const nameRes = await extractBtsName(file);
+        if (existingXmlParseRunIdRef.current !== runId) return;
         if (nameRes.data.success && nameRes.data.btsName) {
           setStationName(nameRes.data.btsName);
           form.setFieldValue('stationName', nameRes.data.btsName);
           addLog(`Station name: ${nameRes.data.btsName}`, 'success', 'extraction');
         }
+        setExistingXmlParseStep(1);
       } catch { addLog('Could not extract station name', 'warning', 'extraction'); }
       try {
+        setExistingXmlParseStep(1);
         const inspRes = await inspectExistingXml(file, region);
+        if (existingXmlParseRunIdRef.current !== runId) return;
         if (inspRes.data.success) {
           const d = inspRes.data.data;
           setInspectData(d);
           addLog(`3G: ${d.has3G ? 'YES' : 'NO'}, 4G: ${d.has4G ? 'YES' : 'NO'}, 5G: ${d.has5G ? 'YES' : 'NO'}, Sectors: ${d.sectorCount}`, 'success', 'extraction');
           if (d.suggestedReference) { setSelectedRef(d.suggestedReference); addLog(`Suggested: ${d.suggestedReference}`, 'info', 'extraction'); }
           if (d.sectorCount) setSectorFilter(`S${d.sectorCount}`);
+          const bestModel = inferModelFilterFromInspect(d);
+          if (bestModel) setModelFilter(bestModel);
         }
+        setExistingXmlParseStep(2);
       } catch { addLog('Could not inspect XML', 'warning', 'extraction'); }
+      finally {
+        if (existingXmlParseRunIdRef.current !== runId) return;
+        setTimeout(() => {
+          if (existingXmlParseRunIdRef.current !== runId) return;
+          setExistingXmlParsing(false);
+          setExistingXmlParseStep(0);
+        }, 450);
+      }
     },
     [region, form, addLog],
   );
@@ -233,6 +307,11 @@ export default function ModernizationPage() {
     try { await form.validateFields(); } catch { return; }
     if (mode === 'modernization' && !existingFile) { message.warning(t('existingXmlHelp')); return; }
     if (mode === 'rollout' && !selectedRef && !refUploadFile) { message.warning('Please select a Reference XML'); return; }
+
+    const runId = xmlGeneratingRunIdRef.current + 1;
+    xmlGeneratingRunIdRef.current = runId;
+    setXmlGeneratingPopupOpen(true);
+    setXmlGeneratingPopupStep(0);
     setGenerating(true);
     const logName = mode === 'rollout' ? (form.getFieldValue('rolloutName') || stationName || '-') : (stationName || '-');
     addLog('Starting XML generation...', 'info', 'generation');
@@ -241,6 +320,7 @@ export default function ModernizationPage() {
     addLog(`IP Plan: ${selectedIp || ipUploadFile?.name || '-'}`, 'info', 'generation');
     addLog(`Mode: ${mode === 'rollout' ? 'Rollout' : 'Modernization'}`, 'info', 'generation');
     addLog('Sending data to server...', 'info', 'generation');
+    setXmlGeneratingPopupStep(0);
     const fd = new FormData();
     const effectiveName = mode === 'rollout' ? (form.getFieldValue('rolloutName') || stationName || '') : (stationName || '');
     fd.append('stationName', effectiveName);
@@ -270,6 +350,7 @@ export default function ModernizationPage() {
       fd.append('rolloutTac', form.getFieldValue('rolloutTac') || '');
     }
     try {
+      setXmlGeneratingPopupStep(1);
       const res = await generateModernization(fd);
       const data = res.data;
       addLog('Server response received', 'info', 'generation');
@@ -317,11 +398,19 @@ export default function ModernizationPage() {
         }
         const doDownload = () => {
           addLog(t('autoDownload'), 'info', 'generation');
+          setXmlGeneratingPopupStep(2);
+          if (xmlGeneratingRunIdRef.current !== runId) return;
           const link = document.createElement('a');
           link.href = downloadUrl(data.filename); link.download = data.filename; link.click();
-          message.success(`${t('generationSuccess')} ${data.filename}`);
           addLog(`${t('generationSuccess')} ${data.filename}`, 'success', 'generation');
+          message.success(`${t('generationSuccess')} ${data.filename}`);
           loadRecentFiles();
+          setGenRefreshSignal((v) => v + 1);
+          setTimeout(() => {
+            if (xmlGeneratingRunIdRef.current !== runId) return;
+            setXmlGeneratingPopupOpen(false);
+            setXmlGeneratingPopupStep(0);
+          }, 500);
         };
         if (data.warnings?.ip_plan) {
           addLog(`\u26A0 ${data.warnings.ip_plan}`, 'warning', 'generation');
@@ -337,20 +426,47 @@ export default function ModernizationPage() {
             ),
             okText: t('yes'), cancelText: t('no'),
             onOk: doDownload,
-            onCancel: () => addLog('User cancelled — IP Plan not found', 'warning', 'generation'),
+            onCancel: () => {
+              addLog('User cancelled — IP Plan not found', 'warning', 'generation');
+              if (xmlGeneratingRunIdRef.current !== runId) return;
+              setXmlGeneratingPopupOpen(false);
+              setXmlGeneratingPopupStep(0);
+            },
           });
         } else { doDownload(); }
       } else {
         addLog(`\u2717 Error: ${data.error}`, 'error', 'generation');
+        setXmlGeneratingPopupOpen(false);
+        setXmlGeneratingPopupStep(0);
         message.error(data.error || 'Generation failed');
       }
     } catch (err: any) {
       addLog(`\u2717 Network error: ${err.message}`, 'error', 'generation');
+      if (xmlGeneratingRunIdRef.current === runId) {
+        setXmlGeneratingPopupOpen(false);
+        setXmlGeneratingPopupStep(0);
+      }
       message.error('Generation failed');
     }
     addLog('Generation process finished', 'info', 'generation');
     setGenerating(false);
   };
+
+  const hasReferenceXml = Boolean(selectedRef || refUploadFile);
+  const hasIpPlan = Boolean(selectedIp || ipUploadFile);
+  const hasModernizationExistingParsed = Boolean(existingFile && stationName.trim() && inspectData);
+  const hasRolloutFieldsFilled = Boolean(
+    String(rolloutId || '').trim() &&
+    String(rolloutName || '').trim() &&
+    String(rolloutTac || '').trim()
+  );
+
+  const canGenerate =
+    !existingXmlParsing &&
+    (
+      (mode === 'modernization' && hasModernizationExistingParsed && hasReferenceXml && hasIpPlan) ||
+      (mode === 'rollout' && hasRolloutFieldsFilled && hasReferenceXml && hasIpPlan)
+    );
 
   const techBadge = (label: string, has: boolean) => (
     <span className={`tech-badge ${has ? 'yes' : 'no'}`}>
@@ -358,8 +474,85 @@ export default function ModernizationPage() {
     </span>
   );
 
+  const detectedStationName = mode === 'rollout' ? (form.getFieldValue('rolloutName') || stationName) : stationName;
+
+  const handleCopyStationName = async () => {
+    const text = String(detectedStationName || '').trim();
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      message.success(t('copied'));
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.top = '-1000px';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      message.success(t('copied'));
+    }
+  };
+
+  const handleDroppedFiles = async (files: File[]) => {
+    const xmlFiles = files.filter((f) => f.name.toLowerCase().endsWith('.xml'));
+    const excelFiles = files.filter((f) => f.name.toLowerCase().endsWith('.xlsx') || f.name.toLowerCase().endsWith('.xls'));
+    if (xmlFiles.length > 0) {
+      const f = xmlFiles[0];
+      if (mode === 'modernization' && !existingFile) {
+        await handleExistingXmlChange(f);
+        return;
+      }
+      // Otherwise treat as Reference XML upload.
+      setRefUploadFile(f);
+      setSelectedRef(undefined);
+      addLog(`Reference XML dropped: ${f.name}`, 'info', 'extraction');
+      return;
+    }
+    if (excelFiles.length > 0) {
+      const f = excelFiles[0];
+      setIpUploadFile(f);
+      addLog(`IP Plan dropped: ${f.name} (${(f.size / 1024).toFixed(1)} KB)`, 'info', 'extraction');
+      return;
+    }
+  };
+
   return (
-    <>
+    <div
+      className="mod-page-dnd"
+      onDragOver={(e) => {
+        e.preventDefault();
+      }}
+      onDragEnter={(e) => {
+        e.preventDefault();
+        dragDepthRef.current += 1;
+        setDragActive(true);
+      }}
+      onDragLeave={(e) => {
+        e.preventDefault();
+        dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+        if (dragDepthRef.current === 0) setDragActive(false);
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragDepthRef.current = 0;
+        setDragActive(false);
+        const dt = e.dataTransfer;
+        if (!dt?.files?.length) return;
+        void handleDroppedFiles(Array.from(dt.files));
+      }}
+    >
+      {dragActive && (
+        <div className="mod-dnd-overlay">
+          <div className="mod-dnd-overlay-card">
+            <CloudUploadOutlined style={{ fontSize: 28, color: '#c4b5fd' }} />
+            <div style={{ marginTop: 8, fontWeight: 700, color: '#e5e7eb' }}>Drop to upload</div>
+          </div>
+        </div>
+      )}
       {/* ─── Top Controls Bar ─── */}
       <div className="mod-controls-bar">
         <div className="mod-control-group">
@@ -553,6 +746,7 @@ export default function ModernizationPage() {
               onClick={handleGenerate}
               block
               className="generate-btn"
+              disabled={generating || !canGenerate}
               style={{ marginTop: 16, marginBottom: 8 }}
             >
               {generating ? t('processing') : t('generate')}
@@ -569,6 +763,18 @@ export default function ModernizationPage() {
                 <RadarChartOutlined style={{ color: '#c4b5fd' }} />
                 <span>{t('detected')}</span>
               </div>
+              {detectedStationName && (
+                <div className="mod-detected-name-row">
+                  <span className="mod-detected-name-label">{t('stationName')}:</span>
+                  <span className="mod-detected-name-value">{detectedStationName}</span>
+                  <Button
+                    size="small"
+                    icon={<CopyOutlined />}
+                    onClick={handleCopyStationName}
+                    style={{ marginLeft: 8, borderRadius: 10 }}
+                  />
+                </div>
+              )}
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
                 {techBadge('3G', inspectData.has3G)}
                 {techBadge('4G', inspectData.has4G)}
@@ -648,7 +854,54 @@ export default function ModernizationPage() {
         </Col>
       </Row>
 
-      <FileManagerModal open={fileModalOpen} onClose={() => setFileModalOpen(false)} region={region} />
-    </>
+      <FileManagerModal
+        open={fileModalOpen}
+        onClose={() => setFileModalOpen(false)}
+        region={region}
+        refreshSignal={genRefreshSignal}
+      />
+
+      {/* Existing XML parse progress */}
+      <Modal
+        open={existingXmlParsing}
+        title={<span style={{ color: '#f0f0f5' }}>{t('parseExistingXmlTitle')}</span>}
+        footer={null}
+        closable={false}
+        width={520}
+        styles={{ body: { paddingTop: 10 } }}
+        centered
+      >
+        <Steps
+          size="small"
+          current={existingXmlParseStep}
+          items={[
+            { title: t('parseExistingXmlStepExtract') },
+            { title: t('parseExistingXmlStepInspect') },
+            { title: t('parseExistingXmlStepApply') },
+          ]}
+        />
+      </Modal>
+
+      {/* XML generation progress */}
+      <Modal
+        open={xmlGeneratingPopupOpen}
+        title={<span style={{ color: '#f0f0f5' }}>{t('generateXmlTitle')}</span>}
+        footer={null}
+        closable={false}
+        width={520}
+        styles={{ body: { paddingTop: 10 } }}
+        centered
+      >
+        <Steps
+          size="small"
+          current={xmlGeneratingPopupStep}
+          items={[
+            { title: t('generateXmlStepSend') },
+            { title: t('generateXmlStepGenerate') },
+            { title: t('generateXmlStepDownload') },
+          ]}
+        />
+      </Modal>
+    </div>
   );
 }
