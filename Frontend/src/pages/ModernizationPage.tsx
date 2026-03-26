@@ -41,6 +41,8 @@ import {
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
+import eastSvg from '../assets/east.svg';
+import westSvg from '../assets/west.svg';
 import {
   listExampleXml,
   listExampleExcel,
@@ -474,6 +476,14 @@ export default function ModernizationPage() {
     </span>
   );
 
+  const regionIcon = (which: 'East' | 'West') => (
+    <Tooltip title={which === 'East' ? `${t('east')} ${t('georgia')}` : `${t('west')} ${t('georgia')}`}>
+      <span className={`region-icon ${which === 'East' ? 'region-icon-east' : 'region-icon-west'}`}>
+        <img src={which === 'East' ? eastSvg : westSvg} alt={which} />
+      </span>
+    </Tooltip>
+  );
+
   const detectedStationName = mode === 'rollout' ? (form.getFieldValue('rolloutName') || stationName) : stationName;
 
   const handleCopyStationName = async () => {
@@ -574,8 +584,8 @@ export default function ModernizationPage() {
           <Segmented
             value={region}
             options={[
-              { label: t('east'), value: 'East' },
-              { label: t('west'), value: 'West' },
+              { label: regionIcon('West'), value: 'West' },
+              { label: regionIcon('East'), value: 'East' },
             ]}
             onChange={(v) => { setRegion(v as string); addLog(`Region changed: ${v}`, 'info', 'system'); }}
           />

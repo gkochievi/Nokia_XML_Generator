@@ -632,71 +632,84 @@ class ModernizationGenerator:
         return xml_content
     
     def _replace_4g_cells(self, xml_content, old_cells, new_cells):
-        """Replace 4G cell parameters in XML content"""
+        """Replace 4G cell parameters in XML content.
+
+        Uses ordinal-position mapping within each tens-group so that
+        non-standard numbering (e.g. existing 11,13,14 vs reference 11,12,13)
+        still maps correctly by sector position.
+        """
         logger.info(f"Replacing 4G cell parameters in template")
         logger.info(f"Reference cells: {list(old_cells.keys()) if old_cells else 'None'}")
         logger.info(f"Target cells: {list(new_cells.keys()) if new_cells else 'None'}")
-        
-        # Count total replacements for logging
+
         total_replacements = 0
-        
-        # Parameters to replace in cells
         params_to_replace = ['phyCellId', 'tac', 'rootSeqIndex']
-        
         import re
-        
-        # Process each cell
-        for cell_id in old_cells.keys():
-            if cell_id in new_cells:
-                logger.info(f"Processing cell {cell_id}")
-                old_cell_params = old_cells[cell_id]
-                new_cell_params = new_cells[cell_id]
-                
-                # For each parameter in this cell
-                for param_name in params_to_replace:
-                    if param_name in old_cell_params and param_name in new_cell_params:
-                        old_value = old_cell_params[param_name]
-                        new_value = new_cell_params[param_name]
-                        
-                        if param_name == 'rootSeqIndex':
-                            # rootSeqIndex is in LNCEL_FDD sub-object, need different pattern
-                            # Pattern to find LNCEL_FDD managedObject that contains the cell_id in distName
-                            cell_pattern = rf'(<managedObject[^>]*class="[^"]*LNCEL_FDD[^"]*"[^>]*distName="[^"]*{re.escape(cell_id)}[^"]*"[^>]*>.*?)(<p\s+name="{re.escape(param_name)}"[^>]*>)\s*{re.escape(old_value)}\s*(</p>.*?</managedObject>)'
-                        else:
-                            # phyCellId and tac are directly in LNCEL managedObject (not LNCEL_FDD)
-                            # Pattern to find the LNCEL managedObject for this specific cell
-                            cell_pattern = rf'(<managedObject[^>]*class="[^"]*:LNCEL"[^>]*distName="[^"]*{re.escape(cell_id)}[^"]*"[^>]*>.*?)(<p\s+name="{re.escape(param_name)}"[^>]*>)\s*{re.escape(old_value)}\s*(</p>.*?</managedObject>)'
-                        
-                        def replace_in_cell(match):
-                            before_param = match.group(1)
-                            param_start = match.group(2)
-                            after_param = match.group(3)
-                            return f"{before_param}{param_start}{new_value}{after_param}"
-                        
-                        # Count matches before replacement
-                        matches = re.findall(cell_pattern, xml_content, re.DOTALL | re.IGNORECASE)
-                        param_replacements = len(matches)
-                        
-                        if param_replacements > 0:
-                            # Perform replacement
-                            xml_content = re.sub(cell_pattern, replace_in_cell, xml_content, flags=re.DOTALL | re.IGNORECASE)
-                            logger.info(f"Replaced {param_replacements} instances of {cell_id} {param_name} '{old_value}' with '{new_value}'")
-                            total_replacements += param_replacements
-                        else:
-                            logger.warning(f"No instances of {cell_id} {param_name} '{old_value}' found for replacement")
+
+        def _cell_num(cell_id: str) -> int:
+            m = re.search(r'LNCEL-(\d+)', cell_id)
+            return int(m.group(1)) if m else -1
+
+        def _group_by_prefix(cells: dict) -> dict[int, list[tuple[int, str, dict]]]:
+            groups: dict[int, list[tuple[int, str, dict]]] = {}
+            for cid, params in cells.items():
+                num = _cell_num(cid)
+                if num < 0 or num >= 50:
+                    continue
+                prefix = num // 10
+                groups.setdefault(prefix, []).append((num, cid, params))
+            for prefix in groups:
+                groups[prefix].sort(key=lambda x: x[0])
+            return groups
+
+        ref_groups = _group_by_prefix(old_cells)
+        exist_groups = _group_by_prefix(new_cells)
+
+        # Build ordinal mapping: ref_cell_id -> (ref_params, exist_params)
+        mapping: list[tuple[str, dict, str, dict]] = []
+        for prefix, ref_cells in ref_groups.items():
+            exist_cells = exist_groups.get(prefix)
+            if not exist_cells:
+                for _, ref_cid, _ in ref_cells:
+                    logger.info(f"No existing group {prefix} for reference cell {ref_cid}")
+                continue
+            for pos, (_, ref_cid, ref_params) in enumerate(ref_cells):
+                if pos < len(exist_cells):
+                    _, exist_cid, exist_params = exist_cells[pos]
+                    mapping.append((ref_cid, ref_params, exist_cid, exist_params))
+                    if ref_cid != exist_cid:
+                        logger.info(f"Ordinal mapping: reference {ref_cid} -> existing {exist_cid} (pos {pos})")
+                else:
+                    logger.info(f"Reference {ref_cid} has no existing counterpart at position {pos}")
+
+        # Also handle direct matches for cells outside groups (IoT etc.)
+        for cell_id in old_cells:
+            num = _cell_num(cell_id)
+            if num >= 50:
+                if cell_id in new_cells:
+                    mapping.append((cell_id, old_cells[cell_id], cell_id, new_cells[cell_id]))
+
+        for ref_cid, ref_params, exist_cid, exist_params in mapping:
+            for param_name in params_to_replace:
+                if param_name in ref_params and param_name in exist_params:
+                    old_value = ref_params[param_name]
+                    new_value = exist_params[param_name]
+
+                    if param_name == 'rootSeqIndex':
+                        cell_pattern = rf'(<managedObject[^>]*class="[^"]*LNCEL_FDD[^"]*"[^>]*distName="[^"]*{re.escape(ref_cid)}[^"]*"[^>]*>.*?)(<p\s+name="{re.escape(param_name)}"[^>]*>)\s*{re.escape(old_value)}\s*(</p>.*?</managedObject>)'
                     else:
-                        if param_name not in old_cell_params:
-                            logger.info(f"Parameter {param_name} not found in reference cell {cell_id}")
-                        if param_name not in new_cell_params:
-                            logger.info(f"Parameter {param_name} not found in existing cell {cell_id}")
-            else:
-                logger.info(f"Cell {cell_id} from reference template not found in existing station")
-        
-        # Check for cells in existing that are not in reference
-        for cell_id in new_cells.keys():
-            if cell_id not in old_cells:
-                logger.info(f"Cell {cell_id} found in existing station but not in reference template")
-        
+                        cell_pattern = rf'(<managedObject[^>]*class="[^"]*:LNCEL"[^>]*distName="[^"]*{re.escape(ref_cid)}[^"]*"[^>]*>.*?)(<p\s+name="{re.escape(param_name)}"[^>]*>)\s*{re.escape(old_value)}\s*(</p>.*?</managedObject>)'
+
+                    def replace_in_cell(match, nv=new_value):
+                        return f"{match.group(1)}{match.group(2)}{nv}{match.group(3)}"
+
+                    matches = re.findall(cell_pattern, xml_content, re.DOTALL | re.IGNORECASE)
+                    if matches:
+                        xml_content = re.sub(cell_pattern, replace_in_cell, xml_content, flags=re.DOTALL | re.IGNORECASE)
+                        src_label = f"(from {exist_cid})" if ref_cid != exist_cid else ""
+                        logger.info(f"Replaced {len(matches)}x {ref_cid} {param_name} '{old_value}' -> '{new_value}' {src_label}")
+                        total_replacements += len(matches)
+
         logger.info(f"Total 4G cell parameter replacements made: {total_replacements}")
         return xml_content
     
@@ -1443,64 +1456,106 @@ class ModernizationGenerator:
         return xml_content
 
     def _replace_tdd_pci_from_fdd(self, xml_content, reference_4g_cells, existing_4g_cells):
-        """Copy phyCellId and tac from existing FDD cells to TDD cells in the reference template.
-        TDD cells (5x, 6x) that don't exist in the existing station get PCI and TAC
-        from same-sector FDD cells (1x, 2x, 3x).
-        Sector is determined by last digit: x1->sector1, x2->sector2, x3->sector3.
+        """Copy phyCellId and tac from existing FDD cells to TDD cells in the reference.
+
+        Mapping uses ordinal position within each tens-group, NOT last-digit matching.
+        This handles non-standard numbering (e.g. 11,13,14 instead of 11,12,13).
+
+        Example with existing cells 11,13,14 and 21,23,24:
+          Group 1 sorted: [11, 13, 14]  (positions 0, 1, 2)
+          Group 2 sorted: [21, 23, 24]  (positions 0, 1, 2)
+
+        Reference TDD cells 51,52,53 and 61,62,63:
+          Group 5 sorted: [51, 52, 53]  (positions 0, 1, 2)
+          Group 6 sorted: [61, 62, 63]  (positions 0, 1, 2)
+
+        Mapping (TDD group prefix - 4 = FDD group prefix):
+          51 (pos 0) -> 11 (pos 0)    61 (pos 0) -> 21 (pos 0)
+          52 (pos 1) -> 13 (pos 1)    62 (pos 1) -> 23 (pos 1)
+          53 (pos 2) -> 14 (pos 2)    63 (pos 2) -> 24 (pos 2)
         """
-        logger.info("Copying PCI+TAC from existing FDD cells to reference TDD cells")
+        logger.info("Copying PCI+TAC from existing FDD cells to reference TDD cells (ordinal mapping)")
         total = 0
         import re
 
         existing_cell_ids = set(existing_4g_cells.keys())
-        fdd_by_sector: dict[str, dict] = {}
+
+        # Group existing FDD cells by tens-prefix, sorted by cell number
+        fdd_groups: dict[int, list[tuple[int, str, dict]]] = {}
         for cell_id, params in existing_4g_cells.items():
             m = re.search(r'LNCEL-(\d+)', cell_id)
             if not m:
                 continue
-            num = m.group(1)
-            sector = num[-1]
-            if int(num) < 50 and sector not in fdd_by_sector:
-                fdd_by_sector[sector] = {
-                    'phyCellId': params.get('phyCellId'),
-                    'tac': params.get('tac'),
-                }
+            num = int(m.group(1))
+            if num >= 50:
+                continue
+            prefix = num // 10
+            fdd_groups.setdefault(prefix, []).append((num, cell_id, params))
 
-        logger.info(f"FDD params by sector: {fdd_by_sector}")
+        for prefix in fdd_groups:
+            fdd_groups[prefix].sort(key=lambda x: x[0])
 
+        for prefix, cells in fdd_groups.items():
+            ids = [c[1] for c in cells]
+            logger.info(f"Existing FDD group {prefix}: {ids}")
+
+        # Group reference TDD cells by tens-prefix, sorted by cell number
+        tdd_groups: dict[int, list[tuple[int, str, dict]]] = {}
         for ref_cell_id, ref_params in reference_4g_cells.items():
             if ref_cell_id in existing_cell_ids:
                 continue
-
             m = re.search(r'LNCEL-(\d+)', ref_cell_id)
             if not m:
                 continue
             num = int(m.group(1))
             if num < 50:
                 continue
+            prefix = num // 10
+            tdd_groups.setdefault(prefix, []).append((num, ref_cell_id, ref_params))
 
-            sector = str(num)[-1]
-            fdd_data = fdd_by_sector.get(sector)
-            if not fdd_data:
+        for prefix in tdd_groups:
+            tdd_groups[prefix].sort(key=lambda x: x[0])
+
+        # Map TDD -> FDD by ordinal position
+        for tdd_prefix, tdd_cells in tdd_groups.items():
+            # 5x -> group 1, 6x -> group 2
+            primary_fdd_prefix = tdd_prefix - 4
+            candidate_prefixes = [primary_fdd_prefix, primary_fdd_prefix + 1, primary_fdd_prefix + 2]
+            candidate_prefixes = [p for p in candidate_prefixes if p in fdd_groups]
+
+            if not candidate_prefixes:
+                logger.warning(f"No FDD source group found for TDD group {tdd_prefix}")
                 continue
 
-            for param_name in ['phyCellId', 'tac']:
-                new_val = fdd_data.get(param_name)
-                old_val = ref_params.get(param_name)
-                if not new_val or not old_val or old_val == new_val:
+            fdd_prefix = candidate_prefixes[0]
+            fdd_cells = fdd_groups[fdd_prefix]
+
+            logger.info(f"TDD group {tdd_prefix} -> FDD group {fdd_prefix} ({len(tdd_cells)} TDD, {len(fdd_cells)} FDD)")
+
+            for pos, (tdd_num, ref_cell_id, ref_params) in enumerate(tdd_cells):
+                if pos >= len(fdd_cells):
+                    logger.warning(f"TDD {ref_cell_id} position {pos} has no FDD counterpart in group {fdd_prefix}")
                     continue
 
-                pattern = rf'(<managedObject[^>]*class="[^"]*:LNCEL"[^>]*distName="[^"]*{re.escape(ref_cell_id)}[^"]*"[^>]*>.*?<p\s+name="{param_name}"[^>]*>)\s*{re.escape(old_val)}\s*(</p>.*?</managedObject>)'
-                matches = re.findall(pattern, xml_content, re.DOTALL | re.IGNORECASE)
-                if matches:
-                    xml_content = re.sub(
-                        pattern,
-                        lambda m, nv=new_val: f"{m.group(1)}{nv}{m.group(2)}",
-                        xml_content,
-                        flags=re.DOTALL | re.IGNORECASE
-                    )
-                    total += len(matches)
-                    logger.info(f"TDD {ref_cell_id} {param_name} {old_val} -> {new_val} (from FDD sector {sector})")
+                _, source_cell_id, source_params = fdd_cells[pos]
+
+                for param_name in ['phyCellId', 'tac']:
+                    new_val = source_params.get(param_name)
+                    old_val = ref_params.get(param_name)
+                    if not new_val or not old_val or old_val == new_val:
+                        continue
+
+                    pattern = rf'(<managedObject[^>]*class="[^"]*:LNCEL"[^>]*distName="[^"]*{re.escape(ref_cell_id)}[^"]*"[^>]*>.*?<p\s+name="{param_name}"[^>]*>)\s*{re.escape(old_val)}\s*(</p>.*?</managedObject>)'
+                    matches = re.findall(pattern, xml_content, re.DOTALL | re.IGNORECASE)
+                    if matches:
+                        xml_content = re.sub(
+                            pattern,
+                            lambda m, nv=new_val: f"{m.group(1)}{nv}{m.group(2)}",
+                            xml_content,
+                            flags=re.DOTALL | re.IGNORECASE
+                        )
+                        total += len(matches)
+                        logger.info(f"TDD {ref_cell_id} {param_name} {old_val} -> {new_val} (from {source_cell_id}, pos {pos})")
 
         logger.info(f"Total TDD param replacements from FDD: {total}")
         return xml_content

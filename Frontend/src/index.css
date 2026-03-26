@@ -876,6 +876,65 @@ html[lang="ka"] body {
   margin-bottom: 20px;
   flex-wrap: wrap;
 }
+
+/* Region segmented (East/West Georgia) highlight */
+.mod-controls-bar .ant-segmented {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-radius: 10px !important;
+  padding: 0 !important;
+}
+.mod-controls-bar .ant-segmented-item {
+  color: var(--text-muted) !important;
+  border-radius: 8px !important;
+  transition: all 0.2s;
+  padding: 0 !important;
+  height: 30px;
+}
+.mod-controls-bar .ant-segmented-item-selected {
+  color: #ffffff !important;
+  background: rgba(124, 58, 237, 0.26) !important;
+  border-color: rgba(124, 58, 237, 0.55) !important;
+  box-shadow: 0 0 18px rgba(124, 58, 237, 0.22), inset 0 0 10px rgba(124, 58, 237, 0.16) !important;
+}
+.mod-controls-bar .ant-segmented-thumb {
+  background: transparent !important;
+}
+
+/* Region icon (Georgia map) */
+.region-icon {
+  width: 40px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  overflow: visible;
+  position: relative;
+  opacity: 0.82;
+  filter: saturate(1.05) contrast(1.1);
+}
+.region-icon img {
+  width: 44px;
+  height: 30px;
+  opacity: 0.85;
+  filter: grayscale(1) brightness(1.05);
+  transform: none !important;
+  display: block;
+  object-fit: contain;
+}
+.region-icon-east img,
+.region-icon-west img {
+  clip-path: none !important;
+}
+.mod-controls-bar .ant-segmented-item-selected .region-icon {
+  opacity: 1;
+  filter: drop-shadow(0 0 10px rgba(124, 58, 237, 0.35));
+}
+.mod-controls-bar .ant-segmented-item-selected .region-icon img {
+  filter: grayscale(0) brightness(1.15) saturate(1.25);
+  opacity: 1;
+}
 .mod-control-group {
   display: flex;
   align-items: center;

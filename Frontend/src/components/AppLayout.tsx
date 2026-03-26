@@ -72,13 +72,13 @@ export default function AppLayout() {
                 className={`lang-btn ${currentLang === 'ka' ? 'lang-btn-active' : ''}`}
                 onClick={() => switchLang('ka')}
               >
-                ქარ
+                🇬🇪
               </button>
               <button
                 className={`lang-btn ${currentLang === 'en' ? 'lang-btn-active' : ''}`}
                 onClick={() => switchLang('en')}
               >
-                ENG
+                🇬🇧
               </button>
             </div>
           </div>
