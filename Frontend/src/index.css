@@ -604,18 +604,18 @@ html[lang="ka"] body {
 }
 .nav-lang-globe {
   color: #555578;
-  font-size: 14px;
+  font-size: 18px;
 }
 .lang-toggle {
   display: flex;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 8px;
+  border-radius: 10px;
   overflow: hidden;
 }
 .lang-btn {
-  padding: 4px 12px;
-  font-size: 12px;
+  padding: 6px 14px;
+  font-size: 16px;
   font-weight: 600;
   font-family: inherit;
   border: none;
@@ -857,6 +857,9 @@ html[lang="ka"] body {
   border-color: rgba(124, 58, 237, 0.2) !important;
   color: #b0b0c8 !important;
   background: rgba(124, 58, 237, 0.06) !important;
+  height: 38px !important;
+  width: 38px !important;
+  font-size: 17px !important;
 }
 .mod-manage-btn:hover {
   border-color: rgba(124, 58, 237, 0.4) !important;
@@ -877,19 +880,45 @@ html[lang="ka"] body {
   flex-wrap: wrap;
 }
 
+/* Mode option (icon-only with tooltip) */
+.mode-option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  padding: 0 8px;
+  height: 100%;
+}
+
 /* Region segmented (East/West Georgia) highlight */
 .mod-controls-bar .ant-segmented {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.06) !important;
   border-radius: 10px !important;
   padding: 0 !important;
+  gap: 0 !important;
+}
+.mod-controls-bar .ant-segmented-group {
+  gap: 0 !important;
 }
 .mod-controls-bar .ant-segmented-item {
   color: var(--text-muted) !important;
-  border-radius: 8px !important;
+  border-radius: 0 !important;
   transition: all 0.2s;
   padding: 0 !important;
-  height: 30px;
+  height: 38px;
+  min-height: 38px;
+}
+.mod-controls-bar .ant-segmented-item .ant-segmented-item-label {
+  padding: 0 !important;
+  min-height: 38px;
+  line-height: 38px;
+}
+.mod-controls-bar .ant-segmented-item:first-child {
+  border-radius: 10px 0 0 10px !important;
+}
+.mod-controls-bar .ant-segmented-item:last-child {
+  border-radius: 0 10px 10px 0 !important;
 }
 .mod-controls-bar .ant-segmented-item-selected {
   color: #ffffff !important;
@@ -899,33 +928,28 @@ html[lang="ka"] body {
 }
 .mod-controls-bar .ant-segmented-thumb {
   background: transparent !important;
+  border-radius: 0 !important;
 }
 
 /* Region icon (Georgia map) */
 .region-icon {
-  width: 40px;
-  height: 30px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
   overflow: visible;
   position: relative;
+  height: 38px;
   opacity: 0.82;
   filter: saturate(1.05) contrast(1.1);
+  padding: 2px 0;
 }
 .region-icon img {
-  width: 44px;
-  height: 30px;
+  height: 34px;
+  width: auto;
   opacity: 0.85;
   filter: grayscale(1) brightness(1.05);
   transform: none !important;
   display: block;
-  object-fit: contain;
-}
-.region-icon-east img,
-.region-icon-west img {
-  clip-path: none !important;
 }
 .mod-controls-bar .ant-segmented-item-selected .region-icon {
   opacity: 1;

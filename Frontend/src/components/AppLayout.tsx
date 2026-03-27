@@ -43,8 +43,8 @@ export default function AppLayout() {
         <div className="nav-inner">
           {/* Brand */}
           <div className="nav-brand" onClick={() => navigate('/')}>
-            <span className="gradient-text">Nokia</span>
-            <span className="brand-suffix">WebEM</span>
+            <span className="gradient-text">BTS</span>
+            <span className="brand-suffix">Forge</span>
           </div>
 
           {/* Nav links */}

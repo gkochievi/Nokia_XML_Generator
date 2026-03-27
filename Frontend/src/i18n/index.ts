@@ -4,14 +4,14 @@ import { initReactI18next } from 'react-i18next';
 const resources = {
   ka: {
     translation: {
-      brand: 'Nokia WebEM',
+      brand: 'BTS Forge',
       home: 'მთავარი',
       modernization: 'მოდერნიზაცია',
       rollout: 'ახალი სადგური',
       xmlViewer: 'XML დამთვალიერებელი',
 
       // Home
-      homeTitle: 'Nokia WebEM Generator',
+      homeTitle: 'BTS Forge',
       homeSubtitle: 'აირჩიეთ ინსტრუმენტი',
       modernizationDesc: '5G მოდერნიზაცია არსებულ სადგურზე',
       rolloutDesc: 'ახალი სადგურის კონფიგურაცია',
@@ -25,7 +25,7 @@ const resources = {
       east: 'აღმოსავლეთი',
       west: 'დასავლეთი',
       georgia: 'საქართველო',
-      existingXml: 'არსებული სადგურის XML',
+      existingXml: 'სადგურის არსებული კონფიგი [ XML ]',
       existingXmlHelp: 'ატვირთეთ არსებული სადგურის XML კონფიგურაცია',
       browseFile: 'აირჩიე...',
       noFileSelected: 'ფაილი არჩეული არ არის',
@@ -44,7 +44,7 @@ const resources = {
       generateXmlStepSend: 'მონაცემების გაგზავნა სერვერზე',
       generateXmlStepGenerate: 'გენერაცია',
       generateXmlStepDownload: 'ჩამოტვირთვა',
-      reference5g: 'სამაგალითო 5G კონფიგი [ XML ]',
+      reference5g: 'სამაგალითო კონფიგი [ XML ]',
       ipPlan: 'IP გეგმა [ Excel ]',
       selectFile: 'არჩევა',
       uploadNew: 'ახალი ფაილის არჩევა',
@@ -53,7 +53,7 @@ const resources = {
       manageFiles: 'ფაილების მართვა',
       sftpLabel: 'ჩამოტვირთე სარეზერვო XML SFTP-დან (ID ან სადგურის სახელი)',
       sftpBtn: 'ჩამოტვირთვა SFTP-დან',
-      referenceXmls: 'Reference XML ფაილები',
+      referenceXmls: 'სამაგალითო XML ფაილები',
       ipPlanFiles: 'IP Plan',
       generatedFiles: 'გენერირებული',
       close: 'დახურვა',
@@ -63,7 +63,7 @@ const resources = {
       yes: 'კი',
       no: 'არა',
       sectors: 'სექტორები',
-      debugConsole: 'დისპეჩერი (Debug Console)',
+      debugConsole: 'დისპეჩერი',
       extraction: 'ამოღება',
       generation: 'გენერაცია',
       system: 'სისტემა',
@@ -75,6 +75,10 @@ const resources = {
       modeHint: 'ID/Name/TAC შეყვანისთვის გადართეთ Rollout რეჟიმზე',
       ipPlanConfirm: 'გნებავთ ფაილის ჩამოტვირთვა IP Plan-ის გარეშე?',
       ipPlanWarningTitle: 'IP Plan არ მოიძებნა',
+      uploadXmlToDetect: 'ატვირთეთ XML სადგურის ამოსაცნობად',
+      enterMrbtsToPreview: 'შეიყვანეთ MRBTS სახელი წინასწარ სანახავად',
+      sftpPlaceholder: 'ID / სახელი',
+      recentGenerations: 'ბოლო გენერაციები',
 
       // XML Viewer
       uploadXml: 'XML ფაილის ატვირთვა',
@@ -94,13 +98,13 @@ const resources = {
   },
   en: {
     translation: {
-      brand: 'Nokia WebEM',
+      brand: 'BTS Forge',
       home: 'Home',
       modernization: 'Modernization',
       rollout: 'New Site',
       xmlViewer: 'XML Viewer',
 
-      homeTitle: 'Nokia WebEM Generator',
+      homeTitle: 'BTS Forge',
       homeSubtitle: 'Choose a tool',
       modernizationDesc: '5G modernization on existing station',
       rolloutDesc: 'New base station configuration',
@@ -163,6 +167,10 @@ const resources = {
       modeHint: 'Toggle to Rollout to input ID/Name/TAC',
       ipPlanConfirm: 'Do you want to download the file without IP Plan?',
       ipPlanWarningTitle: 'IP Plan Not Found',
+      uploadXmlToDetect: 'Upload XML to detect station',
+      enterMrbtsToPreview: 'Enter MRBTS Name to preview',
+      sftpPlaceholder: 'ID / Name',
+      recentGenerations: 'Recent Generations',
 
       uploadXml: 'Upload XML',
       dropOrClick: 'Drop XML file here or click to browse',

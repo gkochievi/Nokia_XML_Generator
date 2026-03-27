@@ -38,6 +38,8 @@ import {
   HistoryOutlined,
   DownloadOutlined,
   CopyOutlined,
+  ToolOutlined,
+  RocketOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
@@ -571,8 +573,8 @@ export default function ModernizationPage() {
           <Segmented
             value={mode}
             options={[
-              { label: t('modeModernization'), value: 'modernization' },
-              { label: t('modeRollout'), value: 'rollout' },
+              { label: <Tooltip title={t('modeModernization')}><span className="mode-option"><ToolOutlined /></span></Tooltip>, value: 'modernization' },
+              { label: <Tooltip title={t('modeRollout')}><span className="mode-option"><RocketOutlined /></span></Tooltip>, value: 'rollout' },
             ]}
             onChange={(v) => { setMode(v as 'modernization' | 'rollout'); addLog(`Mode changed: ${v}`, 'info', 'system'); }}
           />
@@ -596,25 +598,25 @@ export default function ModernizationPage() {
           <Text style={{ color: '#7878a0', fontSize: 12, fontWeight: 600 }}>SFTP</Text>
           <Space.Compact size="small">
             <Input
-              placeholder="ID / Name"
+              placeholder={t('sftpPlaceholder')}
               value={sftpQuery}
               onChange={(e) => setSftpQuery(e.target.value)}
               onPressEnter={handleSftpDownload}
-              style={{ width: 150, borderRadius: '8px 0 0 8px' }}
-              size="small"
+              style={{ width: 170, borderRadius: '8px 0 0 8px' }}
+              size="middle"
             />
-            <Button type="primary" icon={<CloudDownloadOutlined />} loading={sftpLoading} onClick={handleSftpDownload} size="small" style={{ borderRadius: '0 8px 8px 0' }} />
+            <Button type="primary" icon={<CloudDownloadOutlined />} loading={sftpLoading} onClick={handleSftpDownload} size="middle" style={{ borderRadius: '0 8px 8px 0' }} />
           </Space.Compact>
         </div>
         <div style={{ marginLeft: 'auto' }}>
-          <Button
-            icon={<FolderOpenOutlined />}
-            onClick={() => setFileModalOpen(true)}
-            className="mod-manage-btn"
-            size="small"
-          >
-            {t('manageFiles')}
-          </Button>
+          <Tooltip title={t('manageFiles')}>
+            <Button
+              icon={<FolderOpenOutlined />}
+              onClick={() => setFileModalOpen(true)}
+              className="mod-manage-btn"
+              size="small"
+            />
+          </Tooltip>
         </div>
       </div>
 
@@ -742,7 +744,7 @@ export default function ModernizationPage() {
                 </div>
               ) : selectedIp && !ipLookupName ? (
                 <div style={{ color: '#555578', fontSize: 12, fontStyle: 'italic' }}>
-                  {mode === 'modernization' ? 'Upload XML to detect station' : 'Enter MRBTS Name to preview'}
+                  {mode === 'modernization' ? t('uploadXmlToDetect') : t('enterMrbtsToPreview')}
                 </div>
               ) : null}
             </div>
@@ -839,7 +841,7 @@ export default function ModernizationPage() {
             <div className="mod-history-card">
               <div className="mod-section-header" style={{ marginBottom: 10 }}>
                 <HistoryOutlined style={{ color: '#60a5fa' }} />
-                <span style={{ fontSize: 13 }}>Recent Generations</span>
+                <span style={{ fontSize: 13 }}>{t('recentGenerations')}</span>
               </div>
               {recentFiles.map((f, i) => (
                 <div key={i} className="mod-history-item">

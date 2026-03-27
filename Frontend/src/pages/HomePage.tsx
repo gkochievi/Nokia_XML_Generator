@@ -65,7 +65,7 @@ export default function HomePage() {
           <ThunderboltOutlined />
         </div>
         <div className="home-hero-title gradient-text">
-          Nokia WebEM
+          BTS Forge
         </div>
         <Text style={{ color: '#6b6b88', fontSize: 14, display: 'block' }}>
           {t('homeSubtitle')}
