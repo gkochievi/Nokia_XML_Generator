@@ -45,30 +45,29 @@ if %errorlevel% neq 0 (
 :DOCKER_READY
 echo.
 echo  ================================================
-echo    Nokia WebEM Generator - Deploying from GitHub
-echo    (always pulls latest code)
+echo    Nokia WebEM Generator - Deploy / update
+echo    Rebuilds app from latest GitHub ^(uploads stay on disk^)
 echo  ================================================
 echo.
 
-REM Stop and remove any existing container with the same name
-docker stop nokia-webem-generator >nul 2>nul
-docker rm nokia-webem-generator >nul 2>nul
+REM Bust Docker cache for the git-clone layer only (see Dockerfile ARG CACHE_BUST).
+REM No --no-cache: base images and early layers stay cached = faster updates.
+set "CACHE_BUST=%RANDOM%%RANDOM%%RANDOM%"
 
-REM Force fresh git clone by busting Docker cache
-set CACHE_BUST=%RANDOM%%RANDOM%
-
-docker-compose build --no-cache --build-arg CACHE_BUST=%CACHE_BUST%
-if %errorlevel% neq 0 (
-    echo.
-    echo [ERROR] Build failed.
-    pause
-    exit /b %errorlevel%
+REM One command: build if needed, recreate container when image changes.
+REM Named volumes uploads/generated are NOT removed (data kept).
+docker compose version >nul 2>nul
+if not errorlevel 1 (
+    docker compose up -d --build
+) else (
+    docker-compose up -d --build
 )
-
-docker-compose up -d
 if %errorlevel% neq 0 (
     echo.
-    echo [ERROR] docker-compose up failed.
+    echo [ERROR] Docker Compose up --build failed.
+    echo If you see a container name conflict, remove the old container once:
+    echo   docker rm -f nokia-webem-generator
+    echo Then run this script again.
     pause
     exit /b %errorlevel%
 )

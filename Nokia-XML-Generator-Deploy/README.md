@@ -14,8 +14,11 @@
 
 ## Update to Latest Version
 
-Just double-click `Nokia-XML-Generator-Deploy.bat` again.
-It always pulls the latest code from GitHub and rebuilds.
+Double-click `Nokia-XML-Generator-Deploy.bat` again.
+
+- The image is **rebuilt** from the **latest GitHub** code (each run uses a fresh shallow `git clone` inside the build).
+- Docker **replaces the app container** when the new image is ready. You do **not** lose uploaded or generated XML: those live in Docker **volumes** (`uploads`, `generated`), which are kept across updates.
+- The script no longer force-removes the container first; `docker compose up -d --build` updates in place. Builds are **faster** than before because only layers after the git clone are rebuilt when the cache bust changes (no full `--no-cache` on every run).
 
 ## Access
 
