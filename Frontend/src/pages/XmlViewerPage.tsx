@@ -28,6 +28,7 @@ import {
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { uploadXmls, listUploadedXmls, viewXml, deleteUploadedXml } from '../api/client';
+import type { XmlViewerData, RadioCell, VlanEntry, NrX2LinkEntry, LnAdjGnbEntry, CellRadioMapping, CollapseItem } from '../types';
 
 const { Text } = Typography;
 const { Dragger } = Upload;
@@ -38,13 +39,13 @@ const MODEL_MAP: Record<string, string> = {
   '474092A': 'AHEGB', '473995A': 'AHEGA', '476501A': 'AAHF',
 };
 
-function flattenCells(cells: any): any[] {
+function flattenCells(cells: RadioCell[] | Record<string, RadioCell[]> | undefined): RadioCell[] {
   if (!cells) return [];
   if (Array.isArray(cells)) return cells;
-  const result: any[] = [];
+  const result: RadioCell[] = [];
   for (const [tech, arr] of Object.entries(cells)) {
     if (Array.isArray(arr)) {
-      arr.forEach((c: any) => result.push({ ...c, technology: c.technology || tech }));
+      arr.forEach((c) => result.push({ ...c, technology: c.technology || tech }));
     }
   }
   return result;
@@ -56,7 +57,7 @@ export default function XmlViewerPage() {
   const [files, setFiles] = useState<string[]>([]);
   const [selected, setSelected] = useState<string | undefined>();
   const [loading, setLoading] = useState(false);
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<XmlViewerData | null>(null);
   const [cellNameFilter, setCellNameFilter] = useState('');
   const [cellTechFilter, setCellTechFilter] = useState<string | null>(null);
 
@@ -113,7 +114,7 @@ export default function XmlViewerPage() {
     return 't2g';
   };
 
-  const getFreq = (r: any) => {
+  const getFreq = (r: RadioCell) => {
     if (r.technology === '5G') return r.nrarfcnDL;
     if (r.technology === '4G') return r.earfcnDL;
     if (r.technology === '3G') return r.uarfcnDl;
@@ -153,10 +154,10 @@ export default function XmlViewerPage() {
   const renderSummaryChips = () => {
     if (!data) return null;
     const cells = flattenCells(data.radioInfo?.cells);
-    const total2G = cells.filter((c: any) => c.technology === '2G').length;
-    const total3G = cells.filter((c: any) => c.technology === '3G').length;
-    const total4G = cells.filter((c: any) => c.technology === '4G').length;
-    const total5G = cells.filter((c: any) => c.technology === '5G').length;
+    const total2G = cells.filter((c) => c.technology === '2G').length;
+    const total3G = cells.filter((c) => c.technology === '3G').length;
+    const total4G = cells.filter((c) => c.technology === '4G').length;
+    const total5G = cells.filter((c) => c.technology === '5G').length;
     const totalVlans = (data.networkInfo?.vlan_ip_combined || []).length;
     const totalModules = (data.hardwareInfo?.modules || []).length;
     const nb = data.neighborInfo || {};
@@ -189,7 +190,7 @@ export default function XmlViewerPage() {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           <span className="summary-chip purple">{t('sectors')}: <strong>{ri.sectorCount ?? '-'}</strong></span>
           {techs.map((tech: string) => {
-            const count = allCells.filter((c: any) => (c.technology || '') === tech).length;
+            const count = allCells.filter((c) => (c.technology || '') === tech).length;
             return <span key={tech} className="summary-chip blue">{tech}: <strong>{count} cells</strong></span>;
           })}
           {radioSummary && <span className="summary-chip green">Modules: <strong>{radioSummary}</strong></span>}
@@ -202,16 +203,16 @@ export default function XmlViewerPage() {
     if (!data?.radioInfo?.cells) return null;
     const allCells = flattenCells(data.radioInfo.cells);
     if (!allCells.length) return null;
-    const techs = [...new Set(allCells.map((c: any) => c.technology || 'Unknown'))];
+    const techs = [...new Set(allCells.map((c) => c.technology || 'Unknown'))];
     let filtered = allCells;
     if (cellNameFilter) {
       const q = cellNameFilter.toLowerCase();
-      filtered = filtered.filter((c: any) =>
+      filtered = filtered.filter((c) =>
         (c.name || c.cellName || c.userLabel || '').toLowerCase().includes(q) ||
         String(c.cellId || c.localCellId || '').includes(q),
       );
     }
-    if (cellTechFilter) filtered = filtered.filter((c: any) => (c.technology || '') === cellTechFilter);
+    if (cellTechFilter) filtered = filtered.filter((c) => (c.technology || '') === cellTechFilter);
 
     return (
       <div className="mod-section">
@@ -237,7 +238,7 @@ export default function XmlViewerPage() {
         </div>
         <div style={{ maxHeight: 520, overflowY: 'auto', paddingRight: 4 }}>
           <div className="cell-cards-grid">
-            {filtered.map((c: any, i: number) => (
+            {filtered.map((c, i) => (
               <div className="cell-card" key={`${c.cellId || c.localCellId || ''}-${i}`}>
                 <div className="cell-card-header">
                   <span className="cell-card-name">{c.cellName || c.name || '-'}</span>
@@ -265,8 +266,8 @@ export default function XmlViewerPage() {
     const ni = data.networkInfo;
     const combined = ni.vlan_ip_combined || ni.vlans || [];
     if (!combined.length) return null;
-    const nrx2links: any[] = ni.nrx2link_trust || [];
-    const lnadjgnbs: any[] = ni.lnadjgnb || [];
+    const nrx2links: NrX2LinkEntry[] = ni.nrx2link_trust || [];
+    const lnadjgnbs: LnAdjGnbEntry[] = ni.lnadjgnb || [];
     return (
       <div className="mod-section">
         <div className="mod-section-header">
@@ -274,7 +275,7 @@ export default function XmlViewerPage() {
           <span>{t('networkInfo')}</span>
         </div>
         <div className="net-cards-grid">
-          {combined.map((v: any, i: number) => (
+          {combined.map((v: VlanEntry, i: number) => (
             <div className="net-card" key={`vlan-${i}`}>
               <div className="net-card-vlan">{v.label || v.name || 'VLAN'}</div>
               <div className="net-card-row"><span className="net-card-row-label">VLAN ID</span><span className="net-card-row-value">{v.vlanId || '-'}</span></div>
@@ -282,13 +283,13 @@ export default function XmlViewerPage() {
               <div className="net-card-row"><span className="net-card-row-label">Prefix</span><span className="net-card-row-value">/{v.prefix || v.localIpPrefixLength || '-'}</span></div>
             </div>
           ))}
-          {nrx2links.map((x: any, i: number) => (
+          {nrx2links.map((x, i) => (
             <div className="net-card" key={`x2-${i}`} style={{ borderColor: 'rgba(251, 191, 36, 0.15)' }}>
               <div className="net-card-vlan" style={{ color: '#fcd34d' }}>NRX2LINK</div>
               <div className="net-card-row"><span className="net-card-row-label">ipV4Addr</span><span className="net-card-row-value">{x.ipV4Addr || '-'}</span></div>
             </div>
           ))}
-          {lnadjgnbs.map((x: any, i: number) => (
+          {lnadjgnbs.map((x, i) => (
             <div className="net-card" key={`gnb-${i}`} style={{ borderColor: 'rgba(167, 139, 250, 0.15)' }}>
               <div className="net-card-vlan" style={{ color: '#c4b5fd' }}>LNADJGNB</div>
               <div className="net-card-row"><span className="net-card-row-label">cPlaneIpAddr</span><span className="net-card-row-value">{x.cPlaneIpAddr || '-'}</span></div>
@@ -302,11 +303,11 @@ export default function XmlViewerPage() {
   const renderCellRadioMapping = () => {
     if (!data?.cellRadioMapping) return null;
     const raw = data.cellRadioMapping;
-    let entries: any[] = [];
+    let entries: CellRadioMapping[] = [];
     if (Array.isArray(raw)) entries = raw;
     else if (typeof raw === 'object') {
       for (const [sector, cells] of Object.entries(raw)) {
-        if (Array.isArray(cells)) cells.forEach((c: any) => entries.push({ sector, ...c }));
+        if (Array.isArray(cells)) cells.forEach((c) => entries.push({ sector, ...c }));
       }
     }
     if (!entries.length) return null;
@@ -318,8 +319,8 @@ export default function XmlViewerPage() {
         </div>
         <div style={{ maxHeight: 480, overflowY: 'auto', paddingRight: 4 }}>
           <div className="cell-cards-grid">
-            {entries.map((r: any, i: number) => {
-              const model = MODEL_MAP[r.productCode];
+            {entries.map((r, i) => {
+              const model = r.productCode ? MODEL_MAP[r.productCode] : undefined;
               return (
                 <div className="cell-card" key={i}>
                   <div className="cell-card-header">
@@ -365,7 +366,7 @@ export default function XmlViewerPage() {
   const renderAdvanced = () => {
     if (!data?.advanced) return null;
     const adv = data.advanced;
-    const items: any[] = [];
+    const items: CollapseItem[] = [];
     if (adv.routing?.length) {
       items.push({ key: 'routing', label: <span style={{ color: '#c0c0d8' }}>IPv4 Routing (IPRT)</span>, children: (
         <Table size="small" dataSource={adv.routing} columns={[

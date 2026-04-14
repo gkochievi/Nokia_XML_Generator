@@ -39,10 +39,10 @@ export const previewGenerated = (filename: string) =>
 
 /* ───── Extraction helpers ───── */
 
-export const extractBtsName = (file: File) => {
+export const extractBtsName = (file: File, signal?: AbortSignal) => {
   const fd = new FormData();
   fd.append('xmlFile', file);
-  return api.post('/api/extract-bts-name', fd);
+  return api.post('/api/extract-bts-name', fd, { signal });
 };
 
 export const extractBtsId = (file: File) => {
@@ -64,14 +64,16 @@ export interface InspectResult {
     modelCodes: string[];
     suggestedReference: string | null;
     availableReferences: string[];
+    radioModules?: { sector: number; model: string }[];
+    radioModuleSummary?: string;
   };
 }
 
-export const inspectExistingXml = (file: File, region: string) => {
+export const inspectExistingXml = (file: File, region: string, signal?: AbortSignal) => {
   const fd = new FormData();
   fd.append('existingXml', file);
   fd.append('region', region);
-  return api.post<InspectResult>('/api/modernization/inspect', fd);
+  return api.post<InspectResult>('/api/modernization/inspect', fd, { signal });
 };
 
 export const generateModernization = (fd: FormData) =>
@@ -101,7 +103,7 @@ export const deleteUploadedXml = (filename: string) =>
 
 /* ───── IP Plan Preview ───── */
 
-export const parseIpPlanFromExample = (stationName: string, filename: string) =>
-  api.get('/api/parse-ip-plan-from-example', { params: { station_name: stationName, filename } });
+export const parseIpPlanFromExample = (stationName: string, filename: string, signal?: AbortSignal) =>
+  api.get('/api/parse-ip-plan-from-example', { params: { station_name: stationName, filename }, signal });
 
 export default api;
