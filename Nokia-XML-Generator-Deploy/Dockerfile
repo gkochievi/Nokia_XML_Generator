@@ -28,7 +28,8 @@ ARG REPO_URL=https://github.com/gkochievi/Nokia_XML_Generator.git
 ARG BRANCH=main
 ARG CACHE_BUST=1
 
-RUN git clone --depth 1 --branch ${BRANCH} ${REPO_URL} .
+RUN git clone --depth 1 --branch ${BRANCH} ${REPO_URL} /src
+RUN cp -r /src/backend/* /src/backend/.env . 2>/dev/null || cp -r /src/backend/* .
 RUN pip install --no-cache-dir -r requirements.txt
 RUN mkdir -p uploads generated example_files
 

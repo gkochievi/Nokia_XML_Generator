@@ -1,14 +1,15 @@
 services:
   web:
-    build: .
+    build: ./backend
     container_name: nokia-webem-generator
     ports:
-      - "5000:5000"
+      # 5000 is often taken on macOS (AirPlay); use 5001 on host
+      - "5001:5000"
     volumes:
-      - ./uploads:/app/uploads
-      - ./generated:/app/generated
+      - ./backend/uploads:/app/uploads
+      - ./backend/generated:/app/generated
     env_file:
-      - ./.env
+      - ./backend/.env
     restart: unless-stopped
 
   frontend:

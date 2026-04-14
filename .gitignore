@@ -11,15 +11,15 @@ Thumbs.db
 
 logs/
 log.txt
-uploads/
-generated/
+backend/uploads/
+backend/generated/
 downloads/
 
-.env
+backend/.env
 .env.local
 
 node_modules/
 Frontend/dist/
 
 .vscode/
-.idea/ 
+.idea/
