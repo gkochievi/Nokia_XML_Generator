@@ -83,20 +83,20 @@ def sftp_download():
         finally:
             try:
                 sftp.close()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"SFTP close error (non-critical): {e}")
             try:
                 transport.close()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"SFTP transport close error (non-critical): {e}")
 
         @after_this_request
         def cleanup(response):
             try:
                 if os.path.exists(tmp_path):
                     os.unlink(tmp_path)
-            except Exception:
-                pass
+            except OSError as e:
+                logger.warning(f"Could not clean up temp file {tmp_path}: {e}")
             return response
 
         return send_file(tmp_path, as_attachment=True, download_name=download_filename)

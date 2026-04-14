@@ -206,8 +206,8 @@ def modernization():
                 resp['warnings'] = {
                     'ip_plan': f"IP Plan not found for station '{extra.get('ip_plan_lookup','')}'. VLAN/IP/GW replacements were skipped."
                 }
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Could not build IP Plan warning: {e}")
 
         return jsonify(resp)
 
@@ -280,8 +280,8 @@ def modernization_inspect():
                     path = os.path.join(target_dir, f)
                     if os.path.isfile(path):
                         files.append(f)
-        except Exception:
-            pass
+        except OSError as e:
+            logger.warning(f"Could not list reference XMLs in {target_dir}: {e}")
         if not files:
             for fallback in ['East', 'West']:
                 if fallback == region:
@@ -294,8 +294,8 @@ def modernization_inspect():
                                 files.append(f)
                     if files:
                         break
-                except Exception:
-                    pass
+                except OSError as e:
+                    logger.warning(f"Could not list fallback region {fallback}: {e}")
 
         # Match by sector, model
         sector_token = f'S{sector_count}' if sector_count in [2, 3, 4] else None
@@ -322,7 +322,8 @@ def modernization_inspect():
         if (not models) and suggestion:
             try:
                 known = set(XMLViewer.MODEL_CODE_MAP.values()) if hasattr(XMLViewer, 'MODEL_CODE_MAP') else set()
-            except Exception:
+            except Exception as e:
+                logger.warning(f"Could not read MODEL_CODE_MAP: {e}")
                 known = set()
             for tok in known:
                 if tok and tok.upper() in (suggestion or '').upper():

@@ -25,7 +25,8 @@ def list_example_xml_files():
             target_dir = os.path.join(base_dir, region)
         try:
             files = [f for f in os.listdir(target_dir) if f.lower().endswith('.xml')]
-        except Exception:
+        except OSError as e:
+            logger.warning(f"Could not list XML files in {target_dir}: {e}")
             files = []
         return jsonify({'success': True, 'files': files})
     except Exception as e:
@@ -47,7 +48,8 @@ def list_example_excel_files():
             target_dir = base_dir
         try:
             files = [f for f in os.listdir(target_dir) if f.lower().endswith(('.xlsx', '.xls'))]
-        except Exception:
+        except OSError as e:
+            logger.warning(f"Could not list Excel files in {target_dir}: {e}")
             files = []
         return jsonify({'success': True, 'files': files})
     except Exception as e:

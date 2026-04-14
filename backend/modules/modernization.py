@@ -1,4 +1,5 @@
 import os
+import re
 from lxml import etree  # pyright: ignore[reportMissingImports]
 import logging
 from .xml_parser import XMLParser
@@ -874,7 +875,8 @@ class ModernizationGenerator:
                 if vlan_int < 1 or vlan_int > 4094:
                     return None
                 return str(vlan_int)
-            except Exception:
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Could not parse VLAN value '{value}': {e}")
                 return None
 
         if debug_log is None:
@@ -999,7 +1001,8 @@ class ModernizationGenerator:
             try:
                 n = int(float(s))
                 return str(n)
-            except Exception:
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Could not coerce prefix value '{value}' to int, using raw string: {e}")
                 return s
 
         # Namespace strip for easier parsing

@@ -1,6 +1,7 @@
 import xml.etree.ElementTree as ET
 from lxml import etree
 import logging
+import traceback
 
 logger = logging.getLogger(__name__)
 
@@ -163,7 +164,6 @@ class XMLParser:
             
         except Exception as e:
             logger.error(f"Error extracting btsName: {str(e)}")
-            import traceback
             logger.error(f"Traceback: {traceback.format_exc()}")
             return None
     
@@ -221,7 +221,6 @@ class XMLParser:
             
         except Exception as e:
             logger.error(f"Error extracting BTS ID: {str(e)}")
-            import traceback
             logger.error(f"Traceback: {traceback.format_exc()}")
             return None
     
@@ -326,7 +325,6 @@ class XMLParser:
             
         except Exception as e:
             logger.error(f"Error extracting sctpPortMin: {str(e)}")
-            import traceback
             logger.error(f"Traceback: {traceback.format_exc()}")
             return None
     
@@ -404,7 +402,6 @@ class XMLParser:
             
         except Exception as e:
             logger.error(f"Error extracting 2G parameters: {str(e)}")
-            import traceback
             logger.error(f"Traceback: {traceback.format_exc()}")
             return None
     
@@ -501,7 +498,6 @@ class XMLParser:
             
         except Exception as e:
             logger.error(f"Error extracting 4G cell parameters: {str(e)}")
-            import traceback
             logger.error(f"Traceback: {traceback.format_exc()}")
             return None
     
@@ -588,7 +584,6 @@ class XMLParser:
             
         except Exception as e:
             logger.error(f"Error extracting 4G rootSeqIndex: {str(e)}")
-            import traceback
             logger.error(f"Traceback: {traceback.format_exc()}")
             return None
     
@@ -689,7 +684,6 @@ class XMLParser:
             
         except Exception as e:
             logger.error(f"Error extracting 5G NRCELL physCellId: {str(e)}")
-            import traceback
             logger.error(f"Traceback: {traceback.format_exc()}")
             return None
 
@@ -703,7 +697,8 @@ class XMLParser:
                 found = tree.xpath(xp)
                 if found:
                     return found
-            except Exception:
+            except etree.XPathError as e:
+                logger.debug(f"XPath '{xp}' failed for class '{class_contains}': {e}")
                 continue
         root = tree.getroot()
         ns = root.nsmap.get(None)
@@ -712,8 +707,8 @@ class XMLParser:
                 found = tree.xpath(f"//ns:managedObject[contains(@class, '{class_contains}')]", namespaces={'ns': ns})
                 if found:
                     return found
-            except Exception:
-                pass
+            except etree.XPathError as e:
+                logger.debug(f"Namespaced XPath failed for class '{class_contains}': {e}")
         return []
 
     def _find_param(self, element, param_name):
@@ -729,7 +724,8 @@ class XMLParser:
                 found = element.xpath(xp)
                 if found:
                     return found[0]
-            except Exception:
+            except etree.XPathError as e:
+                logger.debug(f"XPath '{xp}' failed for param '{param_name}': {e}")
                 continue
         return None
 
@@ -934,7 +930,6 @@ class XMLParser:
             
         except Exception as e:
             logger.error(f"Error extracting network parameters: {str(e)}")
-            import traceback
             logger.error(f"Traceback: {traceback.format_exc()}")
             return {}
 
@@ -1003,7 +998,6 @@ class XMLParser:
             
         except Exception as e:
             logger.error(f"Error extracting VLAN parameters: {str(e)}")
-            import traceback
             logger.error(f"Traceback: {traceback.format_exc()}")
             return {}
 
@@ -1078,7 +1072,6 @@ class XMLParser:
             
         except Exception as e:
             logger.error(f"Error extracting IP parameters: {str(e)}")
-            import traceback
             logger.error(f"Traceback: {traceback.format_exc()}")
             return {}
 
@@ -1131,6 +1124,5 @@ class XMLParser:
             
         except Exception as e:
             logger.error(f"Error extracting routing parameters: {str(e)}")
-            import traceback
             logger.error(f"Traceback: {traceback.format_exc()}")
             return {}
