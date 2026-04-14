@@ -67,7 +67,7 @@ Endpoints are split across `backend/routes/` blueprints. Key ones:
 | `/api/example-files/xml` | GET | List reference XMLs by region |
 | `/api/example-files/excel` | GET | List IP Plan Excel files |
 | `/api/generated-files` | GET | List generated output files |
-| `/download/<filename>` | GET | Download generated XML |
+| `/api/download/<filename>` | GET | Download generated XML |
 
 **Response format**: `{ success: bool, data/filename/error: ..., debug_log?: [], warnings?: [] }`
 

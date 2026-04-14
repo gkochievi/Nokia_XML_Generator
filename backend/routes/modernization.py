@@ -37,7 +37,7 @@ def modernization():
     try:
         station_name = request.form.get('stationName')
         if not station_name:
-            return jsonify({'error': 'Station name is required'}), 400
+            return jsonify({'success': False, 'error': 'Station name is required'}), 400
 
         mode = (request.form.get('mode') or 'modernization').strip().lower()
         rollout_id_override = request.form.get('rolloutId')
@@ -54,12 +54,12 @@ def modernization():
         elif 'existingXml' in request.files and request.files['existingXml'].filename != '':
             existing_xml_file = request.files['existingXml']
             if not _allowed_file(existing_xml_file.filename):
-                return jsonify({'error': 'არასწორი ფაილის ტიპი არსებული XML-ისთვის'}), 400
+                return jsonify({'success': False, 'error': 'არასწორი ფაილის ტიპი არსებული XML-ისთვის'}), 400
             temp_existing_xml = os.path.join(current_app.config['UPLOAD_FOLDER'], secure_filename(existing_xml_file.filename))
             existing_xml_file.save(temp_existing_xml)
             file_paths['existingXml'] = temp_existing_xml
         else:
-            return jsonify({'error': 'არსებული სადგურის XML ფაილი აუცილებელია'}), 400
+            return jsonify({'success': False, 'error': 'არსებული სადგურის XML ფაილი აუცილებელია'}), 400
 
         # Handle Reference 5G XML
         reference_5g_selection = request.form.get('reference5gXmlSelection')
@@ -67,10 +67,10 @@ def modernization():
             file_paths['reference5gXml'] = _resolve_example_xml_path(reference_5g_selection, region)
         else:
             if 'reference5gXmlUpload' not in request.files or request.files['reference5gXmlUpload'].filename == '':
-                return jsonify({'error': 'Reference 5G XML ფაილი აუცილებელია'}), 400
+                return jsonify({'success': False, 'error': 'Reference 5G XML ფაილი აუცილებელია'}), 400
             ref_xml_file = request.files['reference5gXmlUpload']
             if not _allowed_file(ref_xml_file.filename):
-                return jsonify({'error': 'არასწორი ფაილის ტიპი Reference XML-ისთვის'}), 400
+                return jsonify({'success': False, 'error': 'არასწორი ფაილის ტიპი Reference XML-ისთვის'}), 400
             temp_ref_xml = os.path.join(current_app.config['UPLOAD_FOLDER'], secure_filename(ref_xml_file.filename))
             ref_xml_file.save(temp_ref_xml)
             file_paths['reference5gXml'] = temp_ref_xml
@@ -81,10 +81,10 @@ def modernization():
             file_paths['transmissionExcel'] = os.path.join(current_app.config['EXAMPLE_FILES_FOLDER'], 'IP', ip_plan_selection)
         else:
             if 'ipPlanUpload' not in request.files or request.files['ipPlanUpload'].filename == '':
-                return jsonify({'error': 'IP Plan Excel ფაილი აუცილებელია'}), 400
+                return jsonify({'success': False, 'error': 'IP Plan Excel ფაილი აუცილებელია'}), 400
             excel_file = request.files['ipPlanUpload']
             if not _allowed_file(excel_file.filename):
-                return jsonify({'error': 'არასწორი ფაილის ტიპი Excel-ისთვის'}), 400
+                return jsonify({'success': False, 'error': 'არასწორი ფაილის ტიპი Excel-ისთვის'}), 400
             temp_excel = os.path.join(current_app.config['UPLOAD_FOLDER'], secure_filename(excel_file.filename))
             excel_file.save(temp_excel)
             file_paths['transmissionExcel'] = temp_excel
@@ -126,13 +126,13 @@ def modernization():
             logger.info(f"Reference template 5G NRCells: {reference_5g_nrcells}")
 
             if not existing_bts_name:
-                return jsonify({'error': 'არსებული XML ფაილში btsName ვერ მოიძებნა'}), 400
+                return jsonify({'success': False, 'error': 'არსებული XML ფაილში btsName ვერ მოიძებნა'}), 400
             if not reference_bts_name:
-                return jsonify({'error': 'Reference XML ფაილში btsName ვერ მოიძებნა'}), 400
+                return jsonify({'success': False, 'error': 'Reference XML ფაილში btsName ვერ მოიძებნა'}), 400
 
         except Exception as e:
             logger.error(f"Error extracting station parameters: {str(e)}")
-            return jsonify({'error': f'სადგურის პარამეტრების ამოღების შეცდომა: {str(e)}'}), 500
+            return jsonify({'success': False, 'error': f'სადგურის პარამეტრების ამოღების შეცდომა: {str(e)}'}), 500
 
         generator = ModernizationGenerator()
         output_filename, debug_log, extra = generator.generate(
@@ -213,7 +213,7 @@ def modernization():
 
     except Exception as e:
         logger.error(f"Error in modernization: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @bp.route('/api/modernization/inspect', methods=['POST'])
@@ -356,12 +356,12 @@ def rollout():
     try:
         station_name = request.form.get('stationName')
         if not station_name:
-            return jsonify({'error': 'Station name is required'}), 400
+            return jsonify({'success': False, 'error': 'Station name is required'}), 400
 
         required_files = ['referenceXml', 'radioExcel', 'transmissionExcel']
         for file_key in required_files:
             if file_key not in request.files:
-                return jsonify({'error': f'Missing required file: {file_key}'}), 400
+                return jsonify({'success': False, 'error': f'Missing required file: {file_key}'}), 400
 
         bts_id = request.form.get('btsId', '')
         temp_files = {}
@@ -369,9 +369,9 @@ def rollout():
             for file_key in required_files:
                 file = request.files[file_key]
                 if file.filename == '':
-                    return jsonify({'error': f'No file selected for {file_key}'}), 400
+                    return jsonify({'success': False, 'error': f'No file selected for {file_key}'}), 400
                 if not _allowed_file(file.filename):
-                    return jsonify({'error': f'Invalid file type for {file_key}'}), 400
+                    return jsonify({'success': False, 'error': f'Invalid file type for {file_key}'}), 400
                 temp_path = os.path.join(current_app.config['UPLOAD_FOLDER'], secure_filename(file.filename))
                 file.save(temp_path)
                 temp_files[file_key] = temp_path
@@ -412,4 +412,4 @@ def rollout():
                     os.unlink(path)
     except Exception as e:
         logger.error(f"Error in rollout: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'success': False, 'error': str(e)}), 500

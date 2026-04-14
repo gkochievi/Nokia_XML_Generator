@@ -60,18 +60,18 @@ def extract_from_upload(param_type):
     Handles: bts-name, bts-id, sctp-port, 2g-params, 4g-cells, 4g-rootseq, 5g-nrcells
     """
     if param_type not in EXTRACTORS:
-        return jsonify({'error': f'Unknown extraction type: {param_type}'}), 404
+        return jsonify({'success': False, 'error': f'Unknown extraction type: {param_type}'}), 404
 
     method_name, response_key, error_label = EXTRACTORS[param_type]
 
     try:
         if 'xmlFile' not in request.files:
-            return jsonify({'error': 'No XML file provided'}), 400
+            return jsonify({'success': False, 'error': 'No XML file provided'}), 400
         file = request.files['xmlFile']
         if file.filename == '':
-            return jsonify({'error': 'No file selected'}), 400
+            return jsonify({'success': False, 'error': 'No file selected'}), 400
         if not file.filename.lower().endswith('.xml'):
-            return jsonify({'error': 'File must be an XML file'}), 400
+            return jsonify({'success': False, 'error': 'File must be an XML file'}), 400
 
         with tempfile.NamedTemporaryFile(delete=False, suffix='.xml') as tmp_file:
             file.save(tmp_file.name)
@@ -93,7 +93,7 @@ def extract_from_upload(param_type):
 
     except Exception as e:
         logger.error(f"Error extracting {error_label}: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @bp.route('/api/example-files/extract-<param_type>/<filename>', methods=['GET'])
@@ -102,7 +102,7 @@ def extract_from_example(param_type, filename):
     Handles: bts-name, bts-id, sctp-port, 2g-params, 4g-cells, 4g-rootseq, 5g-nrcells
     """
     if param_type not in EXTRACTORS:
-        return jsonify({'error': f'Unknown extraction type: {param_type}'}), 404
+        return jsonify({'success': False, 'error': f'Unknown extraction type: {param_type}'}), 404
 
     method_name, response_key, error_label = EXTRACTORS[param_type]
 
@@ -113,9 +113,9 @@ def extract_from_example(param_type, filename):
         file_path = os.path.join(base_dir, region, filename) if region in ['East', 'West'] else os.path.join(base_dir, filename)
 
         if not os.path.exists(file_path):
-            return jsonify({'error': 'File not found'}), 404
+            return jsonify({'success': False, 'error': 'File not found'}), 404
         if not filename.lower().endswith('.xml'):
-            return jsonify({'error': 'File must be an XML file'}), 400
+            return jsonify({'success': False, 'error': 'File must be an XML file'}), 400
 
         parser = XMLParser()
         tree = parser.parse_file(file_path)
@@ -128,4 +128,4 @@ def extract_from_example(param_type, filename):
 
     except Exception as e:
         logger.error(f"Error extracting {error_label} from example file: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'success': False, 'error': str(e)}), 500

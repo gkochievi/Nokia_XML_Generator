@@ -32,7 +32,7 @@ export const deleteGeneratedFile = (filename: string) =>
 export const clearGeneratedFiles = () =>
   api.post('/api/generated-files/clear');
 
-export const downloadUrl = (filename: string) => `/download/${encodeURIComponent(filename)}`;
+export const downloadUrl = (filename: string) => `/api/download/${encodeURIComponent(filename)}`;
 
 export const previewGenerated = (filename: string) =>
   api.get<{ content: string }>(`/api/preview/${encodeURIComponent(filename)}`);

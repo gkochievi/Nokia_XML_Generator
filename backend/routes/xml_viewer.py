@@ -20,13 +20,13 @@ def view_xml():
     """Parse and view XML configuration file (uploaded)"""
     try:
         if 'xmlFile' not in request.files:
-            return jsonify({'error': 'No XML file provided'}), 400
+            return jsonify({'success': False, 'error': 'No XML file provided'}), 400
 
         file = request.files['xmlFile']
         if file.filename == '':
-            return jsonify({'error': 'No file selected'}), 400
+            return jsonify({'success': False, 'error': 'No file selected'}), 400
         if not _allowed_file(file.filename):
-            return jsonify({'error': 'Invalid file type. Only XML files are allowed'}), 400
+            return jsonify({'success': False, 'error': 'Invalid file type. Only XML files are allowed'}), 400
 
         temp_path = None
         with tempfile.NamedTemporaryFile(delete=False, suffix='.xml') as tmp:
@@ -51,7 +51,7 @@ def view_xml():
 
     except Exception as e:
         logger.error(f"Error viewing XML: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @bp.route('/api/view-xml/<filename>', methods=['GET'])
@@ -60,7 +60,7 @@ def view_uploaded_xml(filename):
     filename = secure_filename(filename)
     file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
     if not os.path.exists(file_path):
-        return jsonify({'error': 'File not found'}), 404
+        return jsonify({'success': False, 'error': 'File not found'}), 404
     try:
         parser = XMLParser()
         viewer = XMLViewer()
@@ -74,4 +74,4 @@ def view_uploaded_xml(filename):
         })
     except Exception as e:
         logger.error(f"Error viewing uploaded XML: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'success': False, 'error': str(e)}), 500

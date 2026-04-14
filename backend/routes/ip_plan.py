@@ -43,16 +43,16 @@ def parse_ip_plan():
     try:
         station_name = request.form.get('stationName')
         if not station_name:
-            return jsonify({'error': 'Station name is required'}), 400
+            return jsonify({'success': False, 'error': 'Station name is required'}), 400
 
         if 'ipPlanFile' not in request.files:
-            return jsonify({'error': 'IP Plan Excel file is required'}), 400
+            return jsonify({'success': False, 'error': 'IP Plan Excel file is required'}), 400
 
         ip_plan_file = request.files['ipPlanFile']
         if ip_plan_file.filename == '':
-            return jsonify({'error': 'No IP Plan file selected'}), 400
+            return jsonify({'success': False, 'error': 'No IP Plan file selected'}), 400
         if not _allowed_file(ip_plan_file.filename):
-            return jsonify({'error': 'Invalid IP Plan file format'}), 400
+            return jsonify({'success': False, 'error': 'Invalid IP Plan file format'}), 400
 
         ip_plan_temp_path = None
         try:
@@ -106,7 +106,7 @@ def parse_ip_plan():
 
     except Exception as e:
         logger.error(f"Error parsing IP Plan: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @bp.route('/api/parse-ip-plan-from-example', methods=['GET'])
@@ -117,9 +117,9 @@ def parse_ip_plan_from_example():
         filename = request.args.get('filename')
 
         if not station_name:
-            return jsonify({'error': 'Station name is required'}), 400
+            return jsonify({'success': False, 'error': 'Station name is required'}), 400
         if not filename:
-            return jsonify({'error': 'Filename is required'}), 400
+            return jsonify({'success': False, 'error': 'Filename is required'}), 400
 
         base_dir = current_app.config['EXAMPLE_FILES_FOLDER']
         candidates = [
@@ -133,7 +133,7 @@ def parse_ip_plan_from_example():
                 file_path = candidate
                 break
         if not file_path:
-            return jsonify({'error': f'File {filename} not found in example files'}), 404
+            return jsonify({'success': False, 'error': f'File {filename} not found in example files'}), 404
 
         excel_parser = ExcelParser()
         ip_plan_data = excel_parser.parse_ip_plan_excel(file_path, station_name)
@@ -164,4 +164,4 @@ def parse_ip_plan_from_example():
 
     except Exception as e:
         logger.error(f"Error parsing IP Plan from example: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'success': False, 'error': str(e)}), 500

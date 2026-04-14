@@ -17,7 +17,7 @@ def sftp_download():
     try:
         query = request.form.get('query') or (request.get_json(silent=True) or {}).get('query')
         if not query:
-            return jsonify({'error': 'Missing parameter: query (ID or Name)'}), 400
+            return jsonify({'success': False, 'error': 'Missing parameter: query (ID or Name)'}), 400
 
         base_examples = current_app.config['EXAMPLE_FILES_FOLDER']
         candidates = [
@@ -30,7 +30,7 @@ def sftp_download():
                 excel_path = candidate
                 break
         if not excel_path:
-            return jsonify({'error': 'Excel file not found in BTSNaming or example_files root'}), 404
+            return jsonify({'success': False, 'error': 'Excel file not found in BTSNaming or example_files root'}), 404
 
         df = pd.read_excel(excel_path, engine='openpyxl')
 
@@ -41,7 +41,7 @@ def sftp_download():
             return text
 
         if 'Name' not in df.columns or 'ID' not in df.columns or 'Backup_Name' not in df.columns:
-            return jsonify({'error': 'Excel must have columns: ID, Name, Backup_Name'}), 400
+            return jsonify({'success': False, 'error': 'Excel must have columns: ID, Name, Backup_Name'}), 400
         df['_name_norm'] = df['Name'].apply(normalize_name)
 
         if str(query).isdigit():
@@ -50,13 +50,13 @@ def sftp_download():
             row = df[df['_name_norm'] == normalize_name(query)]
 
         if row.empty:
-            return jsonify({'error': 'No match found in Excel for provided ID/Name'}), 404
+            return jsonify({'success': False, 'error': 'No match found in Excel for provided ID/Name'}), 404
 
         backup_name = str(row.iloc[0]['Backup_Name']).strip()
         base_name = str(row.iloc[0]['Name']).strip()
         base_id = str(row.iloc[0]['ID']).strip()
         if not backup_name:
-            return jsonify({'error': 'Backup_Name missing for matched record'}), 404
+            return jsonify({'success': False, 'error': 'Backup_Name missing for matched record'}), 404
 
         host = os.getenv('SFTP_HOST', '127.0.0.1')
         port = int(os.getenv('SFTP_PORT', '22'))
@@ -64,7 +64,7 @@ def sftp_download():
         password = os.getenv('SFTP_PASSWORD', '')
         remote_dir = os.getenv('SFTP_REMOTE_DIR', '/')
         if not host or not username or not password:
-            return jsonify({'error': 'SFTP credentials are not configured'}), 500
+            return jsonify({'success': False, 'error': 'SFTP credentials are not configured'}), 500
 
         transport = paramiko.Transport((host, port))
         transport.connect(username=username, password=password)
@@ -102,7 +102,7 @@ def sftp_download():
         return send_file(tmp_path, as_attachment=True, download_name=download_filename)
 
     except FileNotFoundError:
-        return jsonify({'error': f'Backup file {backup_name} not found on SFTP'}), 404
+        return jsonify({'success': False, 'error': f'Backup file {backup_name} not found on SFTP'}), 404
     except Exception as e:
         logger.error(f"SFTP download error: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'success': False, 'error': str(e)}), 500
