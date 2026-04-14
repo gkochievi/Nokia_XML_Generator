@@ -2,9 +2,13 @@ import os
 import re
 from lxml import etree  # pyright: ignore[reportMissingImports]
 import logging
+from copy import deepcopy
 from .xml_parser import XMLParser
 from .excel_parser import ExcelParser
-from copy import deepcopy
+from constants import (
+    IOT_CELLS, IOT_TAC, VLAN_MIN, VLAN_MAX,
+    TECH_ALIASES, TECH_TOKENS, DEST_IP_TO_TECH,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -405,11 +409,10 @@ class ModernizationGenerator:
         technology suffix (e.g. TBLS-Switch) so that cell names like
         L-TBLS-Switch-11 or T_TBLS_Switch_51 are also updated.
         """
-        import re as _re
         logger.info(f"Replacing '{old_name}' with '{new_name}' in template (format-aware)")
 
         def split_tokens(text: str):
-            return [t for t in _re.split(r'[-_]', str(text)) if t != '']
+            return [t for t in re.split(r'[-_]', str(text)) if t != '']
 
         def style_like(reference: str, target_tokens: list[str]) -> str:
             sep = '_' if ('_' in reference and '-' not in reference) else '-' if ('-' in reference and '_' not in reference) else None
@@ -430,7 +433,7 @@ class ModernizationGenerator:
 
         def strip_tech_suffix(name: str) -> str | None:
             """Strip trailing technology token (2G/3G/4G/5G) to get the base station name."""
-            m = _re.match(r'^(.+?)[-_](?:2G|3G|4G|5G|NR|LTE|GSM|WCDMA)$', name, _re.IGNORECASE)
+            m = re.match(r'^(.+?)[-_](?:2G|3G|4G|5G|NR|LTE|GSM|WCDMA)$', name, re.IGNORECASE)
             return m.group(1) if m else None
 
         def do_replace(content: str, old: str, new: str) -> tuple[str, int]:
@@ -515,7 +518,7 @@ class ModernizationGenerator:
                 logger.info(f"Replaced {replacements} instances of '{pattern}' with '{new_pattern}'")
         
         # Also replace lnBtsId parameter values
-        import re
+
         lnBtsId_pattern = rf'(<p\s+name="lnBtsId"[^>]*>)\s*{re.escape(old_id)}\s*(</p>)'
         lnBtsId_replacement = rf'\g<1>{new_id}\g<2>'
         lnBtsId_matches = re.findall(lnBtsId_pattern, xml_content, flags=re.IGNORECASE)
@@ -528,37 +531,34 @@ class ModernizationGenerator:
         logger.info(f"Total BTS ID replacements made: {total_replacements}")
         return xml_content
 
-    IOT_CELLS = {'LNCEL-211', 'LNCEL-212', 'LNCEL-213', 'LNCEL-214'}
-    IOT_TAC = '5000'
-
     def _override_tac_all(self, xml_content: str, new_tac: str) -> str:
         """Force set <p name="tac"> to new_tac in all LNCEL managedObjects,
         except IoT cells (LNCEL-211..214) which keep TAC=5000.
         """
-        import re
+
         pattern = r'(<managedObject[^>]*class="[^"]*:LNCEL"[^>]*distName="[^"]*"[^>]*>.*?<p\s+name="tac"[^>]*>)\s*[^<]*\s*(</p>.*?</managedObject>)'
         def repl(match):
             block = match.group(0)
-            for iot_id in self.IOT_CELLS:
+            for iot_id in IOT_CELLS:
                 if iot_id in block:
-                    logger.info(f"Preserving IoT TAC={self.IOT_TAC} for {iot_id}")
-                    return f"{match.group(1)}{self.IOT_TAC}{match.group(2)}"
+                    logger.info(f"Preserving IoT TAC={IOT_TAC} for {iot_id}")
+                    return f"{match.group(1)}{IOT_TAC}{match.group(2)}"
             return f"{match.group(1)}{new_tac}{match.group(2)}"
         updated = re.sub(pattern, repl, xml_content, flags=re.DOTALL | re.IGNORECASE)
         return updated
 
     def _fix_iot_tac(self, xml_content: str) -> str:
         """Post-processing safety net: ensure IoT cells (LNCEL-211..214) always have TAC=5000."""
-        import re
+
         total = 0
-        for iot_id in self.IOT_CELLS:
+        for iot_id in IOT_CELLS:
             pattern = rf'(<managedObject[^>]*class="[^"]*:LNCEL"[^>]*distName="[^"]*{re.escape(iot_id)}[^"]*"[^>]*>.*?<p\s+name="tac"[^>]*>)\s*[^<]*\s*(</p>.*?</managedObject>)'
             matches = re.findall(pattern, xml_content, re.DOTALL | re.IGNORECASE)
             if matches:
-                xml_content = re.sub(pattern, lambda m: f"{m.group(1)}{self.IOT_TAC}{m.group(2)}", xml_content, flags=re.DOTALL | re.IGNORECASE)
+                xml_content = re.sub(pattern, lambda m: f"{m.group(1)}{IOT_TAC}{m.group(2)}", xml_content, flags=re.DOTALL | re.IGNORECASE)
                 total += len(matches)
         if total:
-            logger.info(f"Fixed IoT TAC to {self.IOT_TAC} on {total} cells")
+            logger.info(f"Fixed IoT TAC to {IOT_TAC} on {total} cells")
         return xml_content
     
     def _replace_sctp_port_min(self, xml_content, old_port, new_port):
@@ -569,7 +569,7 @@ class ModernizationGenerator:
         total_replacements = 0
         
         # Look for the specific pattern: <p name="sctpPortMin">old_port</p>
-        import re
+
         
         # Pattern to match sctpPortMin parameter
         pattern = rf'(<p\s+name="sctpPortMin"[^>]*>)\s*{re.escape(old_port)}\s*(</p>)'
@@ -601,7 +601,7 @@ class ModernizationGenerator:
         # Parameters to replace
         params_to_replace = ['bcfId', 'bscId', 'mPlaneRemoteIpAddressOmuSig']
         
-        import re
+
         
         for param_name in params_to_replace:
             if param_name in old_params and param_name in new_params:
@@ -645,7 +645,7 @@ class ModernizationGenerator:
 
         total_replacements = 0
         params_to_replace = ['phyCellId', 'tac', 'rootSeqIndex']
-        import re
+
 
         def _cell_num(cell_id: str) -> int:
             m = re.search(r'LNCEL-(\d+)', cell_id)
@@ -723,7 +723,7 @@ class ModernizationGenerator:
         # Count total replacements for logging
         total_replacements = 0
         
-        import re
+
         
         # Process each cell
         for cell_id in old_rootseq.keys():
@@ -773,7 +773,7 @@ class ModernizationGenerator:
         # Count total replacements for logging
         total_replacements = 0
         
-        import re
+
         
         # Process each NRCELL
         for nrcell_id in old_nrcells.keys():
@@ -831,7 +831,7 @@ class ModernizationGenerator:
         აბრუნებს განახლებულ XML string-ს.
         """
         import xml.etree.ElementTree as ET
-        import re
+
         
         def normalize_tech(label):
             if not label:
@@ -839,26 +839,14 @@ class ModernizationGenerator:
             raw = str(label).strip()
             name = raw.upper()
             # Flexible key: strip non-alnum to match variants like O&M, M-GT, etc.
-            import re as _re
-            key = _re.sub(r'[^A-Z0-9]+', '', name)
-            mapping = {
-                'OAM': 'OAM', 'OM': 'OAM', 'OMU': 'OAM', 'MGMT': 'OAM', 'MGT': 'OAM', 'MANAGEMENT': 'OAM',
-                '2G': '2G', 'GSM': '2G', 'GERAN': '2G',
-                '3G': '3G', 'WCDMA': '3G', 'UMTS': '3G',
-                '4G': '4G', 'LTE': '4G',
-                '5G': '5G', 'NR': '5G'
-            }
-            return mapping.get(key, mapping.get(name, None))
+            key = re.sub(r'[^A-Z0-9]+', '', name)
+            return TECH_ALIASES.get(key, TECH_ALIASES.get(name, None))
 
         def derive_tech_from_text(text: str | None):
             if not text:
                 return None
             upper = str(text).upper()
-            for token, norm in [('OAM','OAM'),('OM','OAM'),('MGMT','OAM'),('MGT','OAM'),
-                                ('GERAN','2G'),('GSM','2G'),('2G','2G'),
-                                ('WCDMA','3G'),('UMTS','3G'),('3G','3G'),
-                                ('LTE','4G'),('4G','4G'),
-                                ('NR','5G'),('5G','5G')]:
+            for token, norm in TECH_TOKENS:
                 if token in upper:
                     return norm
             return None
@@ -872,7 +860,7 @@ class ModernizationGenerator:
             try:
                 # handle values like 3980, '3980', 3980.0
                 vlan_int = int(float(s))
-                if vlan_int < 1 or vlan_int > 4094:
+                if vlan_int < VLAN_MIN or vlan_int > VLAN_MAX:
                     return None
                 return str(vlan_int)
             except (ValueError, TypeError) as e:
@@ -960,7 +948,7 @@ class ModernizationGenerator:
         """Replace IP addresses, masks, and gateways from IP Plan data using structural mapping (IPIF → IPADDRESSV4)."""
         logger.info(f"Replacing IP addresses from IP Plan (structural)")
         total_replacements = 0
-        import re
+
         import xml.etree.ElementTree as ET
 
         if debug_log is None:
@@ -1113,7 +1101,7 @@ class ModernizationGenerator:
         logger.info(f"IP Plan routing rules: {ip_plan_routing_rules if ip_plan_routing_rules else 'None'}")
         
         total_replacements = 0
-        import re
+
         
         if not ip_plan_routing_rules:
             logger.info("No IP Plan routing rules provided")
@@ -1190,7 +1178,7 @@ class ModernizationGenerator:
         logger.info(f"IP Plan technologies: {list(ip_plan_technologies.keys()) if ip_plan_technologies else 'None'}")
         
         total_replacements = 0
-        import re
+
         
         # Replace NRX2LINK_TRUST ipV4Addr with LTE IP from IP Plan
         if 'NRX2LINK_TRUST_ipV4Addr' in reference_network_params:
@@ -1251,7 +1239,7 @@ class ModernizationGenerator:
           - IPRT-1 items by destIpAddr: 0.0.0.0->OAM, 10.0.0.192->3G, 10.0.7.112->2G, 10.111.0.0->4G
           - IPRT-2 (or userLabel NR) -> 5G
         """
-        import re
+
         import xml.etree.ElementTree as ET
         if debug_log is None:
             debug_log = []
@@ -1286,38 +1274,7 @@ class ModernizationGenerator:
         xml_no_ns = re.sub(r'xmlns="[^\"]+"', '', xml_content, count=1)
         root = ET.fromstring(xml_no_ns)
 
-        # destIpAddr -> tech mapping for IPRT-1
-        dest_to_tech = {
-            '0.0.0.0': 'OAM',
-            # 3G / WCDMA
-            '10.0.0.192': '3G',
-            '10.0.1.192': '3G',
-            '10.0.2.192': '3G',
-            '10.0.3.192': '3G',
-            # 2G / GSM
-            '10.0.7.112': '2G',
-            '10.0.7.144': '2G',
-            '10.0.7.96': '2G',
-            '10.0.8.112': '2G',
-            '10.0.8.144': '2G',
-            '10.0.8.96': '2G',
-            # 4G / LTE
-            '10.111.0.0': '4G',
-            '10.121.0.0': '4G',
-            '10.131.0.0': '4G',
-            '172.28.16.64': '4G',
-            '172.28.37.80': '4G',
-            '172.28.37.96': '4G',
-            '172.28.44.64': '4G',
-            '172.28.44.80': '4G',
-            '172.29.16.64': '4G',
-            '172.29.37.16': '4G',
-            '172.29.37.32': '4G',
-            '172.30.157.240': '4G',
-            '172.30.160.32': '4G',
-            '10.112.0.0': '4G',
-            '10.122.0.0': '4G'
-        }
+        dest_to_tech = DEST_IP_TO_TECH
 
         replacements = 0
         for mo in root.findall('.//managedObject'):
@@ -1377,7 +1334,7 @@ class ModernizationGenerator:
         - NRX2LINK_TRUST-1 ipV4Addr <- LTE/4G IP
         - LNADJGNB-0 cPlaneIpAddr <- 5G/NR IP
         """
-        import re
+
         import xml.etree.ElementTree as ET
         if debug_log is None:
             debug_log = []
@@ -1440,7 +1397,7 @@ class ModernizationGenerator:
         """Replace 4G TDD cell parameters (tac) in the template using existing station's TDD cell data"""
         logger.info("Replacing 4G TDD cell parameters")
         total = 0
-        import re
+
 
         for ref_cell_id, ref_params in reference_tdd_cells.items():
             if ref_cell_id in existing_tdd_cells:
@@ -1479,7 +1436,7 @@ class ModernizationGenerator:
         """
         logger.info("Copying PCI+TAC from existing FDD cells to reference TDD cells (ordinal mapping)")
         total = 0
-        import re
+
 
         existing_cell_ids = set(existing_4g_cells.keys())
 
@@ -1569,7 +1526,7 @@ class ModernizationGenerator:
         """
         logger.info("Replacing 5G NRCELL detailed parameters (FDD+TDD)")
         total = 0
-        import re
+
 
         for ref_cell_id, ref_info in reference_details.items():
             ref_phys = ref_info.get('physCellId')

@@ -1,5 +1,6 @@
 import pandas as pd
 import logging
+from constants import IP_PLAN_COLUMNS, IPRT1_PREFIX_TO_TECH, IPRT2_PREFIX_TO_TECH
 
 logger = logging.getLogger(__name__)
 
@@ -133,36 +134,7 @@ class ExcelParser:
             
             debug_log.append(f"Station found successfully. Proceeding with data extraction from row {station_row}...")
             
-            # Column mappings (Excel columns are 0-indexed)
-            column_map = {
-                # VLANs
-                'MGT_VLAN_ID': 6,   # G
-                'GSM_VLAN_ID': 10,  # K  
-                'WCDMA_VLAN_ID': 17, # R
-                'LTE_VLAN': 26,     # AA
-                '5G_VLAN': 36,      # AK
-                
-                # IPs
-                'MGT_IP': 7,        # H
-                'GSM_IP': 11,       # L
-                'WCDMA_IP': 18,     # S
-                'LTE_IP': 27,       # AB
-                '5G_IP': 37,        # AL
-                
-                # Masks
-                'MGT_MASK': 8,      # I
-                'GSM_MASK': 12,     # M
-                'WCDMA_MASK': 19,   # T
-                'LTE_MASK': 28,     # AC
-                '5G_MASK': 38,      # AM
-                
-                # Gateways
-                'MGT_GW': 9,        # J
-                'GSM_GW': 13,       # N
-                'WCDMA_GW': 20,     # U
-                'LTE_GW': 29,       # AD
-                '5G_GW': 39         # AN
-            }
+            column_map = IP_PLAN_COLUMNS
             
             debug_log.append("Starting data extraction from specified columns...")
             
@@ -280,17 +252,17 @@ class ExcelParser:
         """Extract IPv4 routing rules based on gateway patterns"""
         routing_rules = {}
         
-        # IPRT-1 rules
+        # Map routing prefixes to gateways from network data
+        tech_to_gw_key = {'OAM': 'MGT_GW', '2G': 'GSM_GW', '3G': 'WCDMA_GW', '4G': 'LTE_GW', '5G': '5G_GW'}
+
         iprt1_mappings = {
-            '10.110': network_data.get('MGT_GW'),      # OAM
-            '10.171': network_data.get('GSM_GW'),      # 2G
-            '10.141': network_data.get('WCDMA_GW'),    # 3G
-            '10.111': network_data.get('LTE_GW')       # 4G
+            prefix: network_data.get(tech_to_gw_key.get(tech, ''))
+            for prefix, tech in IPRT1_PREFIX_TO_TECH.items()
         }
-        
-        # IPRT-2 NR rules
+
         iprt2_mappings = {
-            '10.112': network_data.get('5G_GW')        # 5G
+            prefix: network_data.get(tech_to_gw_key.get(tech, ''))
+            for prefix, tech in IPRT2_PREFIX_TO_TECH.items()
         }
         
         routing_rules['IPRT-1'] = iprt1_mappings

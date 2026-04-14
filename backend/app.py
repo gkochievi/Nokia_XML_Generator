@@ -3,6 +3,7 @@ from flask_cors import CORS
 import os
 import logging
 from dotenv import load_dotenv
+from constants import ALLOWED_EXTENSIONS, DEFAULT_MAX_UPLOAD_MB, DEFAULT_SERVER_HOST, DEFAULT_SERVER_PORT
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -11,12 +12,13 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 CORS(app)
 
-# Configuration
-app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max file size
-app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['GENERATED_FOLDER'] = 'generated'
-app.config['EXAMPLE_FILES_FOLDER'] = 'example_files'
-app.config['ALLOWED_EXTENSIONS'] = {'xml', 'xlsx', 'xls'}
+# Configuration — override via environment variables
+max_upload_mb = int(os.environ.get('MAX_UPLOAD_MB', DEFAULT_MAX_UPLOAD_MB))
+app.config['MAX_CONTENT_LENGTH'] = max_upload_mb * 1024 * 1024
+app.config['UPLOAD_FOLDER'] = os.environ.get('UPLOAD_FOLDER', 'uploads')
+app.config['GENERATED_FOLDER'] = os.environ.get('GENERATED_FOLDER', 'generated')
+app.config['EXAMPLE_FILES_FOLDER'] = os.environ.get('EXAMPLE_FILES_FOLDER', 'example_files')
+app.config['ALLOWED_EXTENSIONS'] = ALLOWED_EXTENSIONS
 
 # Create folders if they don't exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -44,7 +46,10 @@ app.register_blueprint(sftp_bp)
 
 def main():
     """Main function for running the application"""
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    host = os.environ.get('FLASK_HOST', DEFAULT_SERVER_HOST)
+    port = int(os.environ.get('FLASK_PORT', DEFAULT_SERVER_PORT))
+    debug = os.environ.get('FLASK_DEBUG', 'true').lower() in ('1', 'true', 'yes')
+    app.run(host=host, port=port, debug=debug)
 
 
 if __name__ == '__main__':

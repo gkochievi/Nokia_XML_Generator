@@ -6,6 +6,7 @@ from modules.xml_viewer import XMLViewer
 from modules.modernization import ModernizationGenerator
 import os
 import logging
+from constants import REGIONS, EXAMPLE_SUBDIRS
 
 logger = logging.getLogger(__name__)
 
@@ -16,11 +17,11 @@ def _resolve_example_xml_path(filename: str, region: str | None = None) -> str:
     base_dir = current_app.config['EXAMPLE_FILES_FOLDER']
     safe_name = secure_filename(filename)
     candidates = []
-    if region in ['East', 'West']:
+    if region in REGIONS:
         candidates.append(os.path.join(base_dir, region, safe_name))
     candidates.append(os.path.join(base_dir, safe_name))
-    candidates.append(os.path.join(base_dir, 'East', safe_name))
-    candidates.append(os.path.join(base_dir, 'West', safe_name))
+    for r in REGIONS:
+        candidates.append(os.path.join(base_dir, r, safe_name))
     for p in candidates:
         if os.path.exists(p):
             return p
@@ -78,7 +79,7 @@ def modernization():
         # Handle IP Plan Excel
         ip_plan_selection = request.form.get('ipPlanSelection')
         if ip_plan_selection and ip_plan_selection != 'upload':
-            file_paths['transmissionExcel'] = os.path.join(current_app.config['EXAMPLE_FILES_FOLDER'], 'IP', ip_plan_selection)
+            file_paths['transmissionExcel'] = os.path.join(current_app.config['EXAMPLE_FILES_FOLDER'], EXAMPLE_SUBDIRS['ip'], ip_plan_selection)
         else:
             if 'ipPlanUpload' not in request.files or request.files['ipPlanUpload'].filename == '':
                 return jsonify({'success': False, 'error': 'IP Plan Excel ფაილი აუცილებელია'}), 400
@@ -228,8 +229,8 @@ def modernization_inspect():
             return jsonify({'success': False, 'error': 'Invalid file type for existing XML'}), 400
 
         region = (request.form.get('region') or '').strip()
-        if region not in ['East', 'West']:
-            region = 'East'
+        if region not in REGIONS:
+            region = REGIONS[0]
 
         temp_path = os.path.join(current_app.config['UPLOAD_FOLDER'], secure_filename(xml_file.filename))
         xml_file.save(temp_path)
@@ -283,7 +284,7 @@ def modernization_inspect():
         except OSError as e:
             logger.warning(f"Could not list reference XMLs in {target_dir}: {e}")
         if not files:
-            for fallback in ['East', 'West']:
+            for fallback in REGIONS:
                 if fallback == region:
                     continue
                 try:

@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, send_file, current_app
 from werkzeug.utils import secure_filename
 import os
 import logging
+from constants import REGIONS, EXAMPLE_SUBDIRS, XML_EXTENSIONS, EXCEL_EXTENSIONS
 
 logger = logging.getLogger(__name__)
 
@@ -21,10 +22,11 @@ def list_example_xml_files():
         region = (request.args.get('region') or '').strip()
         base_dir = current_app.config['EXAMPLE_FILES_FOLDER']
         target_dir = base_dir
-        if region in ['East', 'West']:
+        if region in REGIONS:
             target_dir = os.path.join(base_dir, region)
         try:
-            files = [f for f in os.listdir(target_dir) if f.lower().endswith('.xml')]
+            files = [f for f in os.listdir(target_dir)
+                     if os.path.splitext(f)[1].lower() in XML_EXTENSIONS]
         except OSError as e:
             logger.warning(f"Could not list XML files in {target_dir}: {e}")
             files = []
@@ -40,14 +42,11 @@ def list_example_excel_files():
     try:
         category = (request.args.get('category') or '').strip().lower()
         base_dir = current_app.config['EXAMPLE_FILES_FOLDER']
-        if category == 'ip':
-            target_dir = os.path.join(base_dir, 'IP')
-        elif category == 'data':
-            target_dir = os.path.join(base_dir, 'Data')
-        else:
-            target_dir = base_dir
+        subdir = EXAMPLE_SUBDIRS.get(category)
+        target_dir = os.path.join(base_dir, subdir) if subdir else base_dir
         try:
-            files = [f for f in os.listdir(target_dir) if f.lower().endswith(('.xlsx', '.xls'))]
+            files = [f for f in os.listdir(target_dir)
+                     if os.path.splitext(f)[1].lower() in EXCEL_EXTENSIONS]
         except OSError as e:
             logger.warning(f"Could not list Excel files in {target_dir}: {e}")
             files = []
@@ -75,15 +74,14 @@ def upload_example_file():
         region = (request.form.get('region') or '').strip()
         category = (request.form.get('category') or '').strip().lower()
 
-        ext = filename.lower().rsplit('.', 1)[-1]
+        ext = '.' + filename.lower().rsplit('.', 1)[-1]
         target_dir = base_dir
-        if ext == 'xml' and region in ['East', 'West']:
+        if ext in XML_EXTENSIONS and region in REGIONS:
             target_dir = os.path.join(base_dir, region)
-        elif ext in ['xlsx', 'xls']:
-            if category == 'ip':
-                target_dir = os.path.join(base_dir, 'IP')
-            elif category == 'data':
-                target_dir = os.path.join(base_dir, 'Data')
+        elif ext in EXCEL_EXTENSIONS:
+            subdir = EXAMPLE_SUBDIRS.get(category)
+            if subdir:
+                target_dir = os.path.join(base_dir, subdir)
 
         os.makedirs(target_dir, exist_ok=True)
         save_path = os.path.join(target_dir, filename)
@@ -98,8 +96,8 @@ def upload_example_file():
             'success': True,
             'filename': filename,
             'message': 'File uploaded successfully',
-            'region': region if ext == 'xml' else None,
-            'category': category if ext in ['xlsx', 'xls'] else None,
+            'region': region if ext in XML_EXTENSIONS else None,
+            'category': category if ext in EXCEL_EXTENSIONS else None,
             'saved_to': saved_rel
         })
     except Exception as e:
@@ -117,9 +115,10 @@ def delete_example_file_post():
         if not filename:
             return jsonify({'success': False, 'error': 'filename required'}), 400
         base_dir = current_app.config['EXAMPLE_FILES_FOLDER']
-        if category in ['ip', 'data']:
-            target_dir = os.path.join(base_dir, 'IP' if category == 'ip' else 'Data')
-        elif region in ['East', 'West']:
+        subdir = EXAMPLE_SUBDIRS.get(category)
+        if subdir:
+            target_dir = os.path.join(base_dir, subdir)
+        elif region in REGIONS:
             target_dir = os.path.join(base_dir, region)
         else:
             target_dir = base_dir

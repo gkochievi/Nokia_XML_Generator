@@ -5,6 +5,7 @@ import tempfile
 import logging
 import pandas as pd
 import paramiko
+from constants import BTS_NAMING_EXCEL_PATHS
 
 logger = logging.getLogger(__name__)
 
@@ -20,10 +21,7 @@ def sftp_download():
             return jsonify({'success': False, 'error': 'Missing parameter: query (ID or Name)'}), 400
 
         base_examples = current_app.config['EXAMPLE_FILES_FOLDER']
-        candidates = [
-            os.path.join(base_examples, 'BTSNaming', 'data.xlsx'),
-            os.path.join(base_examples, 'data.xlsx'),
-        ]
+        candidates = [os.path.join(base_examples, p) for p in BTS_NAMING_EXCEL_PATHS]
         excel_path = None
         for candidate in candidates:
             if os.path.exists(candidate):
