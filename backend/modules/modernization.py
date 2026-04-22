@@ -527,7 +527,17 @@ class ModernizationGenerator:
             lnBtsId_replacements = len(lnBtsId_matches)
             total_replacements += lnBtsId_replacements
             logger.info(f"Replaced {lnBtsId_replacements} instances of lnBtsId '{old_id}' with '{new_id}'")
-        
+
+        # Also replace traceId values that mirror the BTS/gNB ID (nrRanTraceReference)
+        traceId_pattern = rf'(<p\s+name="traceId"[^>]*>)\s*{re.escape(old_id)}\s*(</p>)'
+        traceId_replacement = rf'\g<1>{new_id}\g<2>'
+        traceId_matches = re.findall(traceId_pattern, xml_content, flags=re.IGNORECASE)
+        if traceId_matches:
+            xml_content = re.sub(traceId_pattern, traceId_replacement, xml_content, flags=re.IGNORECASE)
+            traceId_replacements = len(traceId_matches)
+            total_replacements += traceId_replacements
+            logger.info(f"Replaced {traceId_replacements} instances of traceId '{old_id}' with '{new_id}'")
+
         logger.info(f"Total BTS ID replacements made: {total_replacements}")
         return xml_content
 
