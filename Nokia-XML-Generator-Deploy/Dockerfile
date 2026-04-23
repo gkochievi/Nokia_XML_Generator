@@ -40,4 +40,4 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 5000 80
 
-CMD ["sh", "-c", "nginx && exec gunicorn -b 0.0.0.0:5000 app:app"]
+CMD ["sh", "-c", "nginx && exec gunicorn -b 0.0.0.0:5000 -w 2 --threads 4 --timeout 120 app:app"]
