@@ -528,15 +528,42 @@ class ModernizationGenerator:
             total_replacements += lnBtsId_replacements
             logger.info(f"Replaced {lnBtsId_replacements} instances of lnBtsId '{old_id}' with '{new_id}'")
 
-        # Also replace traceId values that mirror the BTS/gNB ID (nrRanTraceReference)
-        traceId_pattern = rf'(<p\s+name="traceId"[^>]*>)\s*{re.escape(old_id)}\s*(</p>)'
-        traceId_replacement = rf'\g<1>{new_id}\g<2>'
-        traceId_matches = re.findall(traceId_pattern, xml_content, flags=re.IGNORECASE)
-        if traceId_matches:
-            xml_content = re.sub(traceId_pattern, traceId_replacement, xml_content, flags=re.IGNORECASE)
-            traceId_replacements = len(traceId_matches)
-            total_replacements += traceId_replacements
-            logger.info(f"Replaced {traceId_replacements} instances of traceId '{old_id}' with '{new_id}'")
+        # Replace traceId under nrRanTraceReference with the new BTS/gNB ID, regardless of the
+        # old value. In real Nokia configs the reference's traceId does not always equal its MRBTS
+        # distName ID, so matching on old_id misses valid cases.
+        nr_trace_block_re = re.compile(
+            r'<list\s+name="nrRanTraceReference">.*?</list>',
+            flags=re.DOTALL | re.IGNORECASE,
+        )
+        trace_id_value_re = re.compile(
+            r'(<p\s+name="traceId"[^>]*>)\s*[^<]*\s*(</p>)',
+            flags=re.IGNORECASE,
+        )
+        trace_replacements = 0
+
+        def _swap_trace_id(match):
+            nonlocal trace_replacements
+            block = match.group(0)
+            new_block, count = trace_id_value_re.subn(rf'\g<1>{new_id}\g<2>', block)
+            trace_replacements += count
+            return new_block
+
+        xml_content = nr_trace_block_re.sub(_swap_trace_id, xml_content)
+        if trace_replacements:
+            total_replacements += trace_replacements
+            logger.info(f"Replaced {trace_replacements} traceId values under nrRanTraceReference with '{new_id}'")
+
+        # Catch-all: replace any remaining standalone occurrences of the reference BTS ID
+        # with the target BTS ID. Uses numeric boundaries so digits embedded inside larger
+        # numbers (e.g. version strings, unrelated tokens) are left untouched. This is the
+        # safety net for BTS-ID references that don't match the targeted patterns above.
+        generic_pattern = rf'(?<!\d){re.escape(old_id)}(?!\d)'
+        generic_matches = re.findall(generic_pattern, xml_content)
+        if generic_matches:
+            xml_content = re.sub(generic_pattern, new_id, xml_content)
+            generic_replacements = len(generic_matches)
+            total_replacements += generic_replacements
+            logger.info(f"Catch-all replaced {generic_replacements} remaining occurrences of '{old_id}' with '{new_id}'")
 
         logger.info(f"Total BTS ID replacements made: {total_replacements}")
         return xml_content
