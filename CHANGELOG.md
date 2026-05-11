@@ -8,13 +8,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Post-generation `_verify_output` in `ModernizationGenerator` — 5 sanity checks (well-formed XML, size > 1KB, reference btsName not leaked, reference BTS-ID not leaked from `MRBTS-/LNBTS-/NRBTS-` tokens, IoT TAC = 5000). Hard errors set `success: false` + `verification_errors`; soft warnings surface in `warnings.verification`.
+- `details.replacement_counts` in the route response — real per-step mutation counts (`station_names`, `bts_ids`, `vlan_ids`, `ip_addresses`, `gateways`, `network_params_structural`, `network_params_legacy`, `sctp_port_min`, `params_2g`, `cells_4g`, `rootseq_4g`, `nrcells_5g_pci`, `tdd_cells_4g`, `tdd_pci_from_fdd`, `nrcell_5g_details`, `tac_override`, `iot_tac_fix`).
+- End-to-end pytest suite (`backend/tests/test_modernization_e2e.py`) — 19 tests calling `ModernizationGenerator.generate()` directly against rich fixtures and asserting both `replacement_counts` and resulting XML. Total backend tests: 58 → 81.
+- Rich `EXISTING_STATION_XML` / `REFERENCE_TEMPLATE_XML` fixtures and an `ip_plan_xlsx` factory in `conftest.py`.
+- 4 namespaced-extractor regression tests (`TestExtractorsOnNamespacedXml` in `test_xml_parser.py`) locking in the xml_parser silent-failure fix.
+- `test-runner` Claude agent — runs the pytest suite from chat and reports a short PASS/FAIL summary.
+- GitHub Actions CI (`.github/workflows/test.yml`) — pytest on push/PR to `main`, Python 3.11/3.12/3.13 matrix, pip-cached, path-filtered to `backend/**`.
+- `MIN_NAME_TOKEN_LEN` substring-replacement safety guard in `_replace_station_names` (refuses to operate on reference btsNames < 4 chars).
+- Workflow checklist in `CLAUDE.md` Step 3 — codifies "after changing code: run tests → update agent docs → update CLAUDE.md → run `graphify update .`" with per-trigger mapping.
+- Rollout TAC override now honored by the `/api/rollout` endpoint (previously dropped silently).
+
+### Changed
+- `_replace_4g_cells` no longer pretends to handle `rootSeqIndex` — that branch was dead because `extract_4g_cells` doesn't extract rootSeqIndex. `_replace_4g_rootseq` is the single source of LNCEL_FDD rootSeqIndex writes.
+- `*_replacement_performed` flags in the response are now derived from real mutation counts, not from extraction success (they used to be `True` even when a replacement silently no-op'd).
+- `ExcelParser.parse_ip_plan_excel` station-name lookup now collapses all whitespace before comparing, so trailing/internal/non-breaking-space variants no longer cause a miss.
+- `xml-output-verifier` Claude agent rescoped to deeper checks (IP Plan cross-reference, sector count, per-tech VLAN/IP/GW, replacement_counts plausibility) since `_verify_output` now handles the baseline server-side.
+- `nokia-xml-debugger` Claude agent updated for the 17-pass pipeline and the new `_verify_output` step.
+
+### Fixed
+- IPRT-2 NR routing key mismatch — `ExcelParser` wrote `'IPRT-2_NR'` (underscore) but `ModernizationGenerator` read `'IPRT-2 NR'` (space). Aligned to space.
+- Four `XMLParser` extractors (`extract_vlan_parameters`, `extract_ip_parameters`, `extract_network_parameters`, `extract_routing_parameters`) used `obj.find(".//*[local-name()='p'][@name='X']")` which lxml's ElementPath rejects with "invalid predicate" on namespaced trees. The functions silently returned `{}` for every real-world Nokia XML. Switched all 11 occurrences to the existing `_find_param` helper (xpath-based, namespace-aware).
 - `ngrok` service in `docker-compose.yaml` behind a `share` profile for one-command public-URL sharing.
 - `backend/.env.example` documenting required environment variables.
 - Vite dev server now allows `*.ngrok-free.app`, `*.ngrok.app`, `*.ngrok.io` hosts.
 
-### Changed
-- README rewritten to match the current backend/Frontend split, real ports (3000/5001), real API routes, and the ngrok workflow.
-- `CONTRIBUTING.md` aligned with the actual project layout (no more `templates/` references).
+### Removed
+- `backend/modules/rollout.py` (`RolloutGenerator`) — orphaned legacy, no callers.
+- `ExcelParser.parse_transmission_excel` / `parse_radio_excel` — only consumers were `RolloutGenerator` and a dead "load for potential future use" path in `generate()`.
+- `ModernizationGenerator._replace_routing_rules` — overlapped with `_replace_gateways_by_tech`; IPRT-1 prefixes only matched 4G by accident, IPRT-2 was unreachable due to the key mismatch above.
+- `ModernizationGenerator._update_element_with_station_data` / `_update_network_configuration` — tree-based helpers never wired into `generate()`.
 
 ## [1.2.0] - 2026-04
 

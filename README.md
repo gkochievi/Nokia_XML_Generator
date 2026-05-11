@@ -92,7 +92,7 @@ npm run dev
 │   ├── modules/
 │   │   ├── xml_parser.py         # Namespace-agnostic XPath extraction
 │   │   ├── excel_parser.py       # IP Plan parsing
-│   │   ├── modernization.py      # Generate pipeline (15+ regex/replace passes)
+│   │   ├── modernization.py      # Generate pipeline (17 regex/replace passes + post-gen verification)
 │   │   └── xml_viewer.py         # Config summary for viewer UI
 │   ├── example_files/            # Reference XMLs (East/, West/), IP Plans, BTS naming
 │   ├── tests/                    # pytest integration tests
@@ -128,9 +128,9 @@ npm run dev
 | `/api/parse-ip-plan` | POST | Debug: parse IP Plan for a station |
 | `/api/sftp-download` | POST | Fetch backup XML via SFTP |
 
-Canonical response shape: `{ success, data?, filename?, error?, debug_log?, warnings? }`.
+Canonical response shape: `{ success, data?, filename?, error?, debug_log?, warnings?, verification_errors?, details? }`.
 
-The frontend `DebugConsole` displays `debug_log` from each generation — it's the source of truth when something goes silently wrong in the pipeline.
+`details.replacement_counts` holds per-step real mutation counts (e.g. `{ vlan_ids: 3, cells_4g: 6, ... }`) — this is the source of truth for "did the pass actually do anything", not the legacy `*_replacement_performed` booleans. The frontend `DebugConsole` displays `debug_log` from each generation. On hard verification failures the route returns `success: false` with a structured `verification_errors` array; the frontend refuses to download in that case.
 
 ## Environment variables
 
@@ -152,7 +152,7 @@ Backend reads these from `backend/.env` (gitignored). Defaults shown for non-sec
 
 The IP Plan Excel layout is **fixed** — `ExcelParser` reads by column index, not by header name. Column indices (0-based, Excel columns G–AN) are defined in `IP_PLAN_COLUMNS` in [`backend/constants.py`](backend/constants.py).
 
-Station-name lookup is **case-insensitive** and tries `-` ↔ `_` swaps, but is otherwise exact (whitespace-sensitive). If your station "exists in the file" but isn't found, check for trailing spaces or non-ASCII characters.
+Station-name lookup is **case-insensitive**, **whitespace-collapsed**, and tries `-` ↔ `_` swaps. Trailing/internal spaces and non-breaking spaces are normalized before comparison, so most upstream-typo cases match cleanly.
 
 ## Testing
 
@@ -160,7 +160,7 @@ Station-name lookup is **case-insensitive** and tries `-` ↔ `_` swaps, but is 
 cd backend && python -m pytest tests/
 ```
 
-Backend tests cover routes and the XML parser (happy-path only). There are no frontend tests — manual browser testing via `npm run dev` is the verification path. The most reliable check after changing the modernization pipeline is end-to-end: generate XML and diff it against a known-good output.
+81 backend tests covering routes, `XMLParser`, and a full `ModernizationGenerator` end-to-end pipeline check (`tests/test_modernization_e2e.py` — every `_replace_*` pass has at least one assertion against real `replacement_counts` and the resulting XML). GitHub Actions runs the suite on push/PR to `main` against Python 3.11/3.12/3.13 (see [`.github/workflows/test.yml`](.github/workflows/test.yml)). There are no frontend tests — manual browser testing via `npm run dev` is the verification path there.
 
 ## Development notes
 

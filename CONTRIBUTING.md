@@ -9,13 +9,16 @@ backend/           # Flask 3.1 API — Python 3.11+, lxml, pandas, paramiko
   routes/          # One Blueprint per file, all mounted under /api
   modules/         # Core logic: xml_parser, excel_parser, modernization, xml_viewer
   example_files/   # Reference XMLs (East/, West/), IP plans, BTS naming
-  tests/           # pytest integration tests
+  tests/           # pytest suite: routes, XMLParser, end-to-end ModernizationGenerator
 
 Frontend/          # React 19 + TypeScript 5.9 (strict) + Vite 8 + Ant Design 6
   src/api/         # Typed Axios endpoints — add new methods here
   src/pages/       # Top-level routes
   src/components/  # Shared UI
   src/i18n/        # ka + en translations
+
+.claude/agents/    # Project-specific Claude agents (debugger, verifier, test-runner, ...)
+.github/workflows/ # GitHub Actions CI (pytest on push/PR, Python 3.11/3.12/3.13)
 ```
 
 The full architectural notes — including non-obvious facts about the modernization pipeline, hardcoded IP-plan column indices, region conventions, and the IoT TAC override — live in [`CLAUDE.md`](CLAUDE.md). **Read it before touching `backend/modules/modernization.py` or `backend/modules/xml_parser.py`.**
@@ -70,9 +73,10 @@ docker-compose up --build         # frontend → :3000, backend → :5001
 cd backend && python -m pytest tests/
 ```
 
-- Backend tests cover the Blueprints and `XMLParser` (happy-path).
-- There are no frontend tests. Manual browser verification is the path.
-- When changing `ModernizationGenerator`, the only reliable check is end-to-end: generate XML against a known-good reference and `diff` the output. Order of `_replace_*()` calls matters.
+- 81 backend tests cover Blueprints, `XMLParser`, and a full `ModernizationGenerator` end-to-end run (`tests/test_modernization_e2e.py`).
+- The e2e suite has one assertion per `_replace_*` pass against `details.replacement_counts` and the resulting XML — if you add or reorder a pass, add at least one assertion to keep it covered.
+- GitHub Actions runs the suite on every push and PR to `main` for Python 3.11 / 3.12 / 3.13.
+- There are no frontend tests. Manual browser verification is the path there.
 
 ## Commit messages
 
@@ -86,8 +90,10 @@ Match the existing style (see `git log`):
 1. Branch from `main`.
 2. Make focused changes — one logical concern per PR.
 3. Update [CHANGELOG.md](CHANGELOG.md) under `## [Unreleased]` if the change is user-visible.
-4. Ensure `cd backend && python -m pytest tests/` and `cd Frontend && npm run build` both pass.
-5. Open a PR with a description that explains *why*, not just *what*.
+4. Ensure `cd backend && python -m pytest tests/` and `cd Frontend && npm run build` both pass — GitHub Actions will run the pytest suite again on push, but check locally first to catch issues without burning CI minutes.
+5. If the change touches `ModernizationGenerator` (passes, counters, verification rules) or the route response shape, update the relevant agent file(s) under `.claude/agents/` — see the workflow checklist in [`CLAUDE.md`](CLAUDE.md).
+6. Run `graphify update .` from the repo root so the knowledge graph in `graphify-out/` reflects your changes (AST-only, no API cost).
+7. Open a PR with a description that explains *why*, not just *what*.
 
 ## Adding common things — where to edit
 
