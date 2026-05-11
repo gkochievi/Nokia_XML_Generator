@@ -1,8 +1,7 @@
 import os
 import re
-from lxml import etree  # pyright: ignore[reportMissingImports]
 import logging
-from copy import deepcopy
+from lxml import etree
 from .xml_parser import XMLParser
 from .excel_parser import ExcelParser
 from constants import (
@@ -12,14 +11,21 @@ from constants import (
 
 logger = logging.getLogger(__name__)
 
+# Minimum length for the station-name token used in global substring replacement.
+# Anything shorter risks matching unrelated tokens (e.g. embedded substrings inside
+# cell names or product codes) since _replace_station_names is a flat str.replace.
+MIN_NAME_TOKEN_LEN = 4
+
+
 class ModernizationGenerator:
     """Generator for modernization configurations"""
-    
+
     def __init__(self):
         self.xml_parser = XMLParser()
         self.excel_parser = ExcelParser()
+        self._counts: dict[str, int] = {}
     
-    def generate(self, station_name, existing_xml_path, reference_5g_xml_path, 
+    def generate(self, station_name, existing_xml_path, reference_5g_xml_path,
                  transmission_excel_path, output_folder, existing_bts_name=None, reference_bts_name=None,
                  ip_plan_excel_path=None, mode: str = 'modernization', rollout_overrides: dict | None = None):
         """Generate modernization configuration using template replacement approach"""
@@ -28,6 +34,13 @@ class ModernizationGenerator:
             logger.info(f"Station name: {station_name}")
             logger.info(f"Existing btsName: {existing_bts_name}")
             logger.info(f"Reference btsName: {reference_bts_name}")
+
+            # transmission_excel_path is retained in the signature for route compatibility
+            # but no longer drives any replacement (it's the same file as ip_plan_excel_path).
+            _ = transmission_excel_path
+
+            # Reset per-call replacement counters
+            self._counts = {}
 
             # Resolve mode and overrides early (used for IP Plan lookup too)
             mode = (mode or 'modernization').lower()
@@ -72,8 +85,6 @@ class ModernizationGenerator:
             reference_vlan_data = None
             existing_ip_data = None
             reference_ip_data = None
-            existing_routing_data = None
-            reference_routing_data = None
             existing_network_params = None
             reference_network_params = None
             
@@ -95,7 +106,6 @@ class ModernizationGenerator:
                     existing_5g_nrcells = self.xml_parser.extract_5g_nrcells(existing_tree)
                     existing_vlan_data = self.xml_parser.extract_vlan_parameters(existing_tree)
                     existing_ip_data = self.xml_parser.extract_ip_parameters(existing_tree)
-                    existing_routing_data = self.xml_parser.extract_routing_parameters(existing_tree)
                     existing_network_params = self.xml_parser.extract_network_parameters(existing_tree)
                     existing_4g_tdd_cells = self.xml_parser.extract_4g_tdd_cells(existing_tree)
                     existing_5g_nrcell_details = self.xml_parser.extract_5g_nrcell_details(existing_tree)
@@ -108,7 +118,6 @@ class ModernizationGenerator:
                     logger.info(f"Existing 5G NRCells: {existing_5g_nrcells}")
                     logger.info(f"Existing VLAN data: {existing_vlan_data}")
                     logger.info(f"Existing IP data: {existing_ip_data}")
-                    logger.info(f"Existing routing data: {existing_routing_data}")
                     logger.info(f"Existing network params: {existing_network_params}")
                     logger.info(f"Existing 4G TDD cells: {existing_4g_tdd_cells}")
                     logger.info(f"Existing 5G NRCELL details: {existing_5g_nrcell_details}")
@@ -125,7 +134,6 @@ class ModernizationGenerator:
                     # Extract network-related parameters
                     reference_vlan_data = self.xml_parser.extract_vlan_parameters(reference_tree)
                     reference_ip_data = self.xml_parser.extract_ip_parameters(reference_tree)
-                    reference_routing_data = self.xml_parser.extract_routing_parameters(reference_tree)
                     reference_network_params = self.xml_parser.extract_network_parameters(reference_tree)
                     reference_4g_tdd_cells = self.xml_parser.extract_4g_tdd_cells(reference_tree)
                     reference_5g_nrcell_details = self.xml_parser.extract_5g_nrcell_details(reference_tree)
@@ -138,7 +146,6 @@ class ModernizationGenerator:
                     logger.info(f"Reference 5G NRCells: {reference_5g_nrcells}")
                     logger.info(f"Reference VLAN data: {reference_vlan_data}")
                     logger.info(f"Reference IP data: {reference_ip_data}")
-                    logger.info(f"Reference routing data: {reference_routing_data}")
                     logger.info(f"Reference network params: {reference_network_params}")
                     logger.info(f"Reference 4G TDD cells: {reference_4g_tdd_cells}")
                     logger.info(f"Reference 5G NRCELL details: {reference_5g_nrcell_details}")
@@ -217,15 +224,6 @@ class ModernizationGenerator:
             else:
                 logger.info("IP Plan or reference IP data not available for IP replacement")
             
-            # Replace routing rules from IP Plan if available
-            if ip_plan_data and reference_routing_data:
-                logger.info("Performing template-based IPv4 routing replacement from IP Plan...")
-                updated_content = self._replace_routing_rules(
-                    updated_content, reference_routing_data, ip_plan_data['routing_rules']
-                )
-            else:
-                logger.info("IP Plan or reference routing data not available for routing replacement")
-            
             # Replace network parameters (NRX2LINK, LNADJGNB) from IP Plan if available
             if ip_plan_data and reference_network_params:
                 logger.info("Performing template-based network parameters replacement from IP Plan...")
@@ -262,7 +260,9 @@ class ModernizationGenerator:
             else:
                 logger.info("4G cell parameters not available for replacement - station may not have 4G cells")
             
-            # Replace 4G rootSeqIndex parameters if available
+            # Replace 4G rootSeqIndex on LNCEL_FDD children. (extract_4g_cells does not
+            # extract rootSeqIndex, so _replace_4g_cells' inline rootSeqIndex branch can
+            # never fire — this dedicated pass is the real source of rootSeqIndex writes.)
             if existing_4g_rootseq and reference_4g_rootseq:
                 logger.info("Performing template-based 4G rootSeqIndex replacement...")
                 updated_content = self._replace_4g_rootseq(
@@ -270,7 +270,7 @@ class ModernizationGenerator:
                 )
             else:
                 logger.info("4G rootSeqIndex parameters not available for replacement - station may not have 4G FDD cells")
-            
+
             # Replace 5G NRCELL physCellId parameters if available
             # Use existing 4G cells phyCellId values for 5G NRCELL physCellId
             if existing_4g_cells and reference_5g_nrcells:
@@ -308,15 +308,6 @@ class ModernizationGenerator:
             else:
                 logger.info("5G NRCELL detailed data not available for replacement")
 
-            # Parse transmission data for potential future use
-            try:
-                transmission_data = self.excel_parser.parse_transmission_excel(transmission_excel_path)
-                station_data = transmission_data.get(station_name, {})
-                logger.info(f"Transmission data loaded for station: {bool(station_data)}")
-            except Exception as e:
-                logger.warning(f"Could not parse transmission Excel: {str(e)}")
-                station_data = {}
-            
             # Rollout mode: override TAC across all LNCEL if provided (do this last to avoid interfering with other regex replacements)
             if mode == 'rollout' and overrides.get('tac'):
                 logger.info("Rollout mode: overriding TAC across all LNCEL objects (post-processing)")
@@ -336,72 +327,101 @@ class ModernizationGenerator:
                 f.write(updated_content)
             
             logger.info(f"Successfully generated: {output_filename}")
-            # OPTIONAL: return debug_log for frontend if needed
+
+            # Post-generation verification (hard errors + soft warnings)
+            verification = self._verify_output(
+                output_xml=updated_content,
+                reference_bts_name=reference_bts_name,
+                reference_bts_id=reference_bts_id,
+                target_name=target_name,
+                target_id=target_id,
+            )
+            if verification['errors']:
+                logger.warning(
+                    f"Output verification flagged {len(verification['errors'])} error(s) "
+                    f"on {output_filename}: {verification['errors']}"
+                )
+                for msg in verification['errors']:
+                    debug_log.append(f"✗ [VERIFY] {msg}")
+            for msg in verification['warnings']:
+                debug_log.append(f"⚠ [VERIFY] {msg}")
+            if not verification['errors'] and not verification['warnings']:
+                debug_log.append("✓ [VERIFY] Output passed all sanity checks")
+
             return output_filename, debug_log, {
                 'ip_plan_lookup': ip_plan_lookup_station,
-                'ip_plan_found': bool(ip_plan_data and ip_plan_data.get('success', True))
+                'ip_plan_found': bool(ip_plan_data and ip_plan_data.get('success', True)),
+                'replacement_counts': dict(self._counts),
+                'verification': verification,
             }
             
         except Exception as e:
             logger.error(f"Error generating modernization: {str(e)}")
             raise
     
-    def _update_element_with_station_data(self, element, station_name, station_data):
-        """Update XML element with station-specific data (deepcopy, distName)"""
-        # Clone element deeply
-        new_elem = deepcopy(element)
-        # Update distName recursively in element and children
-        def update_distname(elem):
-            if 'distName' in elem.attrib:
-                dist_name = elem.attrib['distName']
-                parts = dist_name.split('/')
-                for i, part in enumerate(parts):
-                    if part.startswith('MRBTS-'):
-                        parts[i] = f"MRBTS-{station_name}"
-                    if part.startswith('NRBTS-'):
-                        parts[i] = f"NRBTS-{station_name}"
-                elem.attrib['distName'] = '/'.join(parts)
-            for child in elem:
-                update_distname(child)
-        update_distname(new_elem)
-        return new_elem
-    
-    def _update_network_configuration(self, tree, station_data):
-        """Update network configuration with new 5G IP addresses"""
-        # Find all IPNO managedObjects
-        ipnos = tree.xpath("//managedObject[contains(@class, 'IPNO')]")
-        found_5g = False
-        for ipno in ipnos:
-            # მოძებნე 5G IP-ისთვის (მაგალითად, თუ აქვს p name="ipAddress" და ემთხვევა 5G IP-ს)
-            ip_elem = ipno.find(".//p[@name='ipAddress']")
-            if ip_elem is not None and ip_elem.text == station_data.get('5g_ip'):
-                # განაახლე საჭირო პარამეტრები
-                found_5g = True
-                for p in ipno.findall(".//p"):
-                    if p.get('name') == 'ipAddress':
-                        p.text = station_data.get('5g_ip', '')
-                    elif p.get('name') == 'gateway':
-                        p.text = station_data.get('gateway', '')
-                    elif p.get('name') == 'vlanId':
-                        p.text = str(station_data.get('vlan', ''))
-                break
-        if not found_5g:
-            # თუ არ არსებობს, დაამატე ახალი IPNO ელემენტი
-            config_data = tree.getroot().find(".//configData")
-            if config_data is not None:
-                ipno_elem = etree.Element('managedObject', attrib={
-                    'class': 'IPNO',
-                    'distName': f"MRBTS-{station_data.get('om_ip','')}/IPNO-5G"
-                })
-                p_ip = etree.Element('p', name='ipAddress')
-                p_ip.text = station_data.get('5g_ip', '')
-                p_gw = etree.Element('p', name='gateway')
-                p_gw.text = station_data.get('gateway', '')
-                p_vlan = etree.Element('p', name='vlanId')
-                p_vlan.text = str(station_data.get('vlan', ''))
-                ipno_elem.extend([p_ip, p_gw, p_vlan])
-                config_data.append(ipno_elem) 
-    
+    def _verify_output(self, output_xml: str, reference_bts_name: str | None,
+                       reference_bts_id: str | None, target_name: str | None,
+                       target_id: str | None) -> dict:
+        """Post-generation sanity checks. Returns {'errors': [...], 'warnings': [...]}.
+
+        Hard errors mean the file is unsafe to deploy and the route should refuse
+        to advertise success. Warnings are informational — the file is usable but
+        an operator should review.
+
+        Skips ref-equality checks when target == reference (rollout mode reuses
+        the reference as both 'existing' and 'reference' inputs).
+        """
+        errors: list[str] = []
+        warnings: list[str] = []
+
+        # 1. Output must parse as well-formed XML
+        try:
+            etree.fromstring(output_xml.encode('utf-8'))
+        except etree.XMLSyntaxError as e:
+            errors.append(f"Output XML is not well-formed: {e}")
+
+        # 2. Output must not be suspiciously small (truncated write / empty template)
+        if len(output_xml) < 1024:
+            errors.append(f"Output XML is suspiciously small ({len(output_xml)} bytes)")
+
+        # 3. Reference btsName must not still appear in the output. Skip in
+        #    rollout mode where target == reference by design.
+        if (reference_bts_name and target_name
+                and reference_bts_name != target_name
+                and reference_bts_name in output_xml):
+            errors.append(
+                f"Reference btsName '{reference_bts_name}' still present in output — "
+                f"_replace_station_names did not complete (target was '{target_name}')"
+            )
+
+        # 4. Reference BTS ID must not still appear in MRBTS-/LNBTS-/NRBTS- tokens.
+        if (reference_bts_id and target_id
+                and reference_bts_id != target_id):
+            for prefix in ('MRBTS', 'LNBTS', 'NRBTS'):
+                stale = f"{prefix}-{reference_bts_id}"
+                if stale in output_xml:
+                    errors.append(
+                        f"Reference BTS ID still present as '{stale}' — "
+                        f"_replace_bts_ids did not complete (target was '{target_id}')"
+                    )
+                    break
+
+        # 5. IoT cells (LNCEL-211..214) should have TAC=5000. Soft warning: the
+        #    rest of the file is usable but this is a known invariant.
+        for iot_id in IOT_CELLS:
+            pattern = (
+                rf'distName="[^"]*{re.escape(iot_id)}[^"]*"[^>]*>'
+                rf'.*?<p\s+name="tac"[^>]*>\s*([^<]+?)\s*</p>'
+            )
+            m = re.search(pattern, output_xml, re.DOTALL | re.IGNORECASE)
+            if m and m.group(1) != IOT_TAC:
+                warnings.append(
+                    f"IoT cell {iot_id} has TAC={m.group(1)} (expected {IOT_TAC}) — "
+                    f"_fix_iot_tac did not normalize it"
+                )
+
+        return {'errors': errors, 'warnings': warnings}
+
     def _replace_station_names(self, xml_content, old_name, new_name):
         """Replace station names while matching reference formatting.
 
@@ -410,6 +430,16 @@ class ModernizationGenerator:
         L-TBLS-Switch-11 or T_TBLS_Switch_51 are also updated.
         """
         logger.info(f"Replacing '{old_name}' with '{new_name}' in template (format-aware)")
+
+        # Safety guard: a too-short old_name (e.g. "TB") would substring-match unrelated
+        # tokens across the whole template. Refuse and log loudly.
+        if old_name and len(old_name.strip()) < MIN_NAME_TOKEN_LEN:
+            logger.warning(
+                f"_replace_station_names refused: reference btsName '{old_name}' is too "
+                f"short (<{MIN_NAME_TOKEN_LEN} chars) for safe global substring replacement"
+            )
+            self._counts['station_names'] = 0
+            return xml_content
 
         def split_tokens(text: str):
             return [t for t in re.split(r'[-_]', str(text)) if t != '']
@@ -491,8 +521,9 @@ class ModernizationGenerator:
             total_replacements += rep
 
         logger.info(f"Total name replacements: {total_replacements}")
+        self._counts['station_names'] = total_replacements
         return xml_content
-    
+
     def _replace_bts_ids(self, xml_content, old_id, new_id):
         """Replace BTS IDs in distName attributes (e.g., MRBTS-90217 -> MRBTS-12345)"""
         logger.info(f"Replacing BTS ID '{old_id}' with '{new_id}' in template")
@@ -566,6 +597,7 @@ class ModernizationGenerator:
             logger.info(f"Catch-all replaced {generic_replacements} remaining occurrences of '{old_id}' with '{new_id}'")
 
         logger.info(f"Total BTS ID replacements made: {total_replacements}")
+        self._counts['bts_ids'] = total_replacements
         return xml_content
 
     def _override_tac_all(self, xml_content: str, new_tac: str) -> str:
@@ -574,14 +606,18 @@ class ModernizationGenerator:
         """
 
         pattern = r'(<managedObject[^>]*class="[^"]*:LNCEL"[^>]*distName="[^"]*"[^>]*>.*?<p\s+name="tac"[^>]*>)\s*[^<]*\s*(</p>.*?</managedObject>)'
+        total = 0
         def repl(match):
+            nonlocal total
             block = match.group(0)
+            total += 1
             for iot_id in IOT_CELLS:
                 if iot_id in block:
                     logger.info(f"Preserving IoT TAC={IOT_TAC} for {iot_id}")
                     return f"{match.group(1)}{IOT_TAC}{match.group(2)}"
             return f"{match.group(1)}{new_tac}{match.group(2)}"
         updated = re.sub(pattern, repl, xml_content, flags=re.DOTALL | re.IGNORECASE)
+        self._counts['tac_override'] = total
         return updated
 
     def _fix_iot_tac(self, xml_content: str) -> str:
@@ -596,6 +632,7 @@ class ModernizationGenerator:
                 total += len(matches)
         if total:
             logger.info(f"Fixed IoT TAC to {IOT_TAC} on {total} cells")
+        self._counts['iot_tac_fix'] = total
         return xml_content
     
     def _replace_sctp_port_min(self, xml_content, old_port, new_port):
@@ -624,8 +661,9 @@ class ModernizationGenerator:
             logger.warning(f"No instances of sctpPortMin '{old_port}' found for replacement")
         
         logger.info(f"Total sctpPortMin replacements made: {total_replacements}")
+        self._counts['sctp_port_min'] = total_replacements
         return xml_content
-    
+
     def _replace_2g_parameters(self, xml_content, old_params, new_params):
         """Replace 2G parameters in XML content"""
         logger.info(f"Replacing 2G parameters in template")
@@ -667,8 +705,9 @@ class ModernizationGenerator:
                     logger.info(f"Parameter {param_name} not found in existing station")
         
         logger.info(f"Total 2G parameter replacements made: {total_replacements}")
+        self._counts['params_2g'] = total_replacements
         return xml_content
-    
+
     def _replace_4g_cells(self, xml_content, old_cells, new_cells):
         """Replace 4G cell parameters in XML content.
 
@@ -749,58 +788,44 @@ class ModernizationGenerator:
                         total_replacements += len(matches)
 
         logger.info(f"Total 4G cell parameter replacements made: {total_replacements}")
+        self._counts['cells_4g'] = total_replacements
         return xml_content
-    
-    def _replace_4g_rootseq(self, xml_content, old_rootseq, new_rootseq):
-        """Replace 4G rootSeqIndex parameters in LNCEL_FDD objects"""
-        logger.info(f"Replacing 4G rootSeqIndex parameters in template")
-        logger.info(f"Reference rootSeq: {list(old_rootseq.keys()) if old_rootseq else 'None'}")
-        logger.info(f"Target rootSeq: {list(new_rootseq.keys()) if new_rootseq else 'None'}")
-        
-        # Count total replacements for logging
-        total_replacements = 0
-        
 
-        
-        # Process each cell
-        for cell_id in old_rootseq.keys():
-            if cell_id in new_rootseq:
-                logger.info(f"Processing rootSeqIndex for cell {cell_id}")
-                old_value = old_rootseq[cell_id]['rootSeqIndex']
-                new_value = new_rootseq[cell_id]['rootSeqIndex']
-                
-                # Pattern to find LNCEL_FDD managedObject that contains the cell_id in distName
-                # and then the rootSeqIndex parameter within it
-                cell_pattern = rf'(<managedObject[^>]*class="[^"]*LNCEL_FDD[^"]*"[^>]*distName="[^"]*{re.escape(cell_id)}[^"]*"[^>]*>.*?)(<p\s+name="rootSeqIndex"[^>]*>)\s*{re.escape(old_value)}\s*(</p>.*?</managedObject>)'
-                
-                def replace_rootseq(match):
-                    before_param = match.group(1)
-                    param_start = match.group(2)
-                    after_param = match.group(3)
-                    return f"{before_param}{param_start}{new_value}{after_param}"
-                
-                # Count matches before replacement
-                matches = re.findall(cell_pattern, xml_content, re.DOTALL | re.IGNORECASE)
-                param_replacements = len(matches)
-                
-                if param_replacements > 0:
-                    # Perform replacement
-                    xml_content = re.sub(cell_pattern, replace_rootseq, xml_content, flags=re.DOTALL | re.IGNORECASE)
-                    logger.info(f"Replaced {param_replacements} instances of {cell_id} rootSeqIndex '{old_value}' with '{new_value}'")
-                    total_replacements += param_replacements
-                else:
-                    logger.warning(f"No instances of {cell_id} rootSeqIndex '{old_value}' found for replacement")
-            else:
+    def _replace_4g_rootseq(self, xml_content, old_rootseq, new_rootseq):
+        """Replace 4G rootSeqIndex parameters in LNCEL_FDD objects.
+
+        Uses exact-id match (not ordinal). If the existing station has a
+        non-standard LNCEL numbering, some cells won't map — that's by design;
+        downstream operators want strict pairing for rootSeqIndex specifically.
+        """
+        logger.info("Replacing 4G rootSeqIndex parameters in template")
+        total_replacements = 0
+
+        for cell_id, ref_data in (old_rootseq or {}).items():
+            if cell_id not in (new_rootseq or {}):
                 logger.info(f"Cell {cell_id} from reference template not found in existing station")
-        
-        # Check for cells in existing that are not in reference
-        for cell_id in new_rootseq.keys():
-            if cell_id not in old_rootseq:
-                logger.info(f"Cell {cell_id} found in existing station but not in reference template")
-        
+                continue
+            old_value = ref_data.get('rootSeqIndex')
+            new_value = new_rootseq[cell_id].get('rootSeqIndex')
+            if not old_value or not new_value or old_value == new_value:
+                continue
+
+            cell_pattern = rf'(<managedObject[^>]*class="[^"]*LNCEL_FDD[^"]*"[^>]*distName="[^"]*{re.escape(cell_id)}[^"]*"[^>]*>.*?)(<p\s+name="rootSeqIndex"[^>]*>)\s*{re.escape(old_value)}\s*(</p>.*?</managedObject>)'
+            matches = re.findall(cell_pattern, xml_content, re.DOTALL | re.IGNORECASE)
+            if matches:
+                xml_content = re.sub(
+                    cell_pattern,
+                    lambda m, nv=new_value: f"{m.group(1)}{m.group(2)}{nv}{m.group(3)}",
+                    xml_content,
+                    flags=re.DOTALL | re.IGNORECASE,
+                )
+                total_replacements += len(matches)
+                logger.info(f"Replaced {cell_id} rootSeqIndex '{old_value}' -> '{new_value}' x{len(matches)}")
+
         logger.info(f"Total 4G rootSeqIndex replacements made: {total_replacements}")
+        self._counts['rootseq_4g'] = total_replacements
         return xml_content
-    
+
     def _replace_5g_nrcells(self, xml_content, old_nrcells, new_4g_cells):
         """Replace 5G NRCELL physCellId parameters using 4G LNCEL phyCellId values"""
         logger.info(f"Replacing 5G NRCELL physCellId parameters in template")
@@ -856,6 +881,7 @@ class ModernizationGenerator:
                 logger.info(f"Mapped 4G cell {mapped_lncel_id} not found in existing station for 5G mapping")
         
         logger.info(f"Total 5G NRCELL physCellId replacements made: {total_replacements}")
+        self._counts['nrcells_5g_pci'] = total_replacements
         return xml_content
 
     def _replace_vlan_ids(self, xml_content, reference_vlan_data, ip_plan_technologies, debug_log=None):
@@ -976,6 +1002,7 @@ class ModernizationGenerator:
             debug_log.append(f"[VLAN] userLabel '{user_label}' ({tech_norm}): VLAN {current_vlan_text or 'N/A'} -> {new_vlan}")
 
         debug_log.append(f"[VLAN] Total VLAN replacements: {replacements}")
+        self._counts['vlan_ids'] = replacements
 
         # Convert back to string
         updated_xml = ET.tostring(root, encoding='unicode')
@@ -1129,84 +1156,8 @@ class ModernizationGenerator:
                 debug_log.append(f"[IP] {tech} ({user_label}) nothing to replace (missing elements or values)")
 
         logger.info(f"Total IP/mask replacements made: {total_replacements}")
+        self._counts['ip_addresses'] = total_replacements
         return ET.tostring(root, encoding='unicode')
-
-    def _replace_routing_rules(self, xml_content, reference_routing_data, ip_plan_routing_rules):
-        """Replace IPv4 routing rules from IP Plan data"""
-        logger.info(f"Replacing IPv4 routing rules from IP Plan")
-        logger.info(f"Reference routing data: {list(reference_routing_data.keys()) if reference_routing_data else 'None'}")
-        logger.info(f"IP Plan routing rules: {ip_plan_routing_rules if ip_plan_routing_rules else 'None'}")
-        
-        total_replacements = 0
-
-        
-        if not ip_plan_routing_rules:
-            logger.info("No IP Plan routing rules provided")
-            return xml_content
-        
-        # Process IPRT-1 mappings
-        iprt1_mappings = ip_plan_routing_rules.get('IPRT-1', {})
-        for ip_prefix, new_gateway in iprt1_mappings.items():
-            if not new_gateway:
-                continue
-                
-            # Find matching routes in reference data
-            if 'IPRT-1' in reference_routing_data:
-                ref_routes = reference_routing_data['IPRT-1']
-                if ip_prefix in ref_routes:
-                    old_gateway = ref_routes[ip_prefix]['gateway']
-                    dest_ip = ref_routes[ip_prefix]['destIpAddr']
-                    
-                    logger.info(f"Replacing IPRT-1 route: {ip_prefix} -> gateway {old_gateway} with {new_gateway}")
-                    
-                    # Pattern to replace gateway for specific destination IP
-                    pattern = rf'(<managedObject[^>]*class="[^"]*IPRT[^"]*"[^>]*>.*?<p\s+name="destIpAddr"[^>]*>\s*{re.escape(dest_ip)}\s*</p>.*?)(<p\s+name="gateway"[^>]*>)\s*{re.escape(old_gateway)}\s*(</p>.*?</managedObject>)'
-                    
-                    def replace_route_gw(match):
-                        before_gw = match.group(1)
-                        gw_start = match.group(2)
-                        after_gw = match.group(3)
-                        return f"{before_gw}{gw_start}{new_gateway}{after_gw}"
-                    
-                    matches = re.findall(pattern, xml_content, re.DOTALL | re.IGNORECASE)
-                    if matches:
-                        xml_content = re.sub(pattern, replace_route_gw, xml_content, flags=re.DOTALL | re.IGNORECASE)
-                        total_replacements += len(matches)
-                        logger.info(f"Replaced {len(matches)} instances of IPRT-1 gateway for {dest_ip}")
-        
-        # Process IPRT-2 NR mappings  
-        iprt2_mappings = ip_plan_routing_rules.get('IPRT-2 NR', {})
-        for ip_prefix, new_gateway in iprt2_mappings.items():
-            if not new_gateway:
-                continue
-                
-            # Find matching routes in reference data
-            for iprt_type in ['IPRT-2', 'IPRT-2 NR']:
-                if iprt_type in reference_routing_data:
-                    ref_routes = reference_routing_data[iprt_type]
-                    if ip_prefix in ref_routes:
-                        old_gateway = ref_routes[ip_prefix]['gateway']
-                        dest_ip = ref_routes[ip_prefix]['destIpAddr']
-                        
-                        logger.info(f"Replacing {iprt_type} route: {ip_prefix} -> gateway {old_gateway} with {new_gateway}")
-                        
-                        # Pattern to replace gateway for specific destination IP
-                        pattern = rf'(<managedObject[^>]*class="[^"]*IPRT[^"]*"[^>]*>.*?<p\s+name="destIpAddr"[^>]*>\s*{re.escape(dest_ip)}\s*</p>.*?)(<p\s+name="gateway"[^>]*>)\s*{re.escape(old_gateway)}\s*(</p>.*?</managedObject>)'
-                        
-                        def replace_route_gw(match):
-                            before_gw = match.group(1)
-                            gw_start = match.group(2) 
-                            after_gw = match.group(3)
-                            return f"{before_gw}{gw_start}{new_gateway}{after_gw}"
-                        
-                        matches = re.findall(pattern, xml_content, re.DOTALL | re.IGNORECASE)
-                        if matches:
-                            xml_content = re.sub(pattern, replace_route_gw, xml_content, flags=re.DOTALL | re.IGNORECASE)
-                            total_replacements += len(matches)
-                            logger.info(f"Replaced {len(matches)} instances of {iprt_type} gateway for {dest_ip}")
-        
-        logger.info(f"Total routing replacements made: {total_replacements}")
-        return xml_content
 
     def _replace_network_parameters(self, xml_content, reference_network_params, ip_plan_technologies):
         """Replace network parameters (NRX2LINK_TRUST, LNADJGNB) from IP Plan data"""
@@ -1268,6 +1219,7 @@ class ModernizationGenerator:
                 logger.warning("Could not replace LNADJGNB cPlaneIpAddr - missing old or new IP")
         
         logger.info(f"Total network parameter replacements made: {total_replacements}")
+        self._counts['network_params_legacy'] = total_replacements
         return xml_content
 
     def _replace_gateways_by_tech(self, xml_content, ip_plan_technologies, debug_log=None):
@@ -1364,6 +1316,7 @@ class ModernizationGenerator:
                     debug_log.append(f"[GW] {iprt_type} dest={dest or '-'} tech={target_tech}: GW {old_gw or 'N/A'} -> {new_gw}")
 
         debug_log.append(f"[GW] Total gateway replacements: {replacements}")
+        self._counts['gateways'] = replacements
         return ET.tostring(root, encoding='unicode')
 
     def _replace_network_parameters_structural(self, xml_content, ip_plan_technologies, debug_log=None):
@@ -1428,6 +1381,7 @@ class ModernizationGenerator:
                             debug_log.append(f"[NET] LNADJGNB-0 cPlaneIpAddr {old or 'N/A'} -> {nr_ip}")
 
         debug_log.append(f"[NET] Total network param replacements: {total}")
+        self._counts['network_params_structural'] = total
         return ET.tostring(root, encoding='unicode')
 
     def _replace_4g_tdd_cells(self, xml_content, reference_tdd_cells, existing_tdd_cells):
@@ -1450,6 +1404,7 @@ class ModernizationGenerator:
                         logger.info(f"TDD {ref_cell_id} tac {old_tac} -> {new_tac} ({len(matches)} replacements)")
 
         logger.info(f"Total 4G TDD cell replacements: {total}")
+        self._counts['tdd_cells_4g'] = total
         return xml_content
 
     def _replace_tdd_pci_from_fdd(self, xml_content, reference_4g_cells, existing_4g_cells):
@@ -1555,6 +1510,7 @@ class ModernizationGenerator:
                         logger.info(f"TDD {ref_cell_id} {param_name} {old_val} -> {new_val} (from {source_cell_id}, pos {pos})")
 
         logger.info(f"Total TDD param replacements from FDD: {total}")
+        self._counts['tdd_pci_from_fdd'] = total
         return xml_content
 
     def _replace_5g_nrcell_details(self, xml_content, reference_details, existing_details):
@@ -1590,4 +1546,5 @@ class ModernizationGenerator:
                 break
 
         logger.info(f"Total 5G NRCELL detail replacements: {total}")
+        self._counts['nrcell_5g_details'] = total
         return xml_content

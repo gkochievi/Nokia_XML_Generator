@@ -5,76 +5,8 @@ from constants import IP_PLAN_COLUMNS, IPRT1_PREFIX_TO_TECH, IPRT2_PREFIX_TO_TEC
 logger = logging.getLogger(__name__)
 
 class ExcelParser:
-    """Parser for transmission and radio parameter Excel files"""
-    
-    def parse_transmission_excel(self, file_path):
-        """Parse transmission Excel file"""
-        try:
-            # Read Excel file
-            df = pd.read_excel(file_path, sheet_name=0)
-            
-            # Clean column names
-            df.columns = df.columns.str.strip()
-            
-            # Convert to dictionary for easy lookup
-            transmission_data = {}
-            for _, row in df.iterrows():
-                station_name = str(row.get('Station_Name', '')).strip()
-                if station_name:
-                    transmission_data[station_name] = {
-                        'om_ip': row.get('OM_IP', ''),
-                        '2g_ip': row.get('2G_IP', ''),
-                        '3g_ip': row.get('3G_IP', ''),
-                        '4g_ip': row.get('4G_IP', ''),
-                        '5g_ip': row.get('5G_IP', ''),
-                        'gateway': row.get('Gateway', ''),
-                        'vlan': row.get('VLAN', ''),
-                        'subnet_mask': row.get('Subnet_Mask', '')
-                    }
-            
-            return transmission_data
-            
-        except Exception as e:
-            logger.error(f"Error parsing transmission Excel: {str(e)}")
-            raise
-    
-    def parse_radio_excel(self, file_path):
-        """Parse radio parameters Excel file"""
-        try:
-            # Read Excel file
-            df = pd.read_excel(file_path, sheet_name=0)
-            
-            # Clean column names
-            df.columns = df.columns.str.strip()
-            
-            # Convert to dictionary
-            radio_data = {}
-            for _, row in df.iterrows():
-                station_name = str(row.get('Station_Name', '')).strip()
-                if station_name:
-                    if station_name not in radio_data:
-                        radio_data[station_name] = {
-                            'sectors': [],
-                            'carriers': [],
-                            'frequencies': []
-                        }
-                    
-                    # Add sector info
-                    sector_info = {
-                        'sector_id': row.get('Sector_ID', ''),
-                        'antenna_count': row.get('Antenna_Count', ''),
-                        'radio_module': row.get('Radio_Module', ''),
-                        'frequency': row.get('Frequency', ''),
-                        'carrier_id': row.get('Carrier_ID', '')
-                    }
-                    radio_data[station_name]['sectors'].append(sector_info)
-            
-            return radio_data
-            
-        except Exception as e:
-            logger.error(f"Error parsing radio Excel: {str(e)}")
-            raise
-    
+    """Parser for IP Plan Excel files (Nokia IP Plan template)."""
+
     def parse_ip_plan_excel(self, file_path, station_name):
         """Parse IP Plan Excel file and extract network parameters for a specific station"""
         debug_log = []  # Store debug messages for frontend
@@ -85,32 +17,34 @@ class ExcelParser:
             debug_log.append(f"Excel file loaded successfully. Shape: {df.shape} (rows x columns)")
             logger.info(f"Excel file loaded. Shape: {df.shape}")
             
-            # Find station name (could use - or _ separators)
+            # Find station name (could use - or _ separators; tolerate stray whitespace)
+            import re as _re
+            def _collapse_ws(s: str) -> str:
+                return _re.sub(r'\s+', '', s or '')
+
             station_variants = [
                 station_name,
                 station_name.replace('-', '_'),
                 station_name.replace('_', '-')
             ]
+            normalized_variants = {_collapse_ws(v).lower() for v in station_variants}
             station_row = None
             found_station = None
             debug_log.append(f"Searching for station name. Original: '{station_name}', Variants: {station_variants}")
             logger.info(f"Searching for station name. Variants: {station_variants}")
-            
-            # Search for exact match (case-insensitive) in any cell
+
+            # Search for exact match (case-insensitive, whitespace-insensitive) in any cell
             searched_cells = 0
             for idx, row in df.iterrows():
                 for col_idx, cell_value in enumerate(row):
                     searched_cells += 1
                     if pd.notna(cell_value):
                         cell_str = str(cell_value).strip()
-                        for variant in station_variants:
-                            if cell_str.lower() == variant.lower():
-                                station_row = idx
-                                found_station = cell_str
-                                debug_log.append(f"✓ Station found! '{found_station}' at row {station_row}, column {col_idx}")
-                                logger.info(f"Found station '{found_station}' at row {station_row}")
-                                break
-                        if station_row is not None:
+                        if _collapse_ws(cell_str).lower() in normalized_variants:
+                            station_row = idx
+                            found_station = cell_str
+                            debug_log.append(f"✓ Station found! '{found_station}' at row {station_row}, column {col_idx}")
+                            logger.info(f"Found station '{found_station}' at row {station_row}")
                             break
                 if station_row is not None:
                     break
@@ -266,6 +200,6 @@ class ExcelParser:
         }
         
         routing_rules['IPRT-1'] = iprt1_mappings
-        routing_rules['IPRT-2_NR'] = iprt2_mappings
-        
+        routing_rules['IPRT-2 NR'] = iprt2_mappings
+
         return routing_rules

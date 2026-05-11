@@ -1,6 +1,7 @@
 """Unit tests for modules/xml_parser.py — core XML parsing logic."""
 import pytest
 from modules.xml_parser import XMLParser
+from conftest import REFERENCE_TEMPLATE_XML
 
 
 class TestParseFile:
@@ -159,3 +160,52 @@ class TestHelperMethods:
         tree = parser.parse_file(sample_xml_file)
         mrbts = parser._find_managed_objects(tree, 'MRBTS')[0]
         assert parser._find_param(mrbts, 'doesNotExist') is None
+
+
+class TestExtractorsOnNamespacedXml:
+    """Regression: these four extractors used `obj.find(".//*[local-name()=...]")`
+    which raises `SyntaxError: invalid predicate` on namespaced trees (lxml's
+    ElementPath limited subset doesn't support `local-name()` inside a
+    predicate chain). The functions were wrapped in try/except returning `{}`,
+    so the silent failure went unnoticed. Replaced with `_find_param` (xpath-
+    based). These tests guard against any regression back to `.find(...)`.
+    """
+
+    @pytest.fixture()
+    def reference_tree(self, tmp_path):
+        path = tmp_path / "ref.xml"
+        path.write_text(REFERENCE_TEMPLATE_XML, encoding='utf-8')
+        return XMLParser().parse_file(str(path))
+
+    def test_extract_vlan_parameters_returns_data(self, reference_tree):
+        result = XMLParser().extract_vlan_parameters(reference_tree)
+        assert result, "VLAN extraction must not silently return {}"
+        # Rich fixture has OAM + LTE + NR → all three should be normalized
+        assert set(result.keys()) >= {'OAM', '4G', '5G'}
+        assert result['OAM']['vlanId'] == '3900'
+        assert result['4G']['vlanId'] == '3940'
+        assert result['5G']['vlanId'] == '3950'
+
+    def test_extract_ip_parameters_returns_data(self, reference_tree):
+        result = XMLParser().extract_ip_parameters(reference_tree)
+        assert result, "IP extraction must not silently return {}"
+        assert set(result.keys()) >= {'OAM', '4G', '5G'}
+        assert result['4G']['localIpAddr'] == '10.111.0.10'
+        assert result['5G']['localIpAddr'] == '10.112.0.10'
+
+    def test_extract_network_parameters_returns_data(self, reference_tree):
+        result = XMLParser().extract_network_parameters(reference_tree)
+        assert result, "Network params extraction must not silently return {}"
+        assert 'NRX2LINK_TRUST_ipV4Addr' in result
+        assert result['NRX2LINK_TRUST_ipV4Addr']['value'] == '10.111.0.99'
+        assert 'LNADJGNB_cPlaneIpAddr' in result
+        assert result['LNADJGNB_cPlaneIpAddr']['value'] == '10.112.0.99'
+
+    def test_extract_routing_parameters_returns_data(self, reference_tree):
+        result = XMLParser().extract_routing_parameters(reference_tree)
+        assert result, "Routing extraction must not silently return {}"
+        # IPRT-1 and IPRT-2 should both be present
+        assert 'IPRT-1' in result
+        # Rich fixture's IPRT-2 has userLabel=NR but distName contains 'IPRT-2',
+        # so extract_routing_parameters keys it as 'IPRT-2' (not 'IPRT-2 NR').
+        assert 'IPRT-2' in result or 'IPRT-2 NR' in result

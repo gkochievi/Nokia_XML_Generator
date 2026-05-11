@@ -154,6 +154,7 @@ export interface GenerationDetails {
   cells_4g_replacement_performed: boolean;
   rootseq_4g_replacement_performed: boolean;
   nrcells_5g_replacement_performed: boolean;
+  replacement_counts?: Record<string, number>;
 }
 
 export interface GenerationResponse {
@@ -162,7 +163,8 @@ export interface GenerationResponse {
   error?: string;
   details?: GenerationDetails;
   debug_log?: string[];
-  warnings?: { ip_plan?: string };
+  warnings?: { ip_plan?: string; verification?: string[] };
+  verification_errors?: string[];
 }
 
 /* ───── Collapse item type (Ant Design) ───── */

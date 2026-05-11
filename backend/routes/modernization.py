@@ -100,14 +100,12 @@ def modernization():
             existing_sctp_port = parser.extract_sctp_port_min(existing_tree)
             existing_2g_params = parser.extract_2g_parameters(existing_tree)
             existing_4g_cells = parser.extract_4g_cells(existing_tree)
-            existing_4g_rootseq = parser.extract_4g_rootseq(existing_tree)
             existing_5g_nrcells = parser.extract_5g_nrcells(existing_tree)
             logger.info(f"Existing station btsName: {existing_bts_name}")
             logger.info(f"Existing station BTS ID: {existing_bts_id}")
             logger.info(f"Existing station sctpPortMin: {existing_sctp_port}")
             logger.info(f"Existing station 2G params: {existing_2g_params}")
             logger.info(f"Existing station 4G cells: {existing_4g_cells}")
-            logger.info(f"Existing station 4G rootSeq: {existing_4g_rootseq}")
             logger.info(f"Existing station 5G NRCells: {existing_5g_nrcells}")
 
             reference_tree = parser.parse_file(file_paths['reference5gXml'])
@@ -116,14 +114,12 @@ def modernization():
             reference_sctp_port = parser.extract_sctp_port_min(reference_tree)
             reference_2g_params = parser.extract_2g_parameters(reference_tree)
             reference_4g_cells = parser.extract_4g_cells(reference_tree)
-            reference_4g_rootseq = parser.extract_4g_rootseq(reference_tree)
             reference_5g_nrcells = parser.extract_5g_nrcells(reference_tree)
             logger.info(f"Reference template btsName: {reference_bts_name}")
             logger.info(f"Reference template BTS ID: {reference_bts_id}")
             logger.info(f"Reference template sctpPortMin: {reference_sctp_port}")
             logger.info(f"Reference template 2G params: {reference_2g_params}")
             logger.info(f"Reference template 4G cells: {reference_4g_cells}")
-            logger.info(f"Reference template 4G rootSeq: {reference_4g_rootseq}")
             logger.info(f"Reference template 5G NRCells: {reference_5g_nrcells}")
 
             if not existing_bts_name:
@@ -164,10 +160,19 @@ def modernization():
             if os.path.exists(file_paths['transmissionExcel']):
                 os.unlink(file_paths['transmissionExcel'])
 
+        counts = (extra.get('replacement_counts') if extra else {}) or {}
+        verification = (extra.get('verification') if extra else {}) or {}
+        verification_errors = verification.get('errors') or []
+        verification_warnings = verification.get('warnings') or []
+
         resp = {
-            'success': True,
+            'success': not verification_errors,
             'filename': output_filename,
-            'message': 'Modernization configuration generated successfully',
+            'message': (
+                'Modernization configuration generated successfully'
+                if not verification_errors
+                else f"Generation completed but output failed {len(verification_errors)} sanity check(s)"
+            ),
             'details': {
                 'mode': mode,
                 'existing_bts_name': existing_bts_name,
@@ -180,17 +185,17 @@ def modernization():
                 'reference_2g_params': reference_2g_params,
                 'existing_4g_cells': existing_4g_cells,
                 'reference_4g_cells': reference_4g_cells,
-                'existing_4g_rootseq': existing_4g_rootseq,
-                'reference_4g_rootseq': reference_4g_rootseq,
                 'existing_5g_nrcells': existing_5g_nrcells,
                 'reference_5g_nrcells': reference_5g_nrcells,
-                'replacement_performed': bool(existing_bts_name and reference_bts_name),
-                'bts_id_replacement_performed': bool(existing_bts_id and reference_bts_id),
-                'sctp_port_replacement_performed': bool(existing_sctp_port and reference_sctp_port),
-                'params_2g_replacement_performed': bool(existing_2g_params and reference_2g_params),
-                'cells_4g_replacement_performed': bool(existing_4g_cells and reference_4g_cells),
-                'rootseq_4g_replacement_performed': bool(existing_4g_rootseq and reference_4g_rootseq),
-                'nrcells_5g_replacement_performed': bool(existing_4g_cells and reference_5g_nrcells),
+                # Replacement flags now reflect actual mutation counts, not just extraction success.
+                'replacement_performed': counts.get('station_names', 0) > 0,
+                'bts_id_replacement_performed': counts.get('bts_ids', 0) > 0,
+                'sctp_port_replacement_performed': counts.get('sctp_port_min', 0) > 0,
+                'params_2g_replacement_performed': counts.get('params_2g', 0) > 0,
+                'cells_4g_replacement_performed': counts.get('cells_4g', 0) > 0,
+                'rootseq_4g_replacement_performed': counts.get('rootseq_4g', 0) > 0,
+                'nrcells_5g_replacement_performed': counts.get('nrcells_5g_pci', 0) > 0 or counts.get('nrcell_5g_details', 0) > 0,
+                'replacement_counts': counts,
                 'ip_plan_lookup_station': (extra.get('ip_plan_lookup') if extra else None),
                 'ip_plan_found': (extra.get('ip_plan_found') if extra else None),
                 'rollout_overrides': {
@@ -202,14 +207,27 @@ def modernization():
             'debug_log': debug_log
         }
 
+        warnings_dict: dict[str, object] = {}
         try:
             if extra and not extra.get('ip_plan_found', True):
-                resp['warnings'] = {
-                    'ip_plan': f"IP Plan not found for station '{extra.get('ip_plan_lookup','')}'. VLAN/IP/GW replacements were skipped."
-                }
+                warnings_dict['ip_plan'] = (
+                    f"IP Plan not found for station '{extra.get('ip_plan_lookup','')}'. "
+                    f"VLAN/IP/GW replacements were skipped."
+                )
         except Exception as e:
             logger.warning(f"Could not build IP Plan warning: {e}")
+        if verification_warnings:
+            warnings_dict['verification'] = verification_warnings
+        if verification_errors:
+            # Surface errors as both a top-level error string (legacy callers) and a
+            # structured array for the frontend.
+            resp['error'] = '; '.join(verification_errors)
+            resp['verification_errors'] = verification_errors
+        if warnings_dict:
+            resp['warnings'] = warnings_dict
 
+        # Return HTTP 200 so the frontend's success-boolean branch handles it.
+        # The file IS written; success:false + verification_errors signals "do not deploy".
         return jsonify(resp)
 
     except Exception as e:
@@ -366,6 +384,7 @@ def rollout():
                 return jsonify({'success': False, 'error': f'Missing required file: {file_key}'}), 400
 
         bts_id = request.form.get('btsId', '')
+        rollout_tac_override = (request.form.get('rolloutTac') or '').strip() or None
         temp_files = {}
         try:
             for file_key in required_files:
@@ -399,15 +418,36 @@ def rollout():
                 rollout_overrides={
                     'id': bts_id or None,
                     'name': station_name or None,
-                    'tac': None
+                    'tac': rollout_tac_override,
                 }
             )
-            return jsonify({
-                'success': True,
+            counts = (extra.get('replacement_counts') if extra else {}) or {}
+            verification = (extra.get('verification') if extra else {}) or {}
+            verification_errors = verification.get('errors') or []
+            verification_warnings = verification.get('warnings') or []
+
+            resp = {
+                'success': not verification_errors,
                 'filename': output_filename,
-                'message': 'New rollout configuration generated successfully',
-                'debug_log': debug_log
-            })
+                'message': (
+                    'New rollout configuration generated successfully'
+                    if not verification_errors
+                    else f"Generation completed but output failed {len(verification_errors)} sanity check(s)"
+                ),
+                'debug_log': debug_log,
+                'details': {
+                    'replacement_counts': counts,
+                    'ip_plan_lookup_station': (extra.get('ip_plan_lookup') if extra else None),
+                    'ip_plan_found': (extra.get('ip_plan_found') if extra else None),
+                },
+            }
+            if verification_errors:
+                resp['error'] = '; '.join(verification_errors)
+                resp['verification_errors'] = verification_errors
+            if verification_warnings:
+                resp['warnings'] = {'verification': verification_warnings}
+
+            return jsonify(resp)
         finally:
             for path in temp_files.values():
                 if os.path.exists(path):

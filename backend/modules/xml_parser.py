@@ -904,7 +904,7 @@ class XMLParser:
             logger.info(f"Found {len(nrx2link_objects)} NRX2LINK_TRUST objects")
             for obj in nrx2link_objects:
                 dist_name = obj.get('distName', '')
-                ipv4_addr_elem = obj.find(".//*[local-name()='p'][@name='ipV4Addr']")
+                ipv4_addr_elem = self._find_param(obj, 'ipV4Addr')
                 if ipv4_addr_elem is not None and ipv4_addr_elem.text:
                     network_params['NRX2LINK_TRUST_ipV4Addr'] = {
                         'value': ipv4_addr_elem.text.strip(),
@@ -917,7 +917,7 @@ class XMLParser:
             logger.info(f"Found {len(lnadjgnb_objects)} LNADJGNB objects")
             for obj in lnadjgnb_objects:
                 dist_name = obj.get('distName', '')
-                cplane_ip_elem = obj.find(".//*[local-name()='p'][@name='cPlaneIpAddr']")
+                cplane_ip_elem = self._find_param(obj, 'cPlaneIpAddr')
                 if cplane_ip_elem is not None and cplane_ip_elem.text:
                     network_params['LNADJGNB_cPlaneIpAddr'] = {
                         'value': cplane_ip_elem.text.strip(),
@@ -949,8 +949,8 @@ class XMLParser:
                 logger.info(f"Processing VLANIF {i+1}: distName={dist_name}")
                 
                 # Extract userLabel and vlanId (namespace-agnostic)
-                user_label_elem = obj.find(".//*[local-name()='p'][@name='userLabel']")
-                vlan_id_elem = obj.find(".//*[local-name()='p'][@name='vlanId']")
+                user_label_elem = self._find_param(obj, 'userLabel')
+                vlan_id_elem = self._find_param(obj, 'vlanId')
                 
                 logger.info(f"  userLabel elem: {user_label_elem is not None}")
                 logger.info(f"  vlanId elem: {vlan_id_elem is not None}")
@@ -1015,7 +1015,7 @@ class XMLParser:
             ipif_map = {}  # distName -> { userLabel, tech_name }
             for obj in ipif_objects:
                 dist_name = obj.get('distName', '')
-                user_label_elem = obj.find(".//*[local-name()='p'][@name='userLabel']")
+                user_label_elem = self._find_param(obj, 'userLabel')
                 user_label = user_label_elem.text.strip() if user_label_elem is not None and user_label_elem.text else None
                 if not dist_name or not user_label:
                     continue
@@ -1047,10 +1047,10 @@ class XMLParser:
                 if not info:
                     continue
                 
-                local_ip_elem = obj.find(".//*[local-name()='p'][@name='localIpAddr']")
-                prefix_len_elem = obj.find(".//*[local-name()='p'][@name='localIpPrefixLength']")
-                gateway_elem = obj.find(".//*[local-name()='p'][@name='gateway']")
-                
+                local_ip_elem = self._find_param(obj, 'localIpAddr')
+                prefix_len_elem = self._find_param(obj, 'localIpPrefixLength')
+                gateway_elem = self._find_param(obj, 'gateway')
+
                 local_ip = local_ip_elem.text.strip() if local_ip_elem is not None and local_ip_elem.text else None
                 prefix_len = prefix_len_elem.text.strip() if prefix_len_elem is not None and prefix_len_elem.text else None
                 gateway = gateway_elem.text.strip() if gateway_elem is not None and gateway_elem.text else None
@@ -1090,9 +1090,9 @@ class XMLParser:
                 dist_name = obj.get('distName', '')
                 
                 # Extract routing parameters (namespace-agnostic)
-                dest_ip_elem = obj.find(".//*[local-name()='p'][@name='destIpAddr']")
-                prefix_len_elem = obj.find(".//*[local-name()='p'][@name='destIpPrefixLength']")
-                gateway_elem = obj.find(".//*[local-name()='p'][@name='gateway']")
+                dest_ip_elem = self._find_param(obj, 'destIpAddr')
+                prefix_len_elem = self._find_param(obj, 'destIpPrefixLength')
+                gateway_elem = self._find_param(obj, 'gateway')
                 
                 if dest_ip_elem is not None and dest_ip_elem.text and gateway_elem is not None and gateway_elem.text:
                     dest_ip = dest_ip_elem.text.strip()

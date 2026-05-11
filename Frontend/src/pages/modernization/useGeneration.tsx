@@ -55,6 +55,13 @@ function logGenerationDetails(
     addLog(`2G Replacement: ${d.params_2g_replacement_performed ? 'YES' : 'NO (no 2G)'}`, 'info', 'generation');
   }
   addLog(`4G Cells: ${d.cells_4g_replacement_performed ? 'YES' : 'NO'} | 4G RootSeq: ${d.rootseq_4g_replacement_performed ? 'YES' : 'NO'} | 5G NR: ${d.nrcells_5g_replacement_performed ? 'YES' : 'NO'}`, d.cells_4g_replacement_performed || d.nrcells_5g_replacement_performed ? 'success' : 'info', 'generation');
+  if (d.replacement_counts) {
+    const pairs = Object.entries(d.replacement_counts)
+      .filter(([, v]) => typeof v === 'number')
+      .map(([k, v]) => `${k}=${v}`)
+      .join(', ');
+    if (pairs) addLog(`Replacement counts: ${pairs}`, 'info', 'generation');
+  }
   addLog('--- End Replacement Details ---', 'info', 'generation');
 
   if (data.debug_log?.length) {
@@ -144,6 +151,10 @@ export function useGeneration(options: Options) {
 
       if (data.success) {
         logGenerationDetails(data, addLog);
+        if (data.warnings?.verification?.length) {
+          addLog('⚠ Output passed but has verification warnings:', 'warning', 'generation');
+          data.warnings.verification.forEach((msg) => addLog(`  • ${msg}`, 'warning', 'generation'));
+        }
 
         const doDownload = () => {
           addLog(t('autoDownload'), 'info', 'generation');
@@ -190,7 +201,12 @@ export function useGeneration(options: Options) {
           doDownload();
         }
       } else {
-        addLog(`\u2717 Error: ${data.error}`, 'error', 'generation');
+        if (data.verification_errors?.length) {
+          addLog('\u2717 Output failed sanity checks \u2014 file is not safe to deploy:', 'error', 'generation');
+          data.verification_errors.forEach((msg) => addLog(`  \u2022 ${msg}`, 'error', 'generation'));
+        } else {
+          addLog(`\u2717 Error: ${data.error}`, 'error', 'generation');
+        }
         setPopupOpen(false);
         setPopupStep(0);
         message.error(data.error || 'Generation failed');

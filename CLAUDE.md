@@ -2,6 +2,30 @@
 
 Web tool for generating Nokia base station (BTS) XML configuration files for 5G modernization and new site rollouts. Used by Cellfie's network engineering team.
 
+## Workflow (read this first)
+
+**Step 1 — always check the graph before doing anything else.** Before reading source files, grepping, or answering any question about this codebase: read [`graphify-out/GRAPH_REPORT.md`](graphify-out/GRAPH_REPORT.md) to orient on god nodes, communities, and cross-file relationships. For "how does X relate to Y" type questions, use `graphify query "<question>"`, `graphify path "<A>" "<B>"`, or `graphify explain "<concept>"` — these traverse EXTRACTED + INFERRED edges and answer in ~3k tokens instead of scanning the whole repo.
+
+**Step 2 — then work on the request.** After the graph has given you a map, follow up with targeted reads / edits in source. Don't skip Step 1 even for "simple" questions; the graph is the cheapest way to spot god classes, dead code, and surprising couplings (e.g. `modules/template_manager.py` looks active but only its legacy test imports it).
+
+**Step 3 — after modifying code, refresh the artifacts that go stale.** Do all of these before considering the task done:
+
+1. **Run the test suite** — `cd backend && python -m pytest tests/` (or invoke the `test-runner` agent). The e2e suite is the safety net for `ModernizationGenerator` changes. If you added a `_replace_*` step, add at least one assertion in `tests/test_modernization_e2e.py`.
+2. **Update agent docs** in `.claude/agents/` when a code change invalidates them. Use this checklist:
+   - Changed the `ModernizationGenerator` pipeline (added/removed/reordered a `_replace_*` pass, renamed a counter key, changed `extra[...]` shape, changed verification rules)? → update `nokia-xml-debugger.md` (pipeline section + replacement_counts key list + verification section).
+   - Changed what the route response looks like (new field, removed field, changed status code semantics)? → update `nokia-xml-debugger.md` AND `xml-output-verifier.md`.
+   - Changed `IP_PLAN_COLUMNS` layout or added a new region? → update `ip-plan-validator.md`.
+   - Changed the inspect/scoring logic for reference XMLs (new model code, new sector token)? → update `reference-xml-cataloguer.md`.
+   - Added/removed an agent file? → update the agents table near the bottom of this `CLAUDE.md`.
+3. **Update `CLAUDE.md` itself** when a change crosses any of these surfaces:
+   - File layout (a module added, moved, or deleted) → "Monorepo layout" section.
+   - A new API endpoint, blueprint, or response field → "API endpoints" table + "Data flow" section.
+   - A new pipeline pass, new verification check, new constant in `constants.py`, new domain rule → "Data flow" + "Non-obvious project facts" + "Pitfalls" as appropriate.
+   - A new "where to edit" recipe for a common task → "Common tasks" table.
+4. **Run `graphify update .`** from the repo root to refresh `graphify-out/`. AST-only on code-only changes (no LLM cost). Do this last so the graph reflects the post-edit state including any agent doc changes.
+
+The detailed rules and tools list are in the [`## graphify`](#graphify) section at the bottom of this file.
+
 ## Tech stack
 
 - **Backend**: Flask 3.1 (Python 3.11+), Gunicorn in prod. lxml for XML, pandas + openpyxl for Excel, paramiko for SFTP.
@@ -25,12 +49,11 @@ Web tool for generating Nokia base station (BTS) XML configuration files for 5G 
 │   │   ├── ip_plan.py            # POST /api/parse-ip-plan (debug)
 │   │   └── sftp.py               # POST /api/sftp-download
 │   ├── modules/
-│   │   ├── xml_parser.py         # 1127 LOC — namespace-agnostic XPath extraction (lxml + ET)
-│   │   ├── excel_parser.py       # 270 LOC — IP Plan parsing (hardcoded column indices)
-│   │   ├── modernization.py      # 1555 LOC — **god class**: generate() + 20+ _replace_*() methods
+│   │   ├── xml_parser.py         # ~1127 LOC — namespace-agnostic XPath extraction (lxml + ET)
+│   │   ├── excel_parser.py       # ~200 LOC — IP Plan parsing only (hardcoded column indices)
+│   │   ├── modernization.py      # ~1350 LOC — **god class**: generate() + 14 _replace_*() methods
 │   │   ├── xml_viewer.py         # 773 LOC — config summary for viewer UI
-│   │   ├── template_manager.py   # 333 LOC — legacy, NOT used by main routes
-│   │   └── rollout.py            # 85 LOC — stub; rollout goes through modernization.py instead
+│   │   └── template_manager.py   # 333 LOC — legacy, NOT used by main routes
 │   ├── example_files/            # Reference XMLs: East/*.xml, West/*.xml, IP/*.xlsx, BTSNaming/data.xlsx
 │   ├── uploads/                  # Gitignored — temp upload dir
 │   ├── generated/                # Gitignored — output XMLs
@@ -111,22 +134,34 @@ Web tool for generating Nokia base station (BTS) XML configuration files for 5G 
 
 ## Data flow: modernization request
 
-1. `POST /api/modernization` (form-encoded + files) → [routes/modernization.py:35](backend/routes/modernization.py#L35)
+1. `POST /api/modernization` (form-encoded + files) → `backend/routes/modernization.py` `modernization()`
 2. Resolve file paths (uploaded vs. chosen from `example_files/<Region>/`)
-3. `XMLParser.parse_file()` on both existing + reference XMLs → extract btsName/id, sctp port, 2G params, 4G cells/rootSeq, 5G NRCells (pre-validation + logging)
-4. `ModernizationGenerator.generate()` ([modules/modernization.py:22](backend/modules/modernization.py#L22))
+3. `XMLParser.parse_file()` on both existing + reference XMLs → extract btsName/id, sctp port, 2G params, 4G cells, 5G NRCells, VLAN/IP, network params, TDD details, RMOD (pre-validation + logging)
+4. `ModernizationGenerator.generate()` (`backend/modules/modernization.py`)
    - `ExcelParser.parse_ip_plan_excel()` — load IP/VLAN/GW data for station
    - Reference XML read as string
-   - Pipeline of `_replace_*()` passes (order matters):
-     - `_replace_station_names`, `_replace_bts_ids`, `_replace_sctp_port_min`
-     - `_replace_vlan_ids`, `_replace_ip_addresses`, `_replace_routing_rules`, `_replace_gateways_by_tech`
-     - `_replace_2g_parameters`, `_replace_4g_cells`, `_replace_4g_rootseq`, `_replace_4g_tdd_cells`
-     - `_replace_tdd_pci_from_fdd`, `_replace_5g_nrcells`, `_replace_5g_nrcell_details`
-     - `_fix_iot_tac` (TAC=5000 for IoT cells)
-5. Writes to `generated/<output>.xml`, returns `(filename, debug_log, extra)`
-6. Route cleans up temp uploads and returns JSON with `details` (replacement flags) and `warnings.ip_plan` if station missing
+   - Pipeline of 17 `_replace_*` / `_fix_*` / `_override_*` passes (order matters; each silently skips when its inputs are missing — that's the #1 reason a "replacement didn't happen"):
+     1. `_replace_station_names` — btsName (rollout uses `overrides.name`, modernization uses `existing_bts_name`). Refuses to run when reference name is <4 chars (substring-replace safety).
+     2. `_replace_bts_ids` — MRBTS/LNBTS/NRBTS IDs
+     3. `_replace_vlan_ids` — VLAN from IP Plan, by tech
+     4. `_replace_ip_addresses` — local IPs from IP Plan
+     5. `_replace_gateways_by_tech` — gateway swap by `DEST_IP_TO_TECH` map; covers IPRT-1 and IPRT-2 (5G)
+     6. `_replace_network_parameters_structural` — `NRX2LINK_TRUST-1`, `LNADJGNB-0` (wrapped in try/except; regex fallback in step 7)
+     7. `_replace_network_parameters` — `NRX2LINK`, `LNADJGNB` regex fallback (effectively no-op if step 6 succeeded)
+     8. `_replace_sctp_port_min` — SCTP port copy (absent on stations without 3G)
+     9. `_replace_2g_parameters`
+     10. `_replace_4g_cells` — 4G `phyCellId` + `tac` by ordinal sector mapping
+     11. `_replace_4g_rootseq` — rootSeqIndex on LNCEL_FDD by exact cell-id match (separate from #10 because rootSeqIndex lives on the LNCEL_FDD child, not the LNCEL parent; `extract_4g_cells` does NOT extract it)
+     12. `_replace_5g_nrcells` — 5G NRCELL physCellId from existing **4G** phyCellId
+     13. `_replace_4g_tdd_cells` — TDD-specific TAC (exact-id match)
+     14. `_replace_tdd_pci_from_fdd` — copy PCI from existing FDD to reference TDD (sector ordinal)
+     15. `_replace_5g_nrcell_details` — 5G NRCELL detailed (FDD+TDD physCellId, respects duplex)
+     16. `_override_tac_all` — **rollout-only**; fires when `mode == 'rollout'` AND `overrides.tac` is set. Both `/api/modernization` (rollout mode) and `/api/rollout` honor `rolloutTac` form param.
+     17. `_fix_iot_tac` — **always runs last**, force TAC=5000 for `LNCEL-211..214` (overrides #16 even when active)
+5. Writes to `generated/<output>.xml`, then runs `_verify_output()` for post-generation sanity checks (XML well-formed, size > 1KB, reference btsName/BTS-ID gone, IoT TAC=5000). Returns `(filename, debug_log, extra)`. `extra['replacement_counts']` holds per-step real mutation counts; `extra['verification']` holds `{errors: [...], warnings: [...]}`.
+6. Route cleans up temp uploads. If `verification.errors` is non-empty the response is `{success: false, error, verification_errors: [...]}` (HTTP 200, since the file IS produced — frontend's success-boolean branch refuses to download). Warnings are surfaced via `warnings.verification`. Otherwise `success: true` and `details.replacement_counts` is the truth.
 
-When something goes wrong mid-pipeline, subsequent replacements still run — the output can be partially modified. Always check `debug_log` for skipped/failed steps.
+When something goes wrong mid-pipeline, subsequent replacements still run — the output can be partially modified. Verification is the safety net: it refuses to advertise success if the reference btsName or BTS-ID are still in the output. Check `debug_log` for skipped/failed steps and `details.replacement_counts` for real numbers.
 
 ## Environment variables
 
@@ -178,11 +213,12 @@ On Windows (this project's host), use forward slashes in tool paths (`/dev/null`
 
 ## Testing
 
-- Backend has pytest tests in `backend/tests/` covering routes + XMLParser (limited — happy-path only).
-- `conftest.py` provides fixtures for a temp Flask app and sample XMLs.
+- Backend has pytest tests in `backend/tests/` covering routes, XMLParser, and a full ModernizationGenerator e2e pipeline check (`test_modernization_e2e.py` — every `_replace_*` pass has at least one assertion against the real `replacement_counts` and the resulting XML).
+- `conftest.py` provides fixtures for a temp Flask app, minimal sample XMLs, and a rich existing/reference XML pair (`rich_xml_pair`) plus an `ip_plan_xlsx` factory keyed on station name.
+- **GitHub Actions** runs the suite on push/PR to `main` for Python 3.11/3.12/3.13 (`.github/workflows/test.yml`).
 - `test_basic.py` and `test_template_manager.py` in `backend/` root exist but are manual/legacy — not part of CI.
 - **No frontend tests.** Manual browser testing via `npm run dev` is the verification path.
-- When touching `ModernizationGenerator`, the only reliable test is end-to-end: generate XML, diff against a known-good output.
+- When touching `ModernizationGenerator`, run `python -m pytest tests/` (or invoke the `test-runner` agent) — the e2e suite is the safety net.
 
 ## Code style
 
@@ -195,15 +231,33 @@ On Windows (this project's host), use forward slashes in tool paths (`/dev/null`
 ## Pitfalls to watch for
 
 - **`.env` is gitignored** but referenced in `docker-compose.yaml`. Docker builds will fail without it if `sftp.py` is exercised. Sample vars are in [README.md](README.md).
-- **Station name matching in Excel is case-insensitive but whitespace-sensitive.** If a station is "in the file" but not found, check for trailing spaces or non-ASCII characters.
-- **The generator's `replacement_performed` flags in the response can be `True` even when a specific replacement silently no-op'd.** Flags are set from extraction success, not replacement success. `debug_log` is the source of truth.
+- **Station name matching in Excel is case-insensitive and whitespace-collapsed.** `ExcelParser.parse_ip_plan_excel` collapses all whitespace before comparing, so trailing/internal spaces and non-breaking spaces no longer cause a miss. Still case- and unicode-sensitive otherwise.
+- **`details.replacement_counts`** in the response is the source of truth — the `*_replacement_performed` flags are now derived from real mutation counts (not extraction success). `debug_log` remains a useful per-step narrative.
 - **`test_basic.py` opens a Tk file dialog** — don't run it in CI.
-- **`modules/template_manager.py` and `modules/rollout.py` are largely dead code.** Don't add new functionality there; use `modernization.py` instead.
+- **`modules/template_manager.py` is legacy.** Don't add new functionality there; use `modernization.py` instead. (Old `modules/rollout.py` has been deleted.)
 - **Host port 5001** is the exposed backend port when using docker-compose (5000 conflicts with macOS AirPlay). Local dev without Docker uses 5000.
 - **Frontend uses ports from Vite proxy**, not from env. If you change backend port, update [`Frontend/vite.config.ts`](Frontend/vite.config.ts).
 
 ## Project-specific agents
 
-This repo defines one specialized agent in `.claude/agents/`:
+This repo defines five specialized agents in `.claude/agents/`. Each is investigation- or verification-only — they report findings, they don't apply fixes.
 
-- **`nokia-xml-debugger`** — for tracing why a specific `_replace_*` step didn't update the generated XML. Knows the pipeline order, the hardcoded column indices, and the namespace-agnostic XPath patterns. Use it when a generation completes successfully but the output XML is missing an expected change.
+| Agent | Role | Use when |
+|---|---|---|
+| **`nokia-xml-debugger`** | Trace WHY a specific `_replace_*` step didn't update the generated XML. Knows the 17-pass pipeline, hardcoded column indices, namespace-agnostic XPath patterns. | A generation completed successfully but the output is missing an expected change ("VLANs weren't replaced", "IoT cells don't have TAC 5000", "5G PCI is wrong"). |
+| **`xml-output-verifier`** | DEEPER audit than the server-side `_verify_output` baseline check — cross-references against IP Plan cells, sector count, per-tech VLAN/IP/GW values, and the `replacement_counts` dict. Doesn't debug — finds anomalies. | Before handing a generated file to the operator, especially for high-stakes deployments. Pair with `nokia-xml-debugger` when a check fails. |
+| **`reference-xml-cataloguer`** | Validate that a newly added reference XML in `example_files/<Region>/` is named correctly so `modernization_inspect()` will suggest it, and that XMLParser can extract its fields. | Onboarding a new radio-model template ("I dropped a new S3+AHEGB reference, will inspect() find it?"). |
+| **`ip-plan-validator`** | Verify a new IP Plan `.xlsx` still matches `IP_PLAN_COLUMNS` in [constants.py](backend/constants.py). | Nokia ships an updated IP Plan template. Catch layout drift before it silently breaks every modernization. |
+| **`test-runner`** | Run `python -m pytest backend/tests/` and report a short PASS/FAIL summary with file:line refs. Does not edit code or fix tests. | After editing any backend module — quick verification that nothing regressed before merging. |
+
+Hand-off pattern: `test-runner` flags a failure → `nokia-xml-debugger` traces root cause. `xml-output-verifier` finds anomalies on a generated XML → `nokia-xml-debugger` traces root cause. `ip-plan-validator` detects drift → user patches `IP_PLAN_COLUMNS` themselves (validator does not edit code).
+
+## graphify
+
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+
+Rules:
+- ALWAYS read graphify-out/GRAPH_REPORT.md before reading any source files, running grep/glob searches, or answering codebase questions. The graph is your primary map of the codebase.
+- IF graphify-out/wiki/index.md EXISTS, navigate it instead of reading raw files
+- For cross-module "how does X relate to Y" questions, prefer `graphify query "<question>"`, `graphify path "<A>" "<B>"`, or `graphify explain "<concept>"` over grep — these traverse the graph's EXTRACTED + INFERRED edges instead of scanning files
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost). Do this AFTER any agent-doc updates so the graph reflects the post-edit state. The full refresh checklist is in [Workflow (read this first)](#workflow-read-this-first) → Step 3.
