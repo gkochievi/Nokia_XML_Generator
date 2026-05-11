@@ -1,0 +1,49 @@
+# Secrets — must never end up baked into image layers
+.env
+.env.*
+!.env.example
+
+# Python cruft
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.mypy_cache/
+
+# Local virtualenvs
+venv/
+.venv/
+env/
+
+# Test code — not needed in the production image
+tests/
+conftest.py
+test_basic.py
+test_template_manager.py
+
+# Runtime data — created inside the container; volumes mount over these
+uploads/
+generated/
+
+# VCS / editor / OS
+.git/
+.gitignore
+.gitattributes
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Docker meta (no point copying it into itself)
+Dockerfile
+.dockerignore
+
+# Logs
+*.log
+logs/
